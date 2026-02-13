@@ -7,7 +7,7 @@ import { toast } from '../hooks/use-toast'
 import { ToastAction } from '../components/ui/toast'
 
 // Dashboard components
-import Sidebar from '../components/dashboard/Sidhebar'
+import Sidebar from '../components/dashboard/Sidebar'
 import SearchTab from '../components/dashboard/SearchTab'
 import NewNoteTab from '../components/dashboard/NewNoteTab'
 import LibraryTab from '../components/dashboard/LibraryTab'
