@@ -1,9 +1,9 @@
 import axios from 'axios'
 
-const API_BASE = '/api'
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 // Create axios instance with auth header
-const createAuthClient = (token) => {
+const createAuthClient = (token) => {h
   return axios.create({
     baseURL: API_BASE,
     headers: {
