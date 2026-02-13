@@ -7,7 +7,7 @@ import { toast } from '../hooks/use-toast'
 import { ToastAction } from '../components/ui/toast'
 
 // Dashboard components
-import Sidebar from '../components/dashboard/Sidebar'
+import Sidebar from '../components/dashboard/Sidhebar'
 import SearchTab from '../components/dashboard/SearchTab'
 import NewNoteTab from '../components/dashboard/NewNoteTab'
 import LibraryTab from '../components/dashboard/LibraryTab'
@@ -27,7 +27,7 @@ import ExportModal from '../components/modals/ExportModal'
 import NewCollectionModal from '../components/modals/NewCollectionModal'
 import AddToCollectionModal from '../components/modals/AddToCollectionModal'
 
-const API_BASE = '/api'
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 /**
  * Handle 403 errors: feature_locked, limit_reached, insufficient_credits.
