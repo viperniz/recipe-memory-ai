@@ -6,7 +6,12 @@ Identifies who is speaking when using pyannote-audio
 import os
 from pathlib import Path
 from typing import List, Dict, Optional
-import torch
+try:
+        import torch
+        TORCH_AVAILABLE = True
+except ImportError:
+        TORCH_AVAILABLE = False
+        torch = None
 
 # Ensure .env is loaded
 try:
