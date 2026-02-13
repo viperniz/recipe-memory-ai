@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=350" />
+  <link rel="stylesheet" href="popup.css" />
+  <title>Video Memory AI</title>
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <div class="header">
+      <img src="../icons/icon48.png" alt="" class="header-icon" />
+      <span class="header-title">Video Memory AI</span>
+    </div>
+
+    <!-- View: Not logged in -->
+    <div id="view-login" class="view" hidden>
+      <div class="login-prompt">
+        <p>Sign in to save YouTube videos to your library.</p>
+        <button id="btn-sign-in" class="btn btn-primary">Sign In</button>
+      </div>
+    </div>
+
+    <!-- View: Logged in -->
+    <div id="view-main" class="view" hidden>
+      <div class="user-row">
+        <span id="user-email" class="user-email"></span>
+        <span id="user-tier" class="tier-badge"></span>
+      </div>
+
+      <div class="credits-section">
+        <div class="credits-bar-track">
+          <div id="credits-bar" class="credits-bar-fill"></div>
+        </div>
+        <span id="credits-label" class="credits-label"></span>
+      </div>
+
+      <div id="save-section" hidden>
+        <button id="btn-save" class="btn btn-primary btn-full">Save This Video</button>
+      </div>
+
+      <div id="recent-section" hidden>
+        <h3 class="section-title">Recent Saves</h3>
+        <ul id="recent-list" class="recent-list"></ul>
+      </div>
+
+      <div class="footer-links">
+        <a id="link-library" href="#" class="footer-link">Open Library</a>
+        <button id="btn-settings" class="footer-link btn-link">Settings</button>
+      </div>
+    </div>
+
+    <!-- View: Settings -->
+    <div id="view-settings" class="view" hidden>
+      <h3 class="section-title">Settings</h3>
+
+      <div class="form-group">
+        <label for="input-api-base">API URL</label>
+        <input id="input-api-base" type="url" class="input" />
+      </div>
+
+      <div class="form-group">
+        <label for="input-webapp-base">Webapp URL</label>
+        <input id="input-webapp-base" type="url" class="input" />
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input id="input-analyze-frames" type="checkbox" />
+          Analyze video frames (uses more credits)
+        </label>
+      </div>
+
+      <div class="settings-actions">
+        <button id="btn-save-settings" class="btn btn-primary">Save</button>
+        <button id="btn-back" class="btn btn-secondary">Back</button>
+      </div>
+
+      <hr class="divider" />
+
+      <button id="btn-sign-out" class="btn btn-danger btn-full">Sign Out</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

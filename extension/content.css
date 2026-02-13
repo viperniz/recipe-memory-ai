@@ -1,0 +1,128 @@
+/* Video Memory AI — YouTube content script styles */
+
+.vmem-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 36px;
+  border: none;
+  border-radius: 18px;
+  font-family: 'Roboto', 'Arial', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+  white-space: nowrap;
+  line-height: 1;
+  vertical-align: middle;
+  margin-left: 8px;
+}
+
+.vmem-btn:hover {
+  opacity: 0.9;
+}
+
+.vmem-btn:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.vmem-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 2px;
+}
+
+.vmem-label {
+  pointer-events: none;
+}
+
+/* --- State variants --- */
+
+.vmem-btn-idle {
+  background: #7c3aed;
+  color: #fff;
+}
+
+.vmem-btn-idle:hover {
+  background: #6d28d9;
+}
+
+.vmem-btn-muted {
+  background: rgba(255, 255, 255, 0.1);
+  color: #aaa;
+}
+
+.vmem-btn-muted:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ccc;
+}
+
+.vmem-btn-saving {
+  background: #7c3aed;
+  color: #fff;
+}
+
+.vmem-btn-done {
+  background: #059669;
+  color: #fff;
+}
+
+.vmem-btn-done:hover {
+  background: #047857;
+}
+
+.vmem-btn-error {
+  background: #dc2626;
+  color: #fff;
+}
+
+.vmem-btn-error:hover {
+  background: #b91c1c;
+}
+
+.vmem-btn-warning {
+  background: #d97706;
+  color: #fff;
+}
+
+.vmem-btn-warning:hover {
+  background: #b45309;
+}
+
+/* --- Spinner --- */
+
+.vmem-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: vmem-spin 0.8s linear infinite;
+}
+
+@keyframes vmem-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- Check mark --- */
+
+.vmem-check {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* --- Floating fallback --- */
+
+.vmem-btn-floating {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 0 16px;
+  height: 42px;
+  border-radius: 21px;
+}

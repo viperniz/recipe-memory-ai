@@ -1,0 +1,37 @@
+# Environment variables
+.env
+frontend/.env
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+
+# Build output
+frontend/dist/
+
+# Data directories (user content / large files)
+data/
+src/data/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Claude Code
+.claude/
+
+# Python virtual env
+venv/
+.venv/
+
+# Logs
+*.log
+nul
