@@ -1,13 +1,7 @@
 # Core dependencies
-opencv-python>=4.8.0
+opencv-python-headless>=4.8.0
 openai>=1.0.0
 yt-dlp>=2024.1.0
-
-# Local LLM support (optional - for fully offline mode)
-ollama>=0.1.0
-
-# Web UI
-gradio>=4.0.0
 
 # FastAPI Backend
 fastapi>=0.104.0
@@ -25,15 +19,12 @@ passlib[bcrypt]>=1.7.4
 
 # Database
 sqlalchemy>=2.0.0
-psycopg2-binary>=2.9.9  # PostgreSQL driver for Supabase
-pgvector>=0.2.4  # Vector extension for PostgreSQL
+psycopg2-binary>=2.9.9
+pgvector>=0.2.4
 
 # Redis (Job Queue + Caching)
 redis>=5.0.0
-rq>=1.15.0  # Redis Queue for background jobs (optional for now)
-
-# Embeddings (for pgvector)
-sentence-transformers>=2.2.0  # For generating embeddings
+rq>=1.15.0
 
 # Billing (Stripe)
 stripe>=7.0.0
@@ -43,3 +34,6 @@ resend>=0.7.0
 
 # Google OAuth
 google-auth>=2.0.0
+
+# Numpy (for vector operations)
+numpy>=1.24.0
