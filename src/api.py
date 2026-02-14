@@ -1519,17 +1519,23 @@ async def generate_thumbnails(
         if vid:
             metadata["youtube_thumbnail"] = f"https://img.youtube.com/vi/{vid}/mqdefault.jpg"
 
-    # Update timeline entries with thumbnail paths
-    timeline = content.get("timeline", [])
-    if timeline:
-        for entry in timeline:
-            if entry.get("type") == "vision":
-                entry["thumbnail"] = f"{get_config().api_base_url}/api/thumbnails/{content_id}/{int(entry['timestamp'])}.jpg"
-        content["timeline"] = timeline
+        # Update timeline entries with thumbnail paths (use blob URLs if available)
+        blob_url_map = {}
+            for m in manifest:
+                        ts_key = round(m["timestamp"])
+                        if "url" in m:
+                                        blob_url_map[ts_key] = m["url"]
 
-    content["metadata"] = metadata
-    vector_memory.update_content(content_id, content, current_user.id)
-
+        timeline = content.get("timeline", [])
+            if timeline:
+                        for entry in timeline:
+                                        if entry.get("type") == "vision":
+                                                            ts_key = int(entry["timestamp"])
+                                                            if ts_key in blob_url_map:
+                                                                                    entry["thumbnail"] = blob_url_map[ts_key]
+                                                            else:
+                                                                                    entry["thumbnail"] = f"{get_config().api_base_url}/api/thumbnails/{content_id}/{ts_key}.jpg"
+                                                                        content["timeline"] = timeline
     return {"message": f"Generated {len(manifest)} thumbnails", "thumbnails": manifest}
 
 
@@ -1610,11 +1616,21 @@ async def backfill_all_thumbnails(
                         full_meta["youtube_thumbnail"] = f"https://img.youtube.com/vi/{vid}/mqdefault.jpg"
 
                 timeline = full.get("timeline", [])
-                if timeline:
-                    for entry in timeline:
-                        if entry.get("type") == "vision":
-                            entry["thumbnail"] = f"/api/thumbnails/{cid}/{int(entry['timestamp'])}.jpg"
-                    full["timeline"] = timeline
+                                if timeline:
+                                                        # Build blob URL lookup from manifest
+                                                        blob_urls = {}
+                                                        for m in manifest:
+                                                                                    tsk = round(m["timestamp"])
+                                                                                    if "url" in m:
+                                                                                                                    blob_urls[tsk] = m["url"]
+                                                                                                            for entry in timeline:
+                                                                                                                                        if entry.get("type") == "vision":
+                                                                                                                                                                        tsk = int(entry["timestamp"])
+                                                                                                                                                                        if tsk in blob_urls:
+                                                                                                                                                                                                            entry["thumbnail"] = blob_urls[tsk]
+                                                                                                                                                                                                        else:
+                                                                                                                                                                                                                                            entry["thumbnail"] = f"/api/thumbnails/{cid}/{tsk}.jpg"
+                                                                                                                                                                                                                                full["timeline"] = timeline
 
                 full["metadata"] = full_meta
                 vector_memory.update_content(cid, full, current_user.id)
