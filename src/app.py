@@ -343,7 +343,7 @@ class VideoMemoryAI:
                 "timestamp": p["timestamp"],
                 "end": p["end"],
                 "text": p["text"],
-                "speaker": speaker
+                                "speaker": speaker
             })
 
         # Add vision frame descriptions
