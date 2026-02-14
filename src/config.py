@@ -157,7 +157,7 @@ class AppConfig:
     environment: str = field(default_factory=lambda: os.getenv("ENVIRONMENT", "development"))
     log_level: str = field(default_factory=lambda: os.getenv("LOG_LEVEL", "INFO"))
     data_dir: Path = field(default_factory=lambda: Path(os.getenv("DATA_DIR", "./data")))
-        api_base_url: str = field(default_factory=lambda: os.getenv("API_BASE_URL", "").rstrip("/"))
+    api_base_url: str = field(default_factory=lambda: os.getenv("API_BASE_URL", "").rstrip("/"))
 
     # Sub-configurations
     database: DatabaseConfig = field(default_factory=DatabaseConfig)
