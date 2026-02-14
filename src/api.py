@@ -4,7 +4,7 @@ With authentication, billing, notes, tags, search, and collection chat features
 """
 from fastapi import FastAPI, HTTPException, Depends, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Responsehh
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import sys
@@ -1524,7 +1524,7 @@ async def generate_thumbnails(
     if timeline:
         for entry in timeline:
             if entry.get("type") == "vision":
-                entry["thumbnail"] = f"/api/thumbnails/{content_id}/{int(entry['timestamp'])}.jpg"
+                entry["thumbnail"] = f"{get_config().api_base_url}/api/thumbnails/{content_id}/{int(entry['timestamp'])}.jpg"
         content["timeline"] = timeline
 
     content["metadata"] = metadata
