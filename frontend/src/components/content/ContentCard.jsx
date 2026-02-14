@@ -23,7 +23,7 @@ function ContentCard({
   // Thumbnail source priority: youtube_thumbnail > first extracted frame > none
   const metadata = content.metadata || {}
   const cardThumbnail = metadata.youtube_thumbnail
-    || (metadata.thumbnails?.[0] ? `/api/thumbnails/${content.id}/${metadata.thumbnails[0].filename}` : null)
+    || (metadata.thumbnails?.[0] ? `${import.meta.env.VITE_API_URL || ''}/api/thumbnails/${content.id}/${metadata.thumbnails[0].filename}` : null)
 
   return (
     <div className={`library-card ${mode !== 'general' ? `library-card-${mode}` : ''}`}>
