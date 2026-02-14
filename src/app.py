@@ -20,6 +20,7 @@ from speaker_diarization import SpeakerDiarizer
 from content_creator import TopTenGenerator, ContentSpinner, TopTenScript, SpunContent
 
 import json
+from config import get_config
 
 
 class VideoMemoryAI:
@@ -363,7 +364,7 @@ class VideoMemoryAI:
                         entry["caption"] = caption
                     # Add thumbnail path if content_id is known
                     if content_id:
-                        entry["thumbnail"] = f"/api/thumbnails/{content_id}/{int(ts)}.jpg"
+                        entry["thumbnail"] = f"{get_config().api_base_url}/api/thumbnails/{content_id}/{int(ts)}.jpg"
                     timeline.append(entry)
 
         # Sort by timestamp
