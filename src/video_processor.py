@@ -240,42 +240,42 @@ def extract_frames(
 
 
 def save_frame_thumbnails(
-        frames: List[Tuple[float, str]],
-        content_id: str,
-        output_dir: str = "data/thumbnails"
+    frames: List[Tuple[float, str]],
+    content_id: str,
+    output_dir: str = "data/thumbnails"
 ) -> List[dict]:
-        """Save frame thumbnails to Vercel Blob (or local disk as fallback).
+    """Save frame thumbnails to Vercel Blob (or local disk as fallback).
 
-            Args:
-                    frames: List of (timestamp, base64_image) tuples from extract_frames()
-                            content_id: Content ID for subdirectory
-                                    output_dir: Root thumbnails directory (used for local fallback only)
+    Args:
+        frames: List of (timestamp, base64_image) tuples from extract_frames()
+        content_id: Content ID for subdirectory
+        output_dir: Root thumbnails directory (used for local fallback only)
 
-                                        Returns:
-                                                List of {timestamp, filename, url} dicts (the thumbnail manifest)
-                                                    """
-        import numpy as np
+    Returns:
+        List of {timestamp, filename, url} dicts (the thumbnail manifest)
+    """
+    import numpy as np
 
     # Check if Vercel Blob is available
     try:
-                from blob_storage import upload_thumbnail, is_blob_enabled
-                use_blob = is_blob_enabled()
-except ImportError:
-            use_blob = False
+        from blob_storage import upload_thumbnail, is_blob_enabled
+        use_blob = is_blob_enabled()
+    except ImportError:
+        use_blob = False
 
     # Local fallback directory
     if not use_blob:
-                thumb_dir = os.path.join(output_dir, content_id)
-                os.makedirs(thumb_dir, exist_ok=True)
+        thumb_dir = os.path.join(output_dir, content_id)
+        os.makedirs(thumb_dir, exist_ok=True)
 
     manifest = []
     for timestamp, b64_image in frames:
-                # Decode base64 to image
-                img_bytes = base64.b64decode(b64_image)
-                img_array = np.frombuffer(img_bytes, dtype=np.uint8)
-                img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-                if img is None:
-                                continue
+        # Decode base64 to image
+        img_bytes = base64.b64decode(b64_image)
+        img_array = np.frombuffer(img_bytes, dtype=np.uint8)
+        img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+        if img is None:
+            continue
 
         # Resize to 320px wide, maintain aspect ratio
         h, w = img.shape[:2]
@@ -290,11 +290,11 @@ except ImportError:
         jpeg_bytes = jpeg_buffer.tobytes()
 
         if use_blob:
-                        # Upload to Vercel Blob
-                        try:
-                                            blob_url = upload_thumbnail(jpeg_bytes, f"thumbnails/{content_id}/{filename}")
-                                            manifest.append({"timestamp": timestamp, "filename": filename, "url": blob_url})
-except Exception as e:
+            # Upload to Vercel Blob
+            try:
+                blob_url = upload_thumbnail(jpeg_bytes, f"thumbnails/{content_id}/{filename}")
+                manifest.append({"timestamp": timestamp, "filename": filename, "url": blob_url})
+            except Exception as e:
                 print(f"Warning: Blob upload failed for {filename}: {e}")
                 # Fallback to local
                 thumb_dir = os.path.join(output_dir, content_id)
@@ -302,10 +302,10 @@ except Exception as e:
                 filepath = os.path.join(thumb_dir, filename)
                 cv2.imwrite(filepath, thumb, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 manifest.append({"timestamp": timestamp, "filename": filename})
-else:
+        else:
             # Save locally
             filepath = os.path.join(thumb_dir, filename)
-                cv2.imwrite(filepath, thumb, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            cv2.imwrite(filepath, thumb, [cv2.IMWRITE_JPEG_QUALITY, 80])
             manifest.append({"timestamp": timestamp, "filename": filename})
 
     storage = "Vercel Blob" if use_blob else output_dir
