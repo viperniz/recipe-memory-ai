@@ -4,7 +4,7 @@ With authentication, billing, notes, tags, search, and collection chat features
 """
 from fastapi import FastAPI, HTTPException, Depends, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Responsehh
+from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import sys
