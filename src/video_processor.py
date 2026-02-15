@@ -7,7 +7,7 @@ import cv2
 import os
 import sys
 import base64
-from pathlib import Pathh
+from pathlib import Path
 from typing import List, Tuple
 import subprocess
 
