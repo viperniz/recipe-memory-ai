@@ -1,9 +1,15 @@
 import React, { useState, useRef } from 'react'
-import { Plus, Loader2, Video, Globe, Search, GraduationCap, Mic, Users, FileText, Upload, X } from 'lucide-react'
+import { Plus, Loader2, Video, Globe, Search, GraduationCap, Mic, Users, FileText, Upload, X, Youtube, Chrome, ArrowRight, ExternalLink } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
+import { useNavigate } from 'react-router-dom'
+import { useCreditBalance } from '../billing/FeatureGate'
+import { useExtensionDetection, requestExtensionCookies } from '../../hooks/useExtensionDetection'
 
 const ALLOWED_EXTENSIONS = ['.mp4', '.mkv', '.webm', '.avi', '.mov']
+
+// TODO: Replace with real Chrome Web Store URL after publishing the extension
+const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/video-memory-ai'
 
 // Content modes with icons and descriptions
 const CONTENT_MODES = [
@@ -20,11 +26,18 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+function isValidYoutubeUrl(url) {
+  if (!url) return false
+  return /^https?:\/\/(www\.)?youtube\.com\/watch\?v=[\w-]+/.test(url) ||
+         /^https?:\/\/youtu\.be\/[\w-]+/.test(url)
+}
+
 function NewNoteTab({
   isAddingVideo,
   onAddUrl,
   isAddingUrl,
   onUploadFile,
+  onAddYoutube,
   settings,
   setSettings
 }) {
@@ -36,7 +49,15 @@ function NewNoteTab({
   const [selectedFile, setSelectedFile] = useState(null)
   const [isDragging, setIsDragging] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(null)
+  const [youtubeUrl, setYoutubeUrl] = useState('')
+  const [isAddingYoutube, setIsAddingYoutube] = useState(false)
   const fileInputRef = useRef(null)
+  const navigate = useNavigate()
+
+  const { tier, loading: tierLoading } = useCreditBalance()
+  const { detected: extensionDetected, loading: extensionLoading } = useExtensionDetection()
+
+  const isPaid = tier !== 'free'
 
   const handleFileSelect = (file) => {
     if (!file) return
@@ -64,6 +85,26 @@ function NewNoteTab({
     setIsDragging(false)
   }
 
+  const handleYoutubeSubmit = async () => {
+    if (!isValidYoutubeUrl(youtubeUrl) || !onAddYoutube) return
+    setIsAddingYoutube(true)
+    try {
+      const { cookies, error } = await requestExtensionCookies()
+      if (error) {
+        console.warn('Cookie request warning:', error)
+      }
+      await onAddYoutube(
+        youtubeUrl,
+        contentMode,
+        language === 'auto' ? null : language,
+        cookies
+      )
+      setYoutubeUrl('')
+    } finally {
+      setIsAddingYoutube(false)
+    }
+  }
+
   const handleSubmit = () => {
     if (inputMode === 'video') {
       if (selectedFile) {
@@ -80,8 +121,16 @@ function NewNoteTab({
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  const isProcessing = isAddingVideo || isAddingUrl
-  const hasInput = inputMode === 'video' ? !!selectedFile : webUrl.trim()
+  const isProcessing = isAddingVideo || isAddingUrl || isAddingYoutube
+  const hasInput = inputMode === 'video'
+    ? (!!selectedFile || (extensionDetected && isValidYoutubeUrl(youtubeUrl)))
+    : webUrl.trim()
+
+  // Determine YouTube section state
+  const showYoutubeLoading = tierLoading || extensionLoading
+  const showPromoCard = !showYoutubeLoading && !isPaid
+  const showInstallCard = !showYoutubeLoading && isPaid && !extensionDetected
+  const showYoutubeInput = !showYoutubeLoading && isPaid && extensionDetected
 
   return (
     <div className="page">
@@ -154,11 +203,74 @@ function NewNoteTab({
               </div>
             </div>
 
-            <div className="form-group">
-              <p className="field-hint" style={{ marginTop: 0 }}>
-                To save YouTube videos, use the <strong>Video Memory AI</strong> browser extension.
-              </p>
-            </div>
+            {/* YouTube Section — 3 states */}
+            {showPromoCard && (
+              <div className="youtube-promo-card">
+                <div className="youtube-card-icon">
+                  <Youtube className="w-5 h-5" />
+                </div>
+                <div className="youtube-card-body">
+                  <strong>Save YouTube Videos</strong>
+                  <p>Install our Chrome extension and upgrade your plan to save YouTube videos directly to your knowledge base.</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/pricing')}
+                >
+                  Upgrade
+                  <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                </Button>
+              </div>
+            )}
+
+            {showInstallCard && (
+              <div className="extension-install-card">
+                <div className="youtube-card-icon chrome">
+                  <Chrome className="w-5 h-5" />
+                </div>
+                <div className="youtube-card-body">
+                  <strong>Install the Chrome Extension</strong>
+                  <p>Add the Video Memory AI extension to save YouTube videos with one click.</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(CHROME_EXTENSION_URL, '_blank')}
+                >
+                  Install
+                  <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
+                </Button>
+              </div>
+            )}
+
+            {showYoutubeInput && (
+              <div className="youtube-url-section">
+                <label>Or paste a YouTube URL</label>
+                <div className="youtube-url-input-row">
+                  <Input
+                    type="text"
+                    placeholder="https://youtube.com/watch?v=..."
+                    value={youtubeUrl}
+                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleYoutubeSubmit()}
+                    disabled={isProcessing}
+                    className="font-mono"
+                  />
+                  <Button
+                    onClick={handleYoutubeSubmit}
+                    disabled={isProcessing || !isValidYoutubeUrl(youtubeUrl)}
+                    size="sm"
+                  >
+                    {isAddingYoutube ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Content Mode Selector — horizontal chips */}
             <div className="form-group">

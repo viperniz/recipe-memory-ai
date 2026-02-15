@@ -98,6 +98,28 @@ async function addSavedUrl(url) {
   }
 }
 
+// --- YouTube cookie helpers ---
+
+async function formatYouTubeCookies() {
+  try {
+    const ytCookies = await chrome.cookies.getAll({ domain: '.youtube.com' });
+    if (!ytCookies || ytCookies.length === 0) return null;
+    const lines = ['# Netscape HTTP Cookie File'];
+    for (const c of ytCookies) {
+      const domain = c.domain.startsWith('.') ? c.domain : '.' + c.domain;
+      const flag = 'TRUE';
+      const path = c.path || '/';
+      const secure = c.secure ? 'TRUE' : 'FALSE';
+      const expiry = c.expirationDate ? Math.floor(c.expirationDate) : 0;
+      lines.push(`${domain}\t${flag}\t${path}\t${secure}\t${expiry}\t${c.name}\t${c.value}`);
+    }
+    return lines.join('\n');
+  } catch (e) {
+    console.warn('Cookie extraction failed:', e);
+    return null;
+  }
+}
+
 // --- Message handlers ---
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -130,6 +152,11 @@ async function handleMessage(message, sender) {
       return { success: true };
     }
 
+    case 'GET_YOUTUBE_COOKIES': {
+      const cookies = await formatYouTubeCookies();
+      return { cookies };
+    }
+
     case 'SAVE_VIDEO': {
       // 1. Tier check: free users cannot save YouTube videos
       const credits = await apiFetch('/api/billing/credits');
@@ -145,24 +172,7 @@ async function handleMessage(message, sender) {
       }
 
       // 2. Extract YouTube cookies from browser
-      let cookiesStr = null;
-      try {
-        const ytCookies = await chrome.cookies.getAll({ domain: '.youtube.com' });
-        if (ytCookies && ytCookies.length > 0) {
-          const lines = ['# Netscape HTTP Cookie File'];
-          for (const c of ytCookies) {
-            const domain = c.domain.startsWith('.') ? c.domain : '.' + c.domain;
-            const flag = 'TRUE';
-            const path = c.path || '/';
-            const secure = c.secure ? 'TRUE' : 'FALSE';
-            const expiry = c.expirationDate ? Math.floor(c.expirationDate) : 0;
-            lines.push(`${domain}\t${flag}\t${path}\t${secure}\t${expiry}\t${c.name}\t${c.value}`);
-          }
-          cookiesStr = lines.join('\n');
-        }
-      } catch (e) {
-        console.warn('Cookie extraction failed:', e);
-      }
+      const cookiesStr = await formatYouTubeCookies();
 
       // 3. Send to backend with cookies
       const result = await apiFetch('/api/videos/add', {

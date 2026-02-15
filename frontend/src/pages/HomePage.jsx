@@ -323,6 +323,44 @@ function HomePage() {
     }
   }
 
+  const handleAddYoutube = async (url, contentMode = 'general', language = null, cookies = null) => {
+    if (!url.trim()) return
+    setIsAddingVideo(true)
+    try {
+      const response = await api.post('/videos/add', {
+        url_or_path: url.trim(),
+        analyze_frames: settings.analyzeFrames,
+        provider: settings.provider,
+        mode: contentMode,
+        language,
+        cookies
+      })
+      const newJob = response.data.job
+      if (newJob) {
+        addJob(newJob)
+        toast({
+          variant: 'info',
+          title: 'YouTube video queued',
+          description: `${newJob.title || 'Video'} is now processing`,
+          duration: 3000
+        })
+      }
+      setActiveTab('library')
+    } catch (err) {
+      console.error('Failed to add YouTube video:', err)
+      if (!handle403Error(err, navigate, toast)) {
+        const errorDetail = err.response?.data?.detail
+        toast({
+          variant: 'destructive',
+          title: 'Failed to add YouTube video',
+          description: typeof errorDetail === 'string' ? errorDetail : err.message
+        })
+      }
+    } finally {
+      setIsAddingVideo(false)
+    }
+  }
+
   const handleUploadFile = async (file, contentMode = 'general', language = null, onProgress = null) => {
     if (!file) return
     setIsAddingVideo(true)
@@ -578,6 +616,7 @@ function HomePage() {
             onAddUrl={handleAddUrl}
             isAddingUrl={isAddingUrl}
             onUploadFile={handleUploadFile}
+            onAddYoutube={handleAddYoutube}
             settings={settings}
             setSettings={setSettings}
           />

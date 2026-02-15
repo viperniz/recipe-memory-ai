@@ -25,6 +25,14 @@
       ],
       "js": ["auth-content.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost:3000/*",
+        "https://videomemory.ai/*"
+      ],
+      "js": ["webapp-bridge.js"],
+      "run_at": "document_idle"
     }
   ],
   "action": {
