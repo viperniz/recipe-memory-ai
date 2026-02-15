@@ -98,6 +98,7 @@ def download_video(url: str, output_dir: str = "data/videos") -> str:
         "-f", "best[height<=720]",
         "-o", output_template,
         "--no-playlist",
+        "--cookies-from-browser", "chrome",
         "--print", "after_move:filepath",
         url
     ]
