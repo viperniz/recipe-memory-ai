@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Library, FolderOpen, X, Menu, Clock, Sparkles, Users, ArrowUpRight } from 'lucide-react'
+import { Plus, Library, FolderOpen, X, Menu, Clock, Sparkles, Users, ArrowUpRight } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import { billingApi } from '../../api/billing'
@@ -91,13 +91,6 @@ function Sidebar({
           >
             <Plus className="inline-block w-4 h-4 mr-2" />
             Add Source
-          </button>
-          <button
-            className={`nav-btn ${activeTab === 'search' ? 'active' : ''}`}
-            onClick={() => handleTabChange('search')}
-          >
-            <Search className="inline-block w-4 h-4 mr-2" />
-            Discover
           </button>
           <button
             className={`nav-btn ${activeTab === 'library' ? 'active' : ''}`}

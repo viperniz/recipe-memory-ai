@@ -12,6 +12,34 @@ const createAuthClient = (token) => {
   })
 }
 
+export const videoApi = {
+  async uploadVideo(token, file, { analyzeFrames = false, provider = 'openai', mode = 'general', language = null, collectionId = null, onProgress = null } = {}) {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('analyze_frames', String(analyzeFrames))
+    formData.append('provider', provider)
+    formData.append('mode', mode)
+    if (language) formData.append('language', language)
+    if (collectionId) formData.append('collection_id', collectionId)
+
+    const client = axios.create({
+      baseURL: API_BASE,
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    const response = await client.post('/videos/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: onProgress ? (e) => {
+        const pct = e.total ? Math.round((e.loaded / e.total) * 100) : 0
+        onProgress(pct)
+      } : undefined
+    })
+    return response.data
+  }
+}
+
 export const notesApi = {
   // Notes
   async createNote(token, contentId, noteText, timestampSeconds = null) {

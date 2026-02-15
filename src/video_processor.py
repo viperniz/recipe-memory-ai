@@ -73,7 +73,7 @@ def _extract_video_id(url: str) -> str | None:
     return None
 
 
-def download_video(url: str, output_dir: str = "data/videos") -> str:
+def download_video(url: str, output_dir: str = "data/videos", cookies_file: str = None) -> str:
     """Download video from YouTube or other platforms using yt-dlp"""
     os.makedirs(output_dir, exist_ok=True)
 
@@ -99,8 +99,13 @@ def download_video(url: str, output_dir: str = "data/videos") -> str:
         "-o", output_template,
         "--no-playlist",
         "--print", "after_move:filepath",
-        url
     ]
+
+    # Use cookies file for authenticated downloads (e.g. YouTube with bot detection)
+    if cookies_file:
+        download_cmd.extend(["--cookies", cookies_file])
+
+    download_cmd.append(url)
 
     result = subprocess.run(download_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
 

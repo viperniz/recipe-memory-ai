@@ -2,7 +2,7 @@
 FastAPI Backend for Video Memory AI
 With authentication, billing, notes, tags, search, and collection chat features
 """
-from fastapi import FastAPI, HTTPException, Depends, Request, Header
+from fastapi import FastAPI, HTTPException, Depends, Request, Header, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -48,6 +48,19 @@ import subprocess
 import json
 import traceback
 import math
+import tempfile
+
+
+def _validate_cookies_string(s: str) -> bool:
+    """Validate Netscape-format cookie string (tab-separated, 7 fields per line)."""
+    if not s or len(s) > 500_000:
+        return False
+    for line in s.strip().split('\n'):
+        if line.startswith('#') or not line.strip():
+            continue
+        if len(line.split('\t')) != 7:
+            return False
+    return True
 
 
 def _get_chat_model(db: Session, user_id: int) -> str:
@@ -152,11 +165,7 @@ class VideoAddRequest(BaseModel):
     mode: str = "general"  # general, recipe, learn, creator, meeting
     language: Optional[str] = None  # None = auto-detect, or ISO code like "en", "es", "fr"
     collection_id: Optional[str] = None  # Auto-add to collection after processing
-
-
-class YouTubeSearchRequest(BaseModel):
-    query: str
-    max_results: int = 10
+    cookies: Optional[str] = None  # Netscape-format cookies for YouTube (transient, never stored)
 
 
 class SettingsUpdate(BaseModel):
@@ -889,6 +898,27 @@ async def add_video(
                 }
             )
 
+    # Feature gate: YouTube download requires Starter+
+    is_youtube = any(d in request.url_or_path for d in ['youtube.com', 'youtu.be'])
+    if is_youtube:
+        yt_check = BillingService.check_feature_access(db, current_user.id, "youtube_download")
+        if not yt_check["has_access"]:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "feature_locked",
+                    "feature": "youtube_download",
+                    "required_tier": yt_check["required_tier"],
+                    "current_tier": yt_check["current_tier"],
+                    "message": f"YouTube downloads require {yt_check['required_tier'].capitalize()}+ plan. Free users can upload local video files."
+                }
+            )
+
+    # Validate cookies format if provided
+    if request.cookies:
+        if not _validate_cookies_string(request.cookies):
+            raise HTTPException(status_code=400, detail="Invalid cookie format. Expected Netscape tab-separated format.")
+
     # Credit pre-check: minimum 1 credit (1 min video)
     estimated_cost = CREDIT_COSTS["video_per_minute"]  # Minimum 1 credit
     if request.analyze_frames:
@@ -923,8 +953,9 @@ async def add_video(
         mode=mode
     )
 
-    # Capture user ID as plain int before background thread (avoids detached session error)
+    # Capture values before background thread (avoids detached session error)
     user_id = current_user.id
+    cookies_str = request.cookies  # Captured here, never stored in job settings
 
     # Start processing in background
     def process_video():
@@ -1036,10 +1067,34 @@ async def add_video(
 
                 # Create AI instance for processing
                 ai = get_app(user_id, bg_db)
-                
+
+                # If cookies provided, pre-download with yt-dlp using cookies
+                source_path = request.url_or_path
+                cookies_temp_path = None
+                try:
+                    if cookies_str and is_youtube:
+                        JobService.update_job_progress(db=bg_db, job_id=job.id, progress=5, status="Downloading with cookies...")
+                        cookies_temp = tempfile.NamedTemporaryFile(
+                            mode='w', suffix='.txt', delete=False, prefix='vmem_cookies_'
+                        )
+                        cookies_temp.write(cookies_str)
+                        cookies_temp.close()
+                        cookies_temp_path = cookies_temp.name
+
+                        local_path = download_video(request.url_or_path, cookies_file=cookies_temp_path)
+                        source_path = local_path
+                        print(f"[Job {job.id}] Downloaded with cookies to: {local_path}")
+                finally:
+                    # Always delete the cookies temp file
+                    if cookies_temp_path:
+                        try:
+                            os.unlink(cookies_temp_path)
+                        except OSError:
+                            pass
+
                 # Process video with mode and language
                 result = ai.process_video(
-                    request.url_or_path,
+                    source_path,
                     analyze_frames=request.analyze_frames,
                     progress_callback=progress_callback,
                     detect_speakers=True,
@@ -1182,108 +1237,267 @@ async def add_video(
     }
 
 
-@app.post("/api/youtube/search")
-async def search_youtube(
-    request: YouTubeSearchRequest,
-    current_user: User = Depends(get_current_active_user)
-):
-    """Search YouTube for videos (cached in Redis)"""
-    if not request.query.strip():
-        return {"videos": []}
-
-    # Check cache
-    cache_key = f"youtube_search:{current_user.id}:{request.query}:{request.max_results}"
-    cached = cache_get(cache_key)
-    if cached:
-        return {"videos": cached}
-
-    try:
-        ytdlp_path = get_ytdlp_path()
-
-        cmd = [
-            ytdlp_path,
-            f"ytsearch{request.max_results}:{request.query}",
-            "--dump-json",
-            "--no-warnings",
-            "--quiet",
-            "--no-playlist",
-            "--skip-download",
-            "--no-check-certificate",
-            "--extractor-args", "youtube:player_client=web,android",
-            "--socket-timeout", "30",
-            "--retries", "2",
-            "--fragment-retries", "2",
-            "--ignore-errors"
-        ]
-
-        print(f"Searching YouTube for: {request.query}")
-        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=45)
-
-        if result.returncode != 0:
-            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
-            print(f"YouTube search error: {error_msg}")
-            raise HTTPException(status_code=500, detail=f"YouTube search failed: {error_msg[:100]}")
-
-        videos = []
-        lines = result.stdout.strip().split('\n')
-
-        for line in lines:
-            if not line.strip():
-                continue
-            try:
-                data = json.loads(line)
-                videos.append({
-                    "id": data.get("id", ""),
-                    "title": data.get("title", ""),
-                    "url": data.get("webpage_url", ""),
-                    "thumbnail": data.get("thumbnail", ""),
-                    "channel": data.get("uploader", ""),
-                    "duration": data.get("duration", 0),
-                    "views": data.get("view_count", 0)
-                })
-            except json.JSONDecodeError:
-                continue
-
-        if not videos:
-            raise HTTPException(status_code=500, detail="No videos found. Try a different search term.")
-
-        # Cache for 1 hour
-        cache_set(cache_key, videos, ttl=3600)
-        
-        return {"videos": videos}
-
-    except subprocess.TimeoutExpired:
-        raise HTTPException(status_code=500, detail="Search timed out. Please try again.")
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)[:100]}")
+ALLOWED_VIDEO_EXTENSIONS = {'.mp4', '.mkv', '.webm', '.avi', '.mov'}
+MAX_UPLOAD_SIZE = 500 * 1024 * 1024  # 500MB
 
 
-class VideoAddFromSearchRequest(BaseModel):
-    analyze_frames: bool = True
-    provider: str = "openai"
-
-
-@app.post("/api/videos/add-from-search/{index}")
-async def add_video_from_search(
-    index: int,
-    request: VideoAddFromSearchRequest,
+@app.post("/api/videos/upload")
+async def upload_video(
+    file: UploadFile = File(...),
+    analyze_frames: bool = Form(False),
+    provider: str = Form("openai"),
+    mode: str = Form("general"),
+    language: Optional[str] = Form(None),
+    collection_id: Optional[str] = Form(None),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Add a video from search results by index"""
-    # Get search results from cache (last search)
-    # Note: This is a simplified approach - in production, you might want to store search session IDs
-    cache_key = f"youtube_search:{current_user.id}:*"
-    # For now, we'll need the query - but this endpoint assumes recent search
-    # You might want to pass query as parameter or store in session
-    
-    # For now, just use the URL directly - frontend should pass the full URL
-    raise HTTPException(
-        status_code=400,
-        detail="Please use /api/videos/add with the full video URL instead"
+    """Upload a local video file for processing (available to all tiers)"""
+    # Validate file extension
+    ext = os.path.splitext(file.filename or '')[1].lower()
+    if ext not in ALLOWED_VIDEO_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type '{ext}'. Allowed: {', '.join(sorted(ALLOWED_VIDEO_EXTENSIONS))}"
+        )
+
+    # Feature gate: Vision AI requires Pro+
+    if analyze_frames:
+        vision_check = BillingService.check_feature_access(db, current_user.id, "vision_analysis")
+        if not vision_check["has_access"]:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "feature_locked",
+                    "feature": "vision_analysis",
+                    "required_tier": vision_check["required_tier"],
+                    "current_tier": vision_check["current_tier"],
+                    "message": f"Vision AI requires {vision_check['required_tier'].capitalize()}+ plan."
+                }
+            )
+
+    # Credit pre-check: minimum 1 credit
+    estimated_cost = CREDIT_COSTS["video_per_minute"]
+    if analyze_frames:
+        estimated_cost += CREDIT_COSTS["vision_per_minute"]
+    credit_check = BillingService.check_credits(db, current_user.id, estimated_cost)
+    if not credit_check["has_credits"]:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "insufficient_credits",
+                "cost": estimated_cost,
+                "balance": credit_check["balance"],
+                "tier": credit_check["tier"],
+                "message": f"This costs at least {estimated_cost} credits. You have {credit_check['balance']}."
+            }
+        )
+
+    # Validate mode
+    valid_modes = ["auto", "general", "recipe", "learn", "creator", "meeting"]
+    mode = mode if mode in valid_modes else "auto"
+
+    # Stream file to disk with size check
+    upload_dir = os.path.join("data", "videos")
+    os.makedirs(upload_dir, exist_ok=True)
+    file_id = str(uuid.uuid4())[:12]
+    dest_path = os.path.join(upload_dir, f"upload_{file_id}{ext}")
+
+    total_size = 0
+    try:
+        with open(dest_path, "wb") as f:
+            while True:
+                chunk = await file.read(1024 * 1024)  # 1MB chunks
+                if not chunk:
+                    break
+                total_size += len(chunk)
+                if total_size > MAX_UPLOAD_SIZE:
+                    raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {MAX_UPLOAD_SIZE // (1024*1024)} MB.")
+                f.write(chunk)
+    except HTTPException:
+        # Clean up partial file on size error
+        if os.path.exists(dest_path):
+            os.unlink(dest_path)
+        raise
+
+    if total_size == 0:
+        if os.path.exists(dest_path):
+            os.unlink(dest_path)
+        raise HTTPException(status_code=400, detail="Empty file uploaded.")
+
+    # Create job
+    display_name = (file.filename or f"upload_{file_id}{ext}")[:50]
+    job = JobService.create_job(
+        db=db,
+        user_id=current_user.id,
+        video_url=dest_path,
+        settings={
+            "provider": provider or "openai",
+            "analyze_frames": analyze_frames
+        },
+        title=display_name,
+        mode=mode
     )
+
+    user_id = current_user.id
+
+    # Background processing (same pipeline as add_video, but using local file)
+    def process_upload():
+        try:
+            bg_db = SessionLocal()
+            try:
+                print(f"[Job {job.id}] Starting upload processing for: {display_name}")
+
+                # Check video duration
+                duration_min = 0
+                try:
+                    info = get_video_info(dest_path)
+                    duration_min = info.get("duration", 0) / 60
+                except Exception as e:
+                    print(f"[Job {job.id}] Duration check failed (proceeding): {e}")
+
+                if duration_min > 0:
+                    dur_check = BillingService.check_video_duration(bg_db, user_id, duration_min)
+                    if not dur_check["allowed"]:
+                        JobService.complete_job(
+                            db=bg_db, job_id=job.id,
+                            error=f"Video is {int(duration_min)} min. Your plan allows up to {dur_check['max_duration']} min. Upgrade to {dur_check['required_tier'].capitalize()} for longer videos."
+                        )
+                        return
+
+                # Deduct credits
+                actual_cost = BillingService.get_video_credit_cost(duration_min, analyze_frames)
+                try:
+                    BillingService.deduct_credits(
+                        bg_db, user_id, actual_cost, "video_processing",
+                        content_id=job.id,
+                        description=f"Video upload ({int(duration_min)} min)"
+                    )
+                    from database import Job as JobModel
+                    job_row = bg_db.query(JobModel).filter(JobModel.id == job.id).first()
+                    if job_row:
+                        job_row.credits_deducted = actual_cost
+                        bg_db.commit()
+                    print(f"[Job {job.id}] Deducted {actual_cost} credits")
+                except ValueError:
+                    balance = BillingService.get_credit_balance(bg_db, user_id)
+                    JobService.complete_job(
+                        db=bg_db, job_id=job.id,
+                        error=f"Insufficient credits: need {actual_cost}, have {balance}. Upgrade for more credits."
+                    )
+                    return
+
+                def progress_callback(percent, status):
+                    JobService.update_job_progress(db=bg_db, job_id=job.id, progress=percent, status=status or "processing")
+                    print(f"[Job {job.id}] Progress: {percent}% - {status}")
+
+                ai = get_app(user_id, bg_db)
+
+                result = ai.process_video(
+                    dest_path,
+                    analyze_frames=analyze_frames,
+                    progress_callback=progress_callback,
+                    detect_speakers=True,
+                    user_id=user_id,
+                    mode=mode,
+                    language=language
+                )
+
+                # Check cancellation
+                j = JobService.get_job(bg_db, job.id)
+                if j and j.status == "cancelled":
+                    print(f"[Job {job.id}] Cancelled by user, skipping save.")
+                    return
+
+                # File size for storage tracking
+                file_size_bytes = 0
+                if result.source_video:
+                    try:
+                        file_size_bytes = os.path.getsize(result.source_video)
+                    except OSError:
+                        pass
+
+                # Storage check
+                if file_size_bytes > 0:
+                    storage_check = BillingService.check_storage(bg_db, user_id, file_size_bytes)
+                    if not storage_check["allowed"]:
+                        job_row = bg_db.query(JobModel).filter(JobModel.id == job.id).first()
+                        if job_row and job_row.credits_deducted:
+                            try:
+                                BillingService.refund_credits(
+                                    bg_db, user_id, job_row.credits_deducted,
+                                    "video_processing", content_id=job.id,
+                                    description="Refund: storage limit exceeded"
+                                )
+                            except Exception:
+                                pass
+                        JobService.complete_job(
+                            db=bg_db, job_id=job.id,
+                            error=f"Storage full: using {storage_check['used_mb']:.0f} MB of {storage_check['limit_mb']} MB. Upgrade your plan for more storage."
+                        )
+                        return
+
+                # Save to vector database
+                vector_memory = VectorMemory(bg_db, user_id)
+                result_dict = result.to_dict()
+                result_dict["file_size_bytes"] = file_size_bytes
+                vector_memory.add_content(result_dict, user_id)
+
+                # Auto-add to collection
+                if collection_id:
+                    content_id = result_dict.get("id")
+                    if content_id:
+                        vector_memory.add_to_collection(content_id, collection_id, user_id)
+                        print(f"[Job {job.id}] Added to collection {collection_id}")
+
+                JobService.complete_job(db=bg_db, job_id=job.id, result=result_dict)
+                print(f"[Job {job.id}] Upload completed successfully!")
+
+            finally:
+                try:
+                    bg_db.close()
+                except Exception:
+                    pass
+
+        except Exception as e:
+            error_msg = str(e)
+            error_trace = traceback.format_exc()
+            print(f"[Job {job.id}] ERROR: {error_msg}")
+            print(f"[Job {job.id}] Traceback:\n{error_trace}")
+
+            error_db = SessionLocal()
+            try:
+                j = JobService.get_job(error_db, job.id)
+                if j and j.status != "cancelled":
+                    JobService.complete_job(db=error_db, job_id=job.id, error=error_msg)
+                    if j.credits_deducted and j.credits_deducted > 0:
+                        try:
+                            BillingService.refund_credits(
+                                error_db, user_id, j.credits_deducted,
+                                "video_processing", content_id=job.id,
+                                description="Refund: processing failed"
+                            )
+                            print(f"[Job {job.id}] Refunded {j.credits_deducted} credits")
+                        except Exception as refund_err:
+                            print(f"[Job {job.id}] Refund failed: {refund_err}")
+            finally:
+                error_db.close()
+
+    thread = threading.Thread(target=process_upload, daemon=True)
+    thread.start()
+
+    return {
+        "job": {
+            "id": job.id,
+            "status": job.status,
+            "progress": job.progress,
+            "title": job.title,
+            "video_url": job.video_url,
+            "mode": job.mode,
+            "started_at": job.started_at.isoformat() if job.started_at else None,
+            "error": None
+        }
+    }
 
 
 @app.get("/api/jobs")

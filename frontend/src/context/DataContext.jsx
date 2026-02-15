@@ -30,11 +30,6 @@ export function DataProvider({ children }) {
   const [collectionContents, setCollectionContents] = useState([])
   const [isLoadingCollectionContents, setIsLoadingCollectionContents] = useState(false)
 
-  // Search state (persisted across tab/route switches)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState([])
-  const [isSearching, setIsSearching] = useState(false)
-
   // --- Refs ---
   const previousJobStates = useRef(new Map())
   const hasInitialized = useRef(false)
@@ -203,9 +198,6 @@ export function DataProvider({ children }) {
       setJobs([])
       setCollections([])
       setCollectionContents([])
-      setSearchQuery('')
-      setSearchResults([])
-      setIsSearching(false)
       libraryLoaded.current = false
       hasInitialized.current = false
       previousJobStates.current.clear()
@@ -237,13 +229,6 @@ export function DataProvider({ children }) {
     updateJobStatus,
     startJobPolling,
     stopJobPolling,
-    // Search state
-    searchQuery,
-    setSearchQuery,
-    searchResults,
-    setSearchResults,
-    isSearching,
-    setIsSearching,
   }
 
   return (

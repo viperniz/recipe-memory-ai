@@ -57,9 +57,13 @@ async function apiFetch(path, options = {}) {
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
+    // Backend sends structured 403 errors as body.detail = { error, feature, ... }
+    const detail = body.detail || {};
+    const errorType = (typeof detail === 'object' && detail.error) ? detail.error : (body.error_type || null);
+    const errorMsg = (typeof detail === 'object' && detail.message) ? detail.message : (typeof detail === 'string' ? detail : `Request failed (${response.status})`);
     return {
-      error: body.detail || `Request failed (${response.status})`,
-      error_type: body.error_type || null,
+      error: errorMsg,
+      error_type: errorType,
       status: response.status
     };
   }
@@ -127,14 +131,49 @@ async function handleMessage(message, sender) {
     }
 
     case 'SAVE_VIDEO': {
+      // 1. Tier check: free users cannot save YouTube videos
+      const credits = await apiFetch('/api/billing/credits');
+      if (credits.error) {
+        return credits;
+      }
+      if (credits.tier === 'free') {
+        return {
+          error: 'YouTube downloads require a Starter+ plan. Free users can upload local files on the web app.',
+          error_type: 'feature_locked',
+          status: 403
+        };
+      }
+
+      // 2. Extract YouTube cookies from browser
+      let cookiesStr = null;
+      try {
+        const ytCookies = await chrome.cookies.getAll({ domain: '.youtube.com' });
+        if (ytCookies && ytCookies.length > 0) {
+          const lines = ['# Netscape HTTP Cookie File'];
+          for (const c of ytCookies) {
+            const domain = c.domain.startsWith('.') ? c.domain : '.' + c.domain;
+            const flag = 'TRUE';
+            const path = c.path || '/';
+            const secure = c.secure ? 'TRUE' : 'FALSE';
+            const expiry = c.expirationDate ? Math.floor(c.expirationDate) : 0;
+            lines.push(`${domain}\t${flag}\t${path}\t${secure}\t${expiry}\t${c.name}\t${c.value}`);
+          }
+          cookiesStr = lines.join('\n');
+        }
+      } catch (e) {
+        console.warn('Cookie extraction failed:', e);
+      }
+
+      // 3. Send to backend with cookies
       const result = await apiFetch('/api/videos/add', {
         method: 'POST',
         body: JSON.stringify({
           url_or_path: message.url,
-          analyze_frames: message.analyzeFrames ?? false
+          analyze_frames: message.analyzeFrames ?? false,
+          cookies: cookiesStr
         })
       });
-      if (!result.error && result.job_id) {
+      if (!result.error && result.job) {
         addSavedUrl(message.url);
       }
       return result;

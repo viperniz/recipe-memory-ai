@@ -20,6 +20,7 @@
     DONE: 'done',
     ERROR: 'error',
     NO_CREDITS: 'no_credits',
+    TIER_LOCKED: 'tier_locked',
     ALREADY_SAVED: 'already_saved'
   };
 
@@ -122,6 +123,14 @@
         btn.onclick = () => window.open(`${webappBase}/pricing`, '_blank');
         break;
 
+      case STATE.TIER_LOCKED:
+        btn.classList.add('vmem-btn-warning');
+        btn.innerHTML = `
+          <span class="vmem-label">Upgrade to save videos</span>
+        `;
+        btn.onclick = () => window.open(`${webappBase}/pricing`, '_blank');
+        break;
+
       case STATE.ALREADY_SAVED:
         btn.classList.add('vmem-btn-done');
         btn.innerHTML = `
@@ -180,7 +189,9 @@
     });
 
     if (result.error) {
-      if (result.status === 403 && result.error_type === 'insufficient_credits') {
+      if (result.status === 403 && result.error_type === 'feature_locked') {
+        updateButton(STATE.TIER_LOCKED);
+      } else if (result.status === 403 && result.error_type === 'insufficient_credits') {
         updateButton(STATE.NO_CREDITS);
       } else if (result.status === 401) {
         isLoggedIn = false;
@@ -191,8 +202,9 @@
       return;
     }
 
-    if (result.job_id) {
-      currentJobId = result.job_id;
+    const jobId = result.job?.id || result.job_id;
+    if (jobId) {
+      currentJobId = jobId;
       updateButton(STATE.PROCESSING, { progress: 0 });
       startPolling();
     } else {

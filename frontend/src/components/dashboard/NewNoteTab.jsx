@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'
-import { Plus, Loader2, Video, Globe, Search, GraduationCap, Mic, Users, FileText } from 'lucide-react'
+import React, { useState, useRef } from 'react'
+import { Plus, Loader2, Video, Globe, Search, GraduationCap, Mic, Users, FileText, Upload, X } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 
+const ALLOWED_EXTENSIONS = ['.mp4', '.mkv', '.webm', '.avi', '.mov']
 
 // Content modes with icons and descriptions
 const CONTENT_MODES = [
@@ -13,6 +14,12 @@ const CONTENT_MODES = [
   { id: 'deepdive', label: 'Deep Dive', icon: Search, description: 'In-depth analysis and connections' },
 ]
 
+function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 function NewNoteTab({
   videoUrl,
   setVideoUrl,
@@ -20,24 +27,70 @@ function NewNoteTab({
   onAddVideo,
   onAddUrl,
   isAddingUrl,
+  onUploadFile,
+  userTier,
   settings,
   setSettings
 }) {
   const [inputMode, setInputMode] = useState('video') // 'video' or 'web'
   const [webUrl, setWebUrl] = useState('')
   const [researchMode, setResearchMode] = useState(false)
-  const [contentMode, setContentMode] = useState('general') // User-selected content mode
-  const [language, setLanguage] = useState('auto') // Language for summarization
+  const [contentMode, setContentMode] = useState('general')
+  const [language, setLanguage] = useState('auto')
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(null)
+  const fileInputRef = useRef(null)
+
+  const isPaid = userTier && userTier !== 'free'
+
+  const handleFileSelect = (file) => {
+    if (!file) return
+    const ext = '.' + file.name.split('.').pop().toLowerCase()
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return // silently reject invalid extensions
+    }
+    setSelectedFile(file)
+    setVideoUrl('') // clear URL when file is selected
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) handleFileSelect(file)
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
   const handleSubmit = () => {
     if (inputMode === 'video') {
-      onAddVideo(contentMode, language === 'auto' ? null : language)
+      if (selectedFile) {
+        onUploadFile(selectedFile, contentMode, language === 'auto' ? null : language, (pct) => setUploadProgress(pct))
+      } else {
+        onAddVideo(contentMode, language === 'auto' ? null : language)
+      }
     } else {
       onAddUrl(webUrl, researchMode)
     }
   }
 
+  const clearFile = () => {
+    setSelectedFile(null)
+    setUploadProgress(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const isProcessing = isAddingVideo || isAddingUrl
-  const hasInput = inputMode === 'video' ? videoUrl.trim() : webUrl.trim()
+  const hasInput = inputMode === 'video' ? (videoUrl.trim() || selectedFile) : webUrl.trim()
 
   return (
     <div className="page">
@@ -65,22 +118,74 @@ function NewNoteTab({
 
         {inputMode === 'video' ? (
           <>
-            {/* Video URL Input */}
+            {/* File Upload Drop Zone */}
             <div className="form-group">
-              <label htmlFor="video-url">Paste a video link or drop a file</label>
-              <Input
-                id="video-url"
-                type="text"
-                placeholder="Paste any YouTube, Vimeo, or lecture URL..."
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-                disabled={isProcessing}
-                className="font-mono"
-              />
+              <label>Upload a video file</label>
+              <div
+                className={`file-drop-zone ${isDragging ? 'dragging' : ''} ${selectedFile ? 'has-file' : ''}`}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onClick={() => !selectedFile && fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={ALLOWED_EXTENSIONS.join(',')}
+                  onChange={(e) => handleFileSelect(e.target.files?.[0])}
+                  style={{ display: 'none' }}
+                />
+                {selectedFile ? (
+                  <div className="selected-file-info">
+                    <Video className="w-5 h-5" />
+                    <div className="selected-file-details">
+                      <span className="selected-file-name">{selectedFile.name}</span>
+                      <span className="selected-file-size">{formatFileSize(selectedFile.size)}</span>
+                    </div>
+                    {uploadProgress !== null && (
+                      <span className="upload-progress">{uploadProgress}%</span>
+                    )}
+                    <button
+                      className="file-remove-btn"
+                      onClick={(e) => { e.stopPropagation(); clearFile() }}
+                      disabled={isProcessing}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="drop-zone-prompt">
+                    <Upload className="w-6 h-6" />
+                    <span>Drag & drop a video file, or click to browse</span>
+                    <span className="drop-zone-hint">.mp4, .mkv, .webm, .avi, .mov — up to 500 MB</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Advanced settings hidden — provider defaults to openai, vision follows plan */}
+            {/* URL Input — only for paid users, below the file zone */}
+            {isPaid ? (
+              <div className="form-group">
+                <label htmlFor="video-url">Or paste a video URL</label>
+                <Input
+                  id="video-url"
+                  type="text"
+                  placeholder="Paste any YouTube, Vimeo, or lecture URL..."
+                  value={videoUrl}
+                  onChange={(e) => { setVideoUrl(e.target.value); if (e.target.value) setSelectedFile(null) }}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+                  disabled={isProcessing || !!selectedFile}
+                  className="font-mono"
+                />
+              </div>
+            ) : (
+              <div className="form-group">
+                <p className="field-hint" style={{ marginTop: 4 }}>
+                  YouTube downloads require a paid plan. Install the{' '}
+                  <strong>Video Memory AI extension</strong> and upgrade to Starter to save YouTube videos.
+                </p>
+              </div>
+            )}
 
             {/* Content Mode Selector — horizontal chips */}
             <div className="form-group">
@@ -248,7 +353,7 @@ function NewNoteTab({
           {isProcessing ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Processing...
+              {uploadProgress !== null ? `Uploading ${uploadProgress}%...` : 'Processing...'}
             </>
           ) : (
             <>

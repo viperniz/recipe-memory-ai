@@ -530,6 +530,7 @@ TIER_LIMITS = {
         "mindmap_generation": False,
         "ai_model": "gpt-4o-mini",
         "team_members": 1,
+        "youtube_download": False,
         "support_level": "community",
     },
     "starter": {
@@ -563,6 +564,7 @@ TIER_LIMITS = {
         "mindmap_generation": False,
         "ai_model": "gpt-4o-mini",
         "team_members": 1,
+        "youtube_download": True,
         "support_level": "email",
     },
     "pro": {
@@ -598,6 +600,7 @@ TIER_LIMITS = {
         "mindmap_generation": True,
         "ai_model": "gpt-4o",
         "team_members": 1,
+        "youtube_download": True,
         "support_level": "priority",
     },
     "team": {
@@ -630,6 +633,7 @@ TIER_LIMITS = {
         "mindmap_generation": True,
         "ai_model": "gpt-4o",
         "team_members": 10,
+        "youtube_download": True,
         "support_level": "dedicated",
     }
 }

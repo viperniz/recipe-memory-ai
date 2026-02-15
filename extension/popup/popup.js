@@ -122,7 +122,14 @@ function bindEvents() {
     });
 
     if (result.error) {
-      if (result.status === 403 && result.error_type === 'insufficient_credits') {
+      if (result.status === 403 && result.error_type === 'feature_locked') {
+        $('#btn-save').textContent = 'Upgrade to save videos';
+        $('#btn-save').disabled = false;
+        const wb = await sendMessage({ type: 'GET_WEBAPP_BASE' });
+        $('#btn-save').onclick = () => {
+          chrome.tabs.create({ url: `${(wb.webappBase || 'http://localhost:3000')}/pricing` });
+        };
+      } else if (result.status === 403 && result.error_type === 'insufficient_credits') {
         $('#btn-save').textContent = 'No credits — Get more';
         $('#btn-save').disabled = false;
         const wb = await sendMessage({ type: 'GET_WEBAPP_BASE' });

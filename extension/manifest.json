@@ -3,7 +3,7 @@
   "name": "Video Memory AI",
   "description": "Save YouTube videos to Video Memory AI with one click",
   "version": "1.0.0",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "activeTab", "cookies"],
   "host_permissions": [
     "https://www.youtube.com/*",
     "http://localhost:8000/*"

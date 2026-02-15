@@ -5,10 +5,11 @@ import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { toast } from '../hooks/use-toast'
 import { ToastAction } from '../components/ui/toast'
+import { videoApi } from '../api/notes'
+import { billingApi } from '../api/billing'
 
 // Dashboard components
 import Sidebar from '../components/dashboard/Sidebar'
-import SearchTab from '../components/dashboard/SearchTab'
 import NewNoteTab from '../components/dashboard/NewNoteTab'
 import LibraryTab from '../components/dashboard/LibraryTab'
 import CollectionTab from '../components/dashboard/CollectionTab'
@@ -131,8 +132,6 @@ function HomePage() {
     collectionContents, isLoadingCollectionContents,
     refreshLibrary, refreshCollections, fetchCollectionContents,
     addJob, removeJob, removeLibraryItem, updateJobStatus,
-    searchQuery, setSearchQuery, searchResults, setSearchResults,
-    isSearching, setIsSearching,
   } = useData()
 
   // API client for non-data endpoints (search, export, content detail, etc.)
@@ -146,7 +145,7 @@ function HomePage() {
   }, [])
 
   // Navigation state
-  const [activeTab, setActiveTab] = useState('search')
+  const [activeTab, setActiveTab] = useState('library')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   // Add video state
@@ -155,6 +154,15 @@ function HomePage() {
 
   // Add URL state
   const [isAddingUrl, setIsAddingUrl] = useState(false)
+
+  // Subscription / tier state
+  const [userTier, setUserTier] = useState('free')
+  useEffect(() => {
+    if (!token) return
+    billingApi.getSubscription(token)
+      .then(sub => setUserTier(sub?.tier || 'free'))
+      .catch(() => {})
+  }, [token])
 
   // Content detail state
   const [selectedContent, setSelectedContent] = useState(null)
@@ -226,62 +234,6 @@ function HomePage() {
         variant: 'destructive',
         title: 'Failed to delete content',
         description: err.response?.data?.detail || err.message
-      })
-    }
-  }
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim() || isSearching) return
-    setIsSearching(true)
-    try {
-      const res = await api.post('/youtube/search', {
-        query: searchQuery,
-        max_results: 10
-      }, { timeout: 50000 })
-      setSearchResults(res.data.videos || [])
-    } catch (err) {
-      console.error('Search failed:', err)
-      let errorMsg = 'Search failed'
-      if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
-        errorMsg = 'Search timed out. Please try again.'
-      } else if (err.response?.data?.detail) {
-        errorMsg = err.response.data.detail
-      }
-      toast({
-        variant: 'destructive',
-        title: 'Search failed',
-        description: errorMsg
-      })
-    } finally {
-      setIsSearching(false)
-    }
-  }
-
-  const handleVideoClick = async (index) => {
-    const video = searchResults[index]
-    if (!video || !video.url) return
-    try {
-      await api.post('/videos/add', {
-        url_or_path: video.url,
-        analyze_frames: settings.analyzeFrames,
-        provider: settings.provider
-      })
-      setSearchResults(prev => prev.filter((_, i) => i !== index))
-      toast({
-        title: 'Video added',
-        description: video.title ? `"${video.title}" is now processing.` : 'Video is now processing.',
-        duration: 3000
-      })
-      setActiveTab('library')
-    } catch (err) {
-      console.error('Failed to add video:', err)
-      if (handle403Error(err, navigate, toast)) return
-
-      const errorDetail = err.response?.data?.detail
-      toast({
-        variant: 'destructive',
-        title: 'Failed to add video',
-        description: typeof errorDetail === 'string' ? errorDetail : err.message
       })
     }
   }
@@ -431,6 +383,44 @@ function HomePage() {
       }
     } finally {
       setIsAddingUrl(false)
+    }
+  }
+
+  const handleUploadFile = async (file, contentMode = 'general', language = null, onProgress = null) => {
+    if (!file) return
+    setIsAddingVideo(true)
+    try {
+      const response = await videoApi.uploadVideo(token, file, {
+        analyzeFrames: settings.analyzeFrames,
+        provider: settings.provider,
+        mode: contentMode,
+        language,
+        onProgress
+      })
+
+      const newJob = response.job
+      if (newJob) {
+        addJob(newJob)
+        toast({
+          variant: 'info',
+          title: 'Upload complete',
+          description: `${file.name} is now processing`,
+          duration: 3000
+        })
+      }
+      setActiveTab('library')
+    } catch (err) {
+      console.error('Failed to upload video:', err)
+      if (!handle403Error(err, navigate, toast)) {
+        const errorDetail = err.response?.data?.detail
+        toast({
+          variant: 'destructive',
+          title: 'Failed to upload video',
+          description: typeof errorDetail === 'string' ? errorDetail : err.message
+        })
+      }
+    } finally {
+      setIsAddingVideo(false)
     }
   }
 
@@ -645,19 +635,6 @@ function HomePage() {
         />
 
         <main id="main-content" className="main-content">
-        {activeTab === 'search' && (
-          <SearchTab
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            searchResults={searchResults}
-            isSearching={isSearching}
-            onSearch={handleSearch}
-            onVideoClick={handleVideoClick}
-            settings={settings}
-            setSettings={setSettings}
-          />
-        )}
-
         {activeTab === 'new' && (
           <NewNoteTab
             videoUrl={videoUrl}
@@ -666,6 +643,8 @@ function HomePage() {
             onAddVideo={handleAddVideo}
             onAddUrl={handleAddUrl}
             isAddingUrl={isAddingUrl}
+            onUploadFile={handleUploadFile}
+            userTier={userTier}
             settings={settings}
             setSettings={setSettings}
           />

@@ -998,6 +998,116 @@
   color: #52525b;
 }
 
+/* File Upload Drop Zone */
+.file-drop-zone {
+  border: 2px dashed #27272a;
+  border-radius: 10px;
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(24, 24, 27, 0.5);
+}
+
+.file-drop-zone:hover {
+  border-color: #3f3f46;
+  background: rgba(24, 24, 27, 0.8);
+}
+
+.file-drop-zone.dragging {
+  border-color: rgba(139, 92, 246, 0.5);
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.file-drop-zone.has-file {
+  border-style: solid;
+  border-color: #27272a;
+  padding: 14px 16px;
+  cursor: default;
+}
+
+.drop-zone-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #71717a;
+}
+
+.drop-zone-prompt svg {
+  color: #52525b;
+}
+
+.drop-zone-prompt span:first-of-type {
+  font-size: 14px;
+  color: #a1a1aa;
+}
+
+.drop-zone-hint {
+  font-size: 12px;
+  color: #52525b;
+}
+
+.selected-file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.selected-file-info > svg {
+  flex-shrink: 0;
+  color: #8b5cf6;
+}
+
+.selected-file-details {
+  flex: 1;
+  text-align: left;
+  min-width: 0;
+}
+
+.selected-file-name {
+  display: block;
+  font-size: 14px;
+  color: #fafafa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selected-file-size {
+  font-size: 12px;
+  color: #71717a;
+}
+
+.upload-progress {
+  font-size: 13px;
+  color: #8b5cf6;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.file-remove-btn {
+  flex-shrink: 0;
+  padding: 4px;
+  border: none;
+  background: none;
+  color: #71717a;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.file-remove-btn:hover {
+  color: #fafafa;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.file-remove-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 /* Inline Settings Row */
 .inline-settings {
   display: flex;
