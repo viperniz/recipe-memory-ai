@@ -6,7 +6,6 @@ import { useData } from '../context/DataContext'
 import { toast } from '../hooks/use-toast'
 import { ToastAction } from '../components/ui/toast'
 import { videoApi } from '../api/notes'
-import { billingApi } from '../api/billing'
 
 // Dashboard components
 import Sidebar from '../components/dashboard/Sidebar'
@@ -149,20 +148,10 @@ function HomePage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   // Add video state
-  const [videoUrl, setVideoUrl] = useState('')
   const [isAddingVideo, setIsAddingVideo] = useState(false)
 
   // Add URL state
   const [isAddingUrl, setIsAddingUrl] = useState(false)
-
-  // Subscription / tier state
-  const [userTier, setUserTier] = useState('free')
-  useEffect(() => {
-    if (!token) return
-    billingApi.getSubscription(token)
-      .then(sub => setUserTier(sub?.tier || 'free'))
-      .catch(() => {})
-  }, [token])
 
   // Content detail state
   const [selectedContent, setSelectedContent] = useState(null)
@@ -276,58 +265,6 @@ function HomePage() {
     } catch (err) {
       console.error('Dismiss failed:', err)
       toast({ variant: 'destructive', title: 'Dismiss failed', description: err.response?.data?.detail || err.message })
-    }
-  }
-
-  const handleAddVideo = async (contentMode = 'general', language = null, collectionId = null) => {
-    if (!videoUrl.trim() && !collectionId) {
-      toast({
-        variant: 'warning',
-        title: 'Missing URL',
-        description: 'Please enter a video URL or file path'
-      })
-      return
-    }
-    setIsAddingVideo(true)
-    try {
-      const payload = {
-        url_or_path: videoUrl.trim(),
-        analyze_frames: settings.analyzeFrames,
-        provider: settings.provider,
-        mode: contentMode  // User-selected mode
-      }
-      if (language) payload.language = language
-      if (collectionId) payload.collection_id = collectionId
-      const response = await api.post('/videos/add', payload)
-
-      // Add new job to context immediately so it shows in library
-      const newJob = response.data.job
-      if (newJob) {
-        addJob(newJob)
-
-        // Show started notification
-        toast({
-          variant: 'info',
-          title: 'Processing started',
-          description: newJob.title || 'Video is being processed',
-          duration: 3000
-        })
-      }
-
-      setVideoUrl('')
-      setActiveTab('library')
-    } catch (err) {
-      console.error('Failed to add video:', err)
-      if (!handle403Error(err, navigate, toast)) {
-        const errorDetail = err.response?.data?.detail
-        toast({
-          variant: 'destructive',
-          title: 'Failed to add video',
-          description: typeof errorDetail === 'string' ? errorDetail : err.message
-        })
-      }
-    } finally {
-      setIsAddingVideo(false)
     }
   }
 
@@ -637,14 +574,10 @@ function HomePage() {
         <main id="main-content" className="main-content">
         {activeTab === 'new' && (
           <NewNoteTab
-            videoUrl={videoUrl}
-            setVideoUrl={setVideoUrl}
             isAddingVideo={isAddingVideo}
-            onAddVideo={handleAddVideo}
             onAddUrl={handleAddUrl}
             isAddingUrl={isAddingUrl}
             onUploadFile={handleUploadFile}
-            userTier={userTier}
             settings={settings}
             setSettings={setSettings}
           />

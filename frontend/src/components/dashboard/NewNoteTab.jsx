@@ -21,14 +21,10 @@ function formatFileSize(bytes) {
 }
 
 function NewNoteTab({
-  videoUrl,
-  setVideoUrl,
   isAddingVideo,
-  onAddVideo,
   onAddUrl,
   isAddingUrl,
   onUploadFile,
-  userTier,
   settings,
   setSettings
 }) {
@@ -42,8 +38,6 @@ function NewNoteTab({
   const [uploadProgress, setUploadProgress] = useState(null)
   const fileInputRef = useRef(null)
 
-  const isPaid = userTier && userTier !== 'free'
-
   const handleFileSelect = (file) => {
     if (!file) return
     const ext = '.' + file.name.split('.').pop().toLowerCase()
@@ -51,7 +45,6 @@ function NewNoteTab({
       return // silently reject invalid extensions
     }
     setSelectedFile(file)
-    setVideoUrl('') // clear URL when file is selected
   }
 
   const handleDrop = (e) => {
@@ -75,8 +68,6 @@ function NewNoteTab({
     if (inputMode === 'video') {
       if (selectedFile) {
         onUploadFile(selectedFile, contentMode, language === 'auto' ? null : language, (pct) => setUploadProgress(pct))
-      } else {
-        onAddVideo(contentMode, language === 'auto' ? null : language)
       }
     } else {
       onAddUrl(webUrl, researchMode)
@@ -90,7 +81,7 @@ function NewNoteTab({
   }
 
   const isProcessing = isAddingVideo || isAddingUrl
-  const hasInput = inputMode === 'video' ? (videoUrl.trim() || selectedFile) : webUrl.trim()
+  const hasInput = inputMode === 'video' ? !!selectedFile : webUrl.trim()
 
   return (
     <div className="page">
@@ -163,29 +154,11 @@ function NewNoteTab({
               </div>
             </div>
 
-            {/* URL Input — only for paid users, below the file zone */}
-            {isPaid ? (
-              <div className="form-group">
-                <label htmlFor="video-url">Or paste a video URL</label>
-                <Input
-                  id="video-url"
-                  type="text"
-                  placeholder="Paste any YouTube, Vimeo, or lecture URL..."
-                  value={videoUrl}
-                  onChange={(e) => { setVideoUrl(e.target.value); if (e.target.value) setSelectedFile(null) }}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-                  disabled={isProcessing || !!selectedFile}
-                  className="font-mono"
-                />
-              </div>
-            ) : (
-              <div className="form-group">
-                <p className="field-hint" style={{ marginTop: 4 }}>
-                  YouTube downloads require a paid plan. Install the{' '}
-                  <strong>Video Memory AI extension</strong> and upgrade to Starter to save YouTube videos.
-                </p>
-              </div>
-            )}
+            <div className="form-group">
+              <p className="field-hint" style={{ marginTop: 0 }}>
+                To save YouTube videos, use the <strong>Video Memory AI</strong> browser extension.
+              </p>
+            </div>
 
             {/* Content Mode Selector — horizontal chips */}
             <div className="form-group">
