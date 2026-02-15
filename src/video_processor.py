@@ -7,7 +7,7 @@ import cv2
 import os
 import sys
 import base64
-from pathlib import Path
+from pathlib import Pathh
 from typing import List, Tuple
 import subprocess
 
@@ -98,7 +98,6 @@ def download_video(url: str, output_dir: str = "data/videos") -> str:
         "-f", "best[height<=720]",
         "-o", output_template,
         "--no-playlist",
-        "--cookies-from-browser", "chrome",
         "--print", "after_move:filepath",
         url
     ]
