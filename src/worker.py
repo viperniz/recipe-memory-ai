@@ -115,7 +115,12 @@ def process_video_job(
 
                     print(f"[Job {job_id}] Audio downloaded: {_audio_path}, duration: {duration_min:.1f} min")
                 except Exception as dur_err:
-                    print(f"[Job {job_id}] Audio download/metadata failed (proceeding): {dur_err}")
+                    # If download itself failed, don't bother trying again in process_video
+                    err_str = str(dur_err)
+                    if "ERROR:" in err_str or "Unable to download" in err_str:
+                        raise
+                    # Metadata parsing errors are non-fatal — proceed without stats
+                    print(f"[Job {job_id}] Metadata extraction failed (proceeding): {dur_err}")
 
             # Feature gate: check video duration against tier limits
             if duration_min > 0:
@@ -156,6 +161,10 @@ def process_video_job(
             def progress_callback(percent, status):
                 _pdb = SessionLocal()
                 try:
+                    # Don't overwrite terminal states (failed/completed/cancelled)
+                    j = _pdb.query(JobModel).filter(JobModel.id == job_id).first()
+                    if j and j.status in ("failed", "completed", "cancelled"):
+                        return
                     JobService.update_job_progress(
                         db=_pdb, job_id=job_id, progress=percent,
                         status=status or "processing",
@@ -370,6 +379,10 @@ def process_upload_job(
         def progress_callback(percent, status):
             _pdb = SessionLocal()
             try:
+                # Don't overwrite terminal states (failed/completed/cancelled)
+                j = _pdb.query(JobModel).filter(JobModel.id == job_id).first()
+                if j and j.status in ("failed", "completed", "cancelled"):
+                    return
                 JobService.update_job_progress(
                     db=_pdb, job_id=job_id, progress=percent,
                     status=status or "processing",
