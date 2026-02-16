@@ -315,7 +315,8 @@ class VideoMemoryAI:
         return "\n\n".join(formatted_parts)
 
     def _build_timeline(self, segments: list, frame_descriptions: list,
-                         content_id: str = None, frame_analyses: list = None) -> list:
+                         content_id: str = None, frame_analyses: list = None,
+                         thumbnail_manifest: list = None) -> list:
         """Build a unified chronological timeline merging transcript paragraphs and vision frame descriptions.
 
         Args:
@@ -337,6 +338,14 @@ class VideoMemoryAI:
         if frame_analyses:
             for fa in frame_analyses:
                 caption_map[int(fa["timestamp"])] = fa.get("caption", "")
+
+        # Build blob URL lookup from thumbnail manifest
+        blob_url_map = {}
+        if thumbnail_manifest:
+            for m in thumbnail_manifest:
+                ts_key = int(round(m["timestamp"]))
+                if "url" in m:
+                    blob_url_map[ts_key] = m["url"]
 
         # Add transcript paragraphs
         paragraphs = self._group_transcript_paragraphs(segments)
@@ -373,9 +382,10 @@ class VideoMemoryAI:
                     caption = caption_map.get(int(ts), "")
                     if caption:
                         entry["caption"] = caption
-                    # Add thumbnail path if content_id is known
-                    if content_id:
-                        entry["thumbnail"] = f"{get_config().api_base_url}/api/thumbnails/{content_id}/{int(ts)}.jpg"
+                    # Add thumbnail URL — prefer blob URL, skip local proxy
+                    ts_key = int(ts)
+                    if ts_key in blob_url_map:
+                        entry["thumbnail"] = blob_url_map[ts_key]
                     timeline.append(entry)
 
         # Sort by timestamp
@@ -671,7 +681,8 @@ class VideoMemoryAI:
             content.timeline = self._build_timeline(
                 segments, frame_descriptions,
                 content_id=content.id,
-                frame_analyses=frame_analyses
+                frame_analyses=frame_analyses,
+                thumbnail_manifest=thumbnail_manifest
             )
 
         update_progress(95, "Saving")
