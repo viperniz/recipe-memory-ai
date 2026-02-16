@@ -1415,8 +1415,6 @@ async def generate_thumbnails(
                 ts_key = int(entry["timestamp"])
                 if ts_key in blob_url_map:
                     entry["thumbnail"] = blob_url_map[ts_key]
-                else:
-                    entry["thumbnail"] = f"{get_config().api_base_url}/api/thumbnails/{content_id}/{ts_key}.jpg"
         content["timeline"] = timeline
     return {"message": f"Generated {len(manifest)} thumbnails", "thumbnails": manifest}
 
@@ -1510,8 +1508,6 @@ async def backfill_all_thumbnails(
                             tsk = int(entry["timestamp"])
                             if tsk in blob_urls:
                                 entry["thumbnail"] = blob_urls[tsk]
-                            else:
-                                entry["thumbnail"] = f"/api/thumbnails/{cid}/{tsk}.jpg"
                     full["timeline"] = timeline
 
                 full["metadata"] = full_meta
