@@ -59,17 +59,17 @@ def download_thumbnail(url: str) -> bytes:
 def delete_thumbnail(url: str) -> None:
       """Delete a thumbnail from Vercel Blob.
 
-          Args:
-                  url: The full Vercel Blob URL to delete
-                      """
+      Args:
+            url: The full Vercel Blob URL to delete
+      """
       if not BLOB_TOKEN:
-                return
-            httpx.post(
-                      f"{BLOB_API_URL}/delete",
-                      json={"urls": [url]},
-                      headers={"Authorization": f"Bearer {BLOB_TOKEN}"},
-                      timeout=15,
-            )
+            return
+      httpx.post(
+            f"{BLOB_API_URL}/delete",
+            json={"urls": [url]},
+            headers={"Authorization": f"Bearer {BLOB_TOKEN}"},
+            timeout=15,
+      )
 
 
 def is_blob_enabled() -> bool:
