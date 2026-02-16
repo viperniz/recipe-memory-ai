@@ -42,5 +42,4 @@ numpy>=1.24.0
 # HTTP client (for Vercel Blob uploads)
 httpx>=0.25.0
 
-# Vector embeddings
-sentence-transformers>=2.2.0
+# Vector embeddings (via OpenAI API — no local model needed)

@@ -12,19 +12,18 @@ from datetime import datetime
 from database import ContentVector, EntityVector, Collection
 from config import get_config
 
-try:
-    from sentence_transformers import SentenceTransformer
-    SENTENCE_TRANSFORMERS_AVAILABLE = True
-except ImportError:
-    SENTENCE_TRANSFORMERS_AVAILABLE = False
-    print("[VectorMemory] WARNING: sentence-transformers not installed. Install with: pip install sentence-transformers")
+from openai import OpenAI
 
-# Module-level cache for the embedding model (loaded once, reused across all instances)
-_cached_embedding_model = None
-_cached_embedding_model_name = None
+# Module-level OpenAI client (reused across all instances)
+_openai_client = None
 
 
 class VectorMemory:
+    # OpenAI text-embedding-3-small: 1536 dims by default, but we request
+    # 384 to match the existing DB schema (was all-MiniLM-L6-v2).
+    EMBEDDING_MODEL = "text-embedding-3-small"
+    EMBEDDING_DIMS = 384
+
     def __init__(self, db: Session, user_id: Optional[int] = None):
         """
         Initialize vector memory with database session
@@ -36,27 +35,24 @@ class VectorMemory:
         self.db = db
         self.user_id = user_id
 
-        config = get_config()
-        self.embedding_model_name = config.vector.embedding_model
+    def _get_openai_client(self) -> OpenAI:
+        """Get OpenAI client (cached at module level)."""
+        global _openai_client
+        if _openai_client is None:
+            _openai_client = OpenAI()
+        return _openai_client
 
-    def _get_embedding_model(self):
-        """Get embedding model (cached at module level — loaded once per process)"""
-        global _cached_embedding_model, _cached_embedding_model_name
-
-        if not SENTENCE_TRANSFORMERS_AVAILABLE:
-            raise ImportError("sentence-transformers is required. Install with: pip install sentence-transformers")
-
-        if _cached_embedding_model is None or _cached_embedding_model_name != self.embedding_model_name:
-            print(f"[VectorMemory] Loading embedding model: {self.embedding_model_name}")
-            _cached_embedding_model = SentenceTransformer(self.embedding_model_name)
-            _cached_embedding_model_name = self.embedding_model_name
-        return _cached_embedding_model
-    
     def _generate_embedding(self, text: str) -> List[float]:
-        """Generate embedding for text"""
-        model = self._get_embedding_model()
-        embedding = model.encode(text, normalize_embeddings=True)
-        return embedding.tolist()
+        """Generate embedding via OpenAI API (no local model needed)."""
+        client = self._get_openai_client()
+        # Truncate to ~8000 tokens (~32000 chars) to stay within model limits
+        text = text[:32000] if len(text) > 32000 else text
+        response = client.embeddings.create(
+            model=self.EMBEDDING_MODEL,
+            input=text,
+            dimensions=self.EMBEDDING_DIMS,
+        )
+        return response.data[0].embedding
     
     def _create_searchable_text(self, content: Dict) -> str:
         """Create searchable text from content"""
