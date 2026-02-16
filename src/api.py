@@ -17,7 +17,6 @@ if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(errors='replace')
 from pathlib import Path
 import uuid
-import threading
 import logging
 from collections import OrderedDict
 from datetime import datetime
@@ -27,7 +26,7 @@ from sqlalchemy import text, func
 sys.path.insert(0, str(Path(__file__).parent))
 
 from app import VideoMemoryAI
-from video_processor import download_video, download_audio, download_audio_with_metadata, get_ytdlp_path, _extract_video_id, get_video_info
+from video_processor import _extract_video_id
 from database import get_db, init_db, User, get_tier_limits, engine, SessionLocal, ChatSession, ChatMessage, GeneratedContent, ContentVector, Collection, CREDIT_COSTS, TIER_CREDITS, TOPUP_PACKS
 from auth import (
     UserCreate, UserLogin, UserResponse, Token,
@@ -46,9 +45,7 @@ from redis_client import cache_set, cache_get, cache_delete
 
 import subprocess
 import json
-import traceback
 import math
-import tempfile
 
 
 def _validate_cookies_string(s: str) -> bool:
@@ -953,248 +950,26 @@ async def add_video(
         mode=mode
     )
 
-    # Capture values before background thread (avoids detached session error)
+    # Enqueue processing in background RQ worker
     user_id = current_user.id
     cookies_str = request.cookies  # Captured here, never stored in job settings
 
-    # Start processing in background
-    def process_video():
-        try:
-            # Get fresh DB session for background thread
-            bg_db = SessionLocal()
-            
-            try:
-                print(f"[Job {job.id}] Starting processing for: {request.url_or_path[:50]}")
-
-                # Set up cookies temp file if provided (used for all yt-dlp calls)
-                cookies_temp_path = None
-                if cookies_str and is_youtube:
-                    cookies_temp = tempfile.NamedTemporaryFile(
-                        mode='w', suffix='.txt', delete=False, prefix='vmem_cookies_'
-                    )
-                    cookies_temp.write(cookies_str)
-                    cookies_temp.close()
-                    cookies_temp_path = cookies_temp.name
-
-                try:
-                    # Download audio + metadata in one yt-dlp call (replaces separate probe)
-                    youtube_stats = None
-                    duration_min = 0
-                    if request.url_or_path.startswith(("http://", "https://")):
-                        try:
-                            JobService.update_job_progress(db=bg_db, job_id=job.id, progress=2, status="Downloading audio & metadata...")
-                            _audio_path, meta = download_audio_with_metadata(
-                                request.url_or_path,
-                                output_dir="data/videos",
-                                cookies_file=cookies_temp_path
-                            )
-                            duration_sec = meta.get("duration", 0)
-                            duration_min = duration_sec / 60
-
-                            # Build YouTube stats from metadata
-                            if meta.get("view_count") or meta.get("title"):
-                                youtube_stats = {
-                                    "view_count": meta.get("view_count", 0),
-                                    "like_count": meta.get("like_count", 0),
-                                    "comment_count": meta.get("comment_count", 0),
-                                    "subscriber_count": meta.get("channel_follower_count", 0),
-                                    "upload_date": meta.get("upload_date", ""),
-                                    "channel": meta.get("uploader", ""),
-                                    "categories": meta.get("categories", []),
-                                    "description": meta.get("description", "")[:500],
-                                }
-                                print(f"[Job {job.id}] YouTube stats: {youtube_stats.get('view_count', 0)} views, {youtube_stats.get('like_count', 0)} likes")
-
-                            print(f"[Job {job.id}] Audio downloaded: {_audio_path}, duration: {duration_min:.1f} min")
-                        except Exception as dur_err:
-                            print(f"[Job {job.id}] Audio download/metadata failed (proceeding): {dur_err}")
-
-                    # Feature gate: check video duration against tier limits
-                    if duration_min > 0:
-                        dur_check = BillingService.check_video_duration(bg_db, user_id, duration_min)
-                        if not dur_check["allowed"]:
-                            JobService.complete_job(
-                                db=bg_db,
-                                job_id=job.id,
-                                error=f"Video is {int(duration_min)} min. Your plan allows up to {dur_check['max_duration']} min. Upgrade to {dur_check['required_tier'].capitalize()} for longer videos."
-                            )
-                            return
-
-                    # Deduct credits based on actual duration (per-minute model)
-                    actual_cost = BillingService.get_video_credit_cost(duration_min, request.analyze_frames)
-                    try:
-                        BillingService.deduct_credits(
-                            bg_db, user_id, actual_cost, "video_processing",
-                            content_id=job.id,
-                            description=f"Video processing ({int(duration_min)} min)"
-                        )
-                        # Store deducted amount on job for potential refund
-                        from database import Job as JobModel
-                        job_row = bg_db.query(JobModel).filter(JobModel.id == job.id).first()
-                        if job_row:
-                            job_row.credits_deducted = actual_cost
-                            bg_db.commit()
-                        print(f"[Job {job.id}] Deducted {actual_cost} credits")
-                    except ValueError:
-                        # Insufficient credits — fail the job
-                        balance = BillingService.get_credit_balance(bg_db, user_id)
-                        JobService.complete_job(
-                            db=bg_db,
-                            job_id=job.id,
-                            error=f"Insufficient credits: need {actual_cost}, have {balance}. Upgrade for more credits."
-                        )
-                        return
-
-                    def progress_callback(percent, status):
-                        JobService.update_job_progress(
-                            db=bg_db,
-                            job_id=job.id,
-                            progress=percent,
-                            status=status or "processing"
-                        )
-                        print(f"[Job {job.id}] Progress: {percent}% - {status}")
-
-                    # Create AI instance for processing
-                    ai = get_app(user_id, bg_db)
-
-                    # process_video now handles audio-only download internally
-                    # (audio already cached from download_audio_with_metadata above)
-                    result = ai.process_video(
-                        request.url_or_path,
-                        analyze_frames=request.analyze_frames,
-                        progress_callback=progress_callback,
-                        detect_speakers=True,
-                        user_id=user_id,
-                        mode=mode,
-                        youtube_stats=youtube_stats,
-                        language=request.language
-                    )
-                finally:
-                    # Always delete the cookies temp file
-                    if cookies_temp_path:
-                        try:
-                            os.unlink(cookies_temp_path)
-                        except OSError:
-                            pass
-
-                # If user cancelled while we were processing, do not save or mark complete
-                j = JobService.get_job(bg_db, job.id)
-                if j and j.status == "cancelled":
-                    print(f"[Job {job.id}] Cancelled by user, skipping save.")
-                    return
-
-                # Get file size for storage tracking
-                file_size_bytes = 0
-                if result.source_video:
-                    try:
-                        file_size_bytes = os.path.getsize(result.source_video)
-                    except OSError:
-                        pass
-
-                # Storage check: ensure user hasn't exceeded tier storage limit
-                if file_size_bytes > 0:
-                    storage_check = BillingService.check_storage(bg_db, user_id, file_size_bytes)
-                    if not storage_check["allowed"]:
-                        # Refund credits since we can't store the video
-                        job_row = bg_db.query(JobModel).filter(JobModel.id == job.id).first()
-                        if job_row and job_row.credits_deducted:
-                            try:
-                                BillingService.refund_credits(
-                                    bg_db, user_id, job_row.credits_deducted,
-                                    "video_processing", content_id=job.id,
-                                    description="Refund: storage limit exceeded"
-                                )
-                            except Exception:
-                                pass
-                        JobService.complete_job(
-                            db=bg_db, job_id=job.id,
-                            error=f"Storage full: using {storage_check['used_mb']:.0f} MB of {storage_check['limit_mb']} MB. Upgrade your plan for more storage."
-                        )
-                        return
-
-                # Save to vector database (dedup by source URL)
-                vector_memory = VectorMemory(bg_db, user_id)
-                result_dict = result.to_dict()
-                result_dict["file_size_bytes"] = file_size_bytes
-
-                source_url = result_dict.get("source_url", "")
-                new_content_id = result_dict.get("id", "")
-                if source_url:
-                    existing_id = vector_memory.find_by_source_url(source_url, user_id)
-                    if existing_id and existing_id != new_content_id:
-                        print(f"[Job {job.id}] Dedup: overwriting {existing_id} (same source URL)")
-                        # Swap thumbnail directories: new_id -> existing_id
-                        import shutil
-                        thumb_base = Path("data/thumbnails")
-                        old_thumb_dir = thumb_base / existing_id
-                        new_thumb_dir = thumb_base / new_content_id
-                        if old_thumb_dir.exists():
-                            shutil.rmtree(old_thumb_dir, ignore_errors=True)
-                        if new_thumb_dir.exists():
-                            new_thumb_dir.rename(old_thumb_dir)
-                            # Update thumbnail paths in result metadata
-                            thumbs = (result_dict.get("metadata") or {}).get("thumbnails", [])
-                            for t in thumbs:
-                                if "path" in t:
-                                    t["path"] = t["path"].replace(new_content_id, existing_id)
-                        result_dict["id"] = existing_id
-
-                vector_memory.add_content(result_dict, user_id)
-
-                # Auto-add to collection if specified
-                if request.collection_id:
-                    content_id = result_dict.get("id")
-                    if content_id:
-                        vector_memory.add_to_collection(content_id, request.collection_id, user_id)
-                        print(f"[Job {job.id}] Added to collection {request.collection_id}")
-
-                # Mark job complete
-                JobService.complete_job(
-                    db=bg_db,
-                    job_id=job.id,
-                    result=result_dict
-                )
-
-                print(f"[Job {job.id}] Completed successfully!")
-
-            finally:
-                try:
-                    bg_db.close()
-                except Exception:
-                    pass
-
-        except Exception as e:
-            error_msg = str(e)
-            error_trace = traceback.format_exc()
-            print(f"[Job {job.id}] ERROR: {error_msg}")
-            print(f"[Job {job.id}] Traceback:\n{error_trace}")
-
-            # Get fresh session for error handling (don't overwrite if user cancelled)
-            error_db = SessionLocal()
-            try:
-                j = JobService.get_job(error_db, job.id)
-                if j and j.status != "cancelled":
-                    JobService.complete_job(
-                        db=error_db,
-                        job_id=job.id,
-                        error=error_msg
-                    )
-                    # Auto-refund credits on failure
-                    if j.credits_deducted and j.credits_deducted > 0:
-                        try:
-                            BillingService.refund_credits(
-                                error_db, user_id, j.credits_deducted,
-                                "video_processing", content_id=job.id,
-                                description=f"Refund: processing failed"
-                            )
-                            print(f"[Job {job.id}] Refunded {j.credits_deducted} credits")
-                        except Exception as refund_err:
-                            print(f"[Job {job.id}] Refund failed: {refund_err}")
-            finally:
-                error_db.close()
-
-    thread = threading.Thread(target=process_video, daemon=True)
-    thread.start()
+    from rq import Queue
+    from redis_client import get_redis_client
+    q = Queue(connection=get_redis_client())
+    q.enqueue(
+        "worker.process_video_job",
+        job_id=job.id,
+        user_id=user_id,
+        url_or_path=request.url_or_path,
+        analyze_frames=request.analyze_frames,
+        mode=mode,
+        cookies_str=cookies_str,
+        language=request.language,
+        collection_id=request.collection_id,
+        provider=request.provider or "openai",
+        job_timeout="30m",
+    )
 
     return {
         "job": {
@@ -1314,150 +1089,23 @@ async def upload_video(
 
     user_id = current_user.id
 
-    # Background processing (same pipeline as add_video, but using local file)
-    def process_upload():
-        try:
-            bg_db = SessionLocal()
-            try:
-                print(f"[Job {job.id}] Starting upload processing for: {display_name}")
-
-                # Check video duration
-                duration_min = 0
-                try:
-                    info = get_video_info(dest_path)
-                    duration_min = info.get("duration", 0) / 60
-                except Exception as e:
-                    print(f"[Job {job.id}] Duration check failed (proceeding): {e}")
-
-                if duration_min > 0:
-                    dur_check = BillingService.check_video_duration(bg_db, user_id, duration_min)
-                    if not dur_check["allowed"]:
-                        JobService.complete_job(
-                            db=bg_db, job_id=job.id,
-                            error=f"Video is {int(duration_min)} min. Your plan allows up to {dur_check['max_duration']} min. Upgrade to {dur_check['required_tier'].capitalize()} for longer videos."
-                        )
-                        return
-
-                # Deduct credits
-                actual_cost = BillingService.get_video_credit_cost(duration_min, analyze_frames)
-                try:
-                    BillingService.deduct_credits(
-                        bg_db, user_id, actual_cost, "video_processing",
-                        content_id=job.id,
-                        description=f"Video upload ({int(duration_min)} min)"
-                    )
-                    from database import Job as JobModel
-                    job_row = bg_db.query(JobModel).filter(JobModel.id == job.id).first()
-                    if job_row:
-                        job_row.credits_deducted = actual_cost
-                        bg_db.commit()
-                    print(f"[Job {job.id}] Deducted {actual_cost} credits")
-                except ValueError:
-                    balance = BillingService.get_credit_balance(bg_db, user_id)
-                    JobService.complete_job(
-                        db=bg_db, job_id=job.id,
-                        error=f"Insufficient credits: need {actual_cost}, have {balance}. Upgrade for more credits."
-                    )
-                    return
-
-                def progress_callback(percent, status):
-                    JobService.update_job_progress(db=bg_db, job_id=job.id, progress=percent, status=status or "processing")
-                    print(f"[Job {job.id}] Progress: {percent}% - {status}")
-
-                ai = get_app(user_id, bg_db)
-
-                result = ai.process_video(
-                    dest_path,
-                    analyze_frames=analyze_frames,
-                    progress_callback=progress_callback,
-                    detect_speakers=True,
-                    user_id=user_id,
-                    mode=mode,
-                    language=language
-                )
-
-                # Check cancellation
-                j = JobService.get_job(bg_db, job.id)
-                if j and j.status == "cancelled":
-                    print(f"[Job {job.id}] Cancelled by user, skipping save.")
-                    return
-
-                # File size for storage tracking
-                file_size_bytes = 0
-                if result.source_video:
-                    try:
-                        file_size_bytes = os.path.getsize(result.source_video)
-                    except OSError:
-                        pass
-
-                # Storage check
-                if file_size_bytes > 0:
-                    storage_check = BillingService.check_storage(bg_db, user_id, file_size_bytes)
-                    if not storage_check["allowed"]:
-                        job_row = bg_db.query(JobModel).filter(JobModel.id == job.id).first()
-                        if job_row and job_row.credits_deducted:
-                            try:
-                                BillingService.refund_credits(
-                                    bg_db, user_id, job_row.credits_deducted,
-                                    "video_processing", content_id=job.id,
-                                    description="Refund: storage limit exceeded"
-                                )
-                            except Exception:
-                                pass
-                        JobService.complete_job(
-                            db=bg_db, job_id=job.id,
-                            error=f"Storage full: using {storage_check['used_mb']:.0f} MB of {storage_check['limit_mb']} MB. Upgrade your plan for more storage."
-                        )
-                        return
-
-                # Save to vector database
-                vector_memory = VectorMemory(bg_db, user_id)
-                result_dict = result.to_dict()
-                result_dict["file_size_bytes"] = file_size_bytes
-                vector_memory.add_content(result_dict, user_id)
-
-                # Auto-add to collection
-                if collection_id:
-                    content_id = result_dict.get("id")
-                    if content_id:
-                        vector_memory.add_to_collection(content_id, collection_id, user_id)
-                        print(f"[Job {job.id}] Added to collection {collection_id}")
-
-                JobService.complete_job(db=bg_db, job_id=job.id, result=result_dict)
-                print(f"[Job {job.id}] Upload completed successfully!")
-
-            finally:
-                try:
-                    bg_db.close()
-                except Exception:
-                    pass
-
-        except Exception as e:
-            error_msg = str(e)
-            error_trace = traceback.format_exc()
-            print(f"[Job {job.id}] ERROR: {error_msg}")
-            print(f"[Job {job.id}] Traceback:\n{error_trace}")
-
-            error_db = SessionLocal()
-            try:
-                j = JobService.get_job(error_db, job.id)
-                if j and j.status != "cancelled":
-                    JobService.complete_job(db=error_db, job_id=job.id, error=error_msg)
-                    if j.credits_deducted and j.credits_deducted > 0:
-                        try:
-                            BillingService.refund_credits(
-                                error_db, user_id, j.credits_deducted,
-                                "video_processing", content_id=job.id,
-                                description="Refund: processing failed"
-                            )
-                            print(f"[Job {job.id}] Refunded {j.credits_deducted} credits")
-                        except Exception as refund_err:
-                            print(f"[Job {job.id}] Refund failed: {refund_err}")
-            finally:
-                error_db.close()
-
-    thread = threading.Thread(target=process_upload, daemon=True)
-    thread.start()
+    # Enqueue processing in background RQ worker
+    from rq import Queue
+    from redis_client import get_redis_client
+    q = Queue(connection=get_redis_client())
+    q.enqueue(
+        "worker.process_upload_job",
+        job_id=job.id,
+        user_id=user_id,
+        dest_path=dest_path,
+        analyze_frames=analyze_frames,
+        mode=mode,
+        display_name=display_name,
+        language=language,
+        collection_id=collection_id,
+        provider=provider or "openai",
+        job_timeout="30m",
+    )
 
     return {
         "job": {

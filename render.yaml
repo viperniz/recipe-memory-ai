@@ -1,0 +1,26 @@
+services:
+  # API server — lightweight HTTP only (auth, CRUD, search)
+  - type: web
+    name: videomemory-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.api:app --host 0.0.0.0 --port $PORT
+    plan: starter  # 512MB — no video processing
+    envVars:
+      - key: ENABLE_SPEAKER_DETECTION
+        value: "false"
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+
+  # Background worker — handles video processing via RQ
+  - type: worker
+    name: videomemory-worker
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run_worker.py
+    plan: standard  # 1-2GB — video/audio processing
+    envVars:
+      - key: ENABLE_SPEAKER_DETECTION
+        value: "false"
+      - key: PYTHON_VERSION
+        value: "3.12.3"

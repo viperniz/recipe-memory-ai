@@ -435,13 +435,11 @@ class VideoMemoryAI:
             try:
                 videos_dir = str(self.data_dir / "videos")
                 if analyze_frames:
-                    # Need both audio (for transcription) and video (for frames) — download in parallel
-                    with ThreadPoolExecutor(max_workers=2) as executor:
-                        audio_future = executor.submit(download_audio, source, videos_dir)
-                        video_future = executor.submit(download_video, source, videos_dir)
-                        audio_path = audio_future.result()
-                        video_path = video_future.result()
+                    # Need both audio (for transcription) and video (for frames)
+                    # Download sequentially to limit peak memory (avoid 2 concurrent yt-dlp subprocesses)
+                    audio_path = download_audio(source, videos_dir)
                     print(f"  Audio: {audio_path}")
+                    video_path = download_video(source, videos_dir)
                     print(f"  Video: {video_path}")
                 else:
                     # No frame analysis — only need audio (~5MB instead of ~300MB)
@@ -526,7 +524,7 @@ class VideoMemoryAI:
                 update_progress(pct, f"Analyzing frame {completed}/{total}")
 
             frame_descriptions = self.analyzer.analyze_frames_parallel(
-                raw_frames, with_captions=True, max_workers=5,
+                raw_frames, with_captions=True, max_workers=3,
                 progress_callback=frame_progress
             )
             if hasattr(self.analyzer, '_last_frame_analyses'):
@@ -642,6 +640,8 @@ class VideoMemoryAI:
             except Exception as e:
                 print(f"Warning: failed to save thumbnails: {e}")
                 thumbnail_manifest = []
+            # Free raw frame data to reclaim memory
+            raw_frames.clear()
 
         # Store frame analyses and thumbnail manifest in content
         if frame_analyses:
