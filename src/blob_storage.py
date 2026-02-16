@@ -91,10 +91,15 @@ def get_thumbnail_url(blob_path: str) -> str | None:
       if not BLOB_TOKEN:
             return None
 
+      # Vercel Blob adds a random hash to filenames during upload
+      # e.g., "thumbnails/.../0.jpg" becomes "thumbnails/.../0-TMlPIWjSBP.jpg"
+      # Strip extension so prefix search matches the hashed filename
+      prefix = blob_path.rsplit(".", 1)[0] if "." in blob_path else blob_path
+
       try:
             resp = httpx.get(
                   f"{BLOB_API_URL}",
-                  params={"prefix": blob_path, "limit": "1"},
+                  params={"prefix": prefix, "limit": "1"},
                   headers={"Authorization": f"Bearer {BLOB_TOKEN}"},
                   timeout=10,
             )
