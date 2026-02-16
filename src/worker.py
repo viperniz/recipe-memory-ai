@@ -15,6 +15,11 @@ from pathlib import Path
 # Ensure src/ is on the path (same trick as api.py)
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Eagerly import openai so all submodules (openai.resources.chat etc.) are
+# fully loaded before any thread tries to use them.  Python's per-module
+# import lock can deadlock when a lazy import happens inside a daemon thread.
+import openai  # noqa: F401
+
 from database import SessionLocal, Job as JobModel
 from job_service import JobService
 from billing import BillingService

@@ -70,8 +70,9 @@ def _enqueue_or_thread(func_path: str, **kwargs):
         except Exception as e:
             print(f"[RQ] Enqueue failed, falling back to thread: {e}")
 
-    # Fallback: import the worker function and run in a thread
-    from worker import process_video_job, process_upload_job
+    # Fallback: import the worker module (this eagerly loads openai and all
+    # transitive deps) then run the function in a daemon thread.
+    from worker import process_video_job, process_upload_job  # noqa: triggers openai import
     func_map = {
         "worker.process_video_job": process_video_job,
         "worker.process_upload_job": process_upload_job,
