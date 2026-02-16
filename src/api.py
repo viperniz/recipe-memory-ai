@@ -46,6 +46,40 @@ from redis_client import cache_set, cache_get, cache_delete
 import subprocess
 import json
 import math
+import threading
+
+
+def _enqueue_or_thread(func_path: str, **kwargs):
+    """Try to enqueue job via RQ worker; fall back to in-process thread.
+
+    Uses RQ when a Redis connection is available and USE_THREAD_FALLBACK is not set.
+    Otherwise runs the job function in a daemon thread (single-instance mode).
+    """
+    use_thread = os.getenv("USE_THREAD_FALLBACK", "").lower() == "true"
+
+    if not use_thread:
+        try:
+            from rq import Queue
+            from redis_client import get_redis_client
+            conn = get_redis_client()
+            if conn is not None:
+                q = Queue(connection=conn)
+                timeout = kwargs.pop("job_timeout", "30m")
+                q.enqueue(func_path, job_timeout=timeout, **kwargs)
+                return
+        except Exception as e:
+            print(f"[RQ] Enqueue failed, falling back to thread: {e}")
+
+    # Fallback: import the worker function and run in a thread
+    from worker import process_video_job, process_upload_job
+    func_map = {
+        "worker.process_video_job": process_video_job,
+        "worker.process_upload_job": process_upload_job,
+    }
+    fn = func_map[func_path]
+    kwargs.pop("job_timeout", None)
+    thread = threading.Thread(target=fn, kwargs=kwargs, daemon=True)
+    thread.start()
 
 
 def _validate_cookies_string(s: str) -> bool:
@@ -950,14 +984,11 @@ async def add_video(
         mode=mode
     )
 
-    # Enqueue processing in background RQ worker
+    # Enqueue processing in background (RQ worker or thread fallback)
     user_id = current_user.id
     cookies_str = request.cookies  # Captured here, never stored in job settings
 
-    from rq import Queue
-    from redis_client import get_redis_client
-    q = Queue(connection=get_redis_client())
-    q.enqueue(
+    _enqueue_or_thread(
         "worker.process_video_job",
         job_id=job.id,
         user_id=user_id,
@@ -1089,11 +1120,8 @@ async def upload_video(
 
     user_id = current_user.id
 
-    # Enqueue processing in background RQ worker
-    from rq import Queue
-    from redis_client import get_redis_client
-    q = Queue(connection=get_redis_client())
-    q.enqueue(
+    # Enqueue processing in background (RQ worker or thread fallback)
+    _enqueue_or_thread(
         "worker.process_upload_job",
         job_id=job.id,
         user_id=user_id,
