@@ -20,10 +20,12 @@ function ContentCard({
   const modeConfig = MODE_CONFIG[mode]
   const ModeIcon = modeConfig?.icon
 
-  // Thumbnail source priority: youtube_thumbnail > first extracted frame > none
+  // Thumbnail source priority: youtube_thumbnail > blob URL > API proxy > none
   const metadata = content.metadata || {}
+  const firstThumb = metadata.thumbnails?.[0]
   const cardThumbnail = metadata.youtube_thumbnail
-    || (metadata.thumbnails?.[0] ? `${import.meta.env.VITE_API_URL || ''}/api/thumbnails/${content.id}/${metadata.thumbnails[0].filename}` : null)
+    || (firstThumb?.url)
+    || (firstThumb ? `${import.meta.env.VITE_API_URL || ''}/api/thumbnails/${content.id}/${firstThumb.filename}` : null)
 
   return (
     <div className={`library-card ${mode !== 'general' ? `library-card-${mode}` : ''}`}>
