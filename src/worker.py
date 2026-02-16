@@ -149,10 +149,16 @@ def process_video_job(
                 return
 
             def progress_callback(percent, status):
-                JobService.update_job_progress(
-                    db=bg_db, job_id=job_id, progress=percent,
-                    status=status or "processing",
-                )
+                _pdb = SessionLocal()
+                try:
+                    JobService.update_job_progress(
+                        db=_pdb, job_id=job_id, progress=percent,
+                        status=status or "processing",
+                    )
+                except Exception as _pe:
+                    print(f"[Job {job_id}] Progress update failed: {_pe}")
+                finally:
+                    _pdb.close()
                 print(f"[Job {job_id}] Progress: {percent}% - {status}")
 
             ai = _get_app(user_id, bg_db)
@@ -166,6 +172,7 @@ def process_video_job(
                 mode=mode,
                 youtube_stats=youtube_stats,
                 language=language,
+                save_content=False,
             )
         finally:
             if cookies_temp_path:
@@ -345,10 +352,16 @@ def process_upload_job(
             return
 
         def progress_callback(percent, status):
-            JobService.update_job_progress(
-                db=bg_db, job_id=job_id, progress=percent,
-                status=status or "processing",
-            )
+            _pdb = SessionLocal()
+            try:
+                JobService.update_job_progress(
+                    db=_pdb, job_id=job_id, progress=percent,
+                    status=status or "processing",
+                )
+            except Exception as _pe:
+                print(f"[Job {job_id}] Progress update failed: {_pe}")
+            finally:
+                _pdb.close()
             print(f"[Job {job_id}] Progress: {percent}% - {status}")
 
         ai = _get_app(user_id, bg_db)
@@ -361,6 +374,7 @@ def process_upload_job(
             user_id=user_id,
             mode=mode,
             language=language,
+            save_content=False,
         )
 
         # Check cancellation
