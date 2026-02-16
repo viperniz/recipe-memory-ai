@@ -687,9 +687,94 @@ class ContentAnalyzer:
         else:
             raise ValueError(f"Unknown provider: {provider}")
 
+    def _analyze_single_frame(
+        self, timestamp: float, base64_image: str, with_captions: bool = True
+    ) -> dict:
+        """Analyze a single video frame using vision model.
+
+        Returns:
+            dict with keys: timestamp, caption, description, formatted
+            or None on failure.
+        """
+        caption_instruction = (
+            "First, write a short caption (max 15 words) summarizing the key visual. "
+            "Then write ||| on its own. "
+            "Then write a full description of what you see."
+        ) if with_captions else ""
+
+        if self.provider == "openai":
+            vision_model = self.model if self.tier in ("pro", "team") else "gpt-4o-mini"
+
+            prompt_text = (
+                f"This is a frame from a video at {timestamp:.0f} seconds. "
+                "Focus on the CONTENT being presented, not the people. "
+                "Describe: text on screen, slides, diagrams, charts, code, "
+                "products, demonstrations, websites, apps, or any visual information. "
+                "Do NOT describe people's appearance, clothing, or physical features. "
+                "If the frame only shows a person talking with no visual content, "
+                "just say 'Speaker talking, no visual content on screen.' "
+            )
+            if with_captions:
+                prompt_text += caption_instruction
+            else:
+                prompt_text += "Be concise and focus on informational content."
+
+            response = self.client.chat.completions.create(
+                model=vision_model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": prompt_text
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}",
+                                    "detail": "low"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                max_tokens=200
+            )
+            raw = response.choices[0].message.content
+        else:
+            response = self.client.chat(
+                model="llava",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"This is a frame from a video at {timestamp:.0f} seconds. "
+                                   "Briefly describe what you see: people, text, diagrams, demonstrations.",
+                        "images": [base64_image]
+                    }
+                ]
+            )
+            raw = response["message"]["content"]
+
+        # Parse caption ||| description if present
+        if with_captions and "|||" in raw:
+            parts = raw.split("|||", 1)
+            caption = parts[0].strip()
+            description = parts[1].strip()
+        else:
+            caption = ""
+            description = raw.strip()
+
+        return {
+            "timestamp": timestamp,
+            "caption": caption,
+            "description": description,
+            "formatted": f"[{timestamp:.0f}s] {description}"
+        }
+
     def analyze_frames(self, frames: List[Tuple[float, str]], with_captions: bool = True) -> List[str]:
         """
-        Analyze video frames using vision model.
+        Analyze video frames using vision model (sequential, one at a time).
         Returns descriptions of what's happening in each frame.
 
         When with_captions=True, also populates self._last_frame_analyses with
@@ -698,85 +783,15 @@ class ContentAnalyzer:
         descriptions = []
         self._last_frame_analyses = []
 
-        caption_instruction = (
-            "First, write a short caption (max 15 words) summarizing the key visual. "
-            "Then write ||| on its own. "
-            "Then write a full description of what you see."
-        ) if with_captions else ""
-
         for timestamp, base64_image in frames:
             try:
-                if self.provider == "openai":
-                    # Use tier-based model for vision too
-                    vision_model = self.model if self.tier in ("pro", "team") else "gpt-4o-mini"
+                result = self._analyze_single_frame(timestamp, base64_image, with_captions)
 
-                    prompt_text = (
-                        f"This is a frame from a video at {timestamp:.0f} seconds. "
-                        "Focus on the CONTENT being presented, not the people. "
-                        "Describe: text on screen, slides, diagrams, charts, code, "
-                        "products, demonstrations, websites, apps, or any visual information. "
-                        "Do NOT describe people's appearance, clothing, or physical features. "
-                        "If the frame only shows a person talking with no visual content, "
-                        "just say 'Speaker talking, no visual content on screen.' "
-                    )
-                    if with_captions:
-                        prompt_text += caption_instruction
-                    else:
-                        prompt_text += "Be concise and focus on informational content."
-
-                    response = self.client.chat.completions.create(
-                        model=vision_model,
-                        messages=[
-                            {
-                                "role": "user",
-                                "content": [
-                                    {
-                                        "type": "text",
-                                        "text": prompt_text
-                                    },
-                                    {
-                                        "type": "image_url",
-                                        "image_url": {
-                                            "url": f"data:image/jpeg;base64,{base64_image}",
-                                            "detail": "low"
-                                        }
-                                    }
-                                ]
-                            }
-                        ],
-                        max_tokens=200
-                    )
-                    raw = response.choices[0].message.content
-                else:
-                    # Ollama with vision model (llava)
-                    response = self.client.chat(
-                        model="llava",
-                        messages=[
-                            {
-                                "role": "user",
-                                "content": f"This is a frame from a video at {timestamp:.0f} seconds. "
-                                           "Briefly describe what you see: people, text, diagrams, demonstrations.",
-                                "images": [base64_image]
-                            }
-                        ]
-                    )
-                    raw = response["message"]["content"]
-
-                # Parse caption ||| description if present
-                if with_captions and "|||" in raw:
-                    parts = raw.split("|||", 1)
-                    caption = parts[0].strip()
-                    description = parts[1].strip()
-                else:
-                    caption = ""
-                    description = raw.strip()
-
-                descriptions.append(f"[{timestamp:.0f}s] {description}")
-
+                descriptions.append(result["formatted"])
                 self._last_frame_analyses.append({
-                    "timestamp": timestamp,
-                    "caption": caption,
-                    "description": description
+                    "timestamp": result["timestamp"],
+                    "caption": result["caption"],
+                    "description": result["description"]
                 })
 
                 print(f"  Analyzed frame at {timestamp:.0f}s")
@@ -785,6 +800,71 @@ class ContentAnalyzer:
                 print(f"  WARNING: Frame at {timestamp:.0f}s failed ({type(frame_err).__name__}), skipping")
 
         return descriptions
+
+    def analyze_frames_parallel(
+        self,
+        frames: List[Tuple[float, str]],
+        with_captions: bool = True,
+        max_workers: int = 5,
+        progress_callback: callable = None
+    ) -> List[str]:
+        """
+        Analyze video frames using vision model in parallel using ThreadPoolExecutor.
+        Returns descriptions in the same order as input frames.
+
+        Args:
+            frames: List of (timestamp, base64_image) tuples
+            with_captions: Whether to generate captions
+            max_workers: Max concurrent API calls (default 5)
+            progress_callback: Optional callback(completed, total) for progress
+
+        When with_captions=True, also populates self._last_frame_analyses.
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        descriptions = [None] * len(frames)
+        analyses = [None] * len(frames)
+        self._last_frame_analyses = []
+        completed_count = 0
+
+        def analyze_with_index(idx, timestamp, base64_image):
+            return idx, self._analyze_single_frame(timestamp, base64_image, with_captions)
+
+        try:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(analyze_with_index, i, ts, img): i
+                    for i, (ts, img) in enumerate(frames)
+                }
+
+                for future in as_completed(futures):
+                    idx = futures[future]
+                    try:
+                        i, result = future.result()
+                        descriptions[i] = result["formatted"]
+                        analyses[i] = {
+                            "timestamp": result["timestamp"],
+                            "caption": result["caption"],
+                            "description": result["description"]
+                        }
+                        completed_count += 1
+                        print(f"  Analyzed frame at {result['timestamp']:.0f}s ({completed_count}/{len(frames)})")
+                        if progress_callback:
+                            progress_callback(completed_count, len(frames))
+                    except Exception as frame_err:
+                        ts = frames[idx][0]
+                        print(f"  WARNING: Frame at {ts:.0f}s failed ({type(frame_err).__name__}), skipping")
+                        completed_count += 1
+                        if progress_callback:
+                            progress_callback(completed_count, len(frames))
+
+        except Exception as e:
+            print(f"  Parallel analysis failed ({e}), falling back to sequential")
+            return self.analyze_frames(frames, with_captions)
+
+        # Filter out None entries (failed frames)
+        self._last_frame_analyses = [a for a in analyses if a is not None]
+        return [d for d in descriptions if d is not None]
 
     def detect_mode(self, transcript: str) -> dict:
         """

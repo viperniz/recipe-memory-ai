@@ -27,7 +27,7 @@ from sqlalchemy import text, func
 sys.path.insert(0, str(Path(__file__).parent))
 
 from app import VideoMemoryAI
-from video_processor import download_video, get_ytdlp_path, _extract_video_id, get_video_info
+from video_processor import download_video, download_audio, download_audio_with_metadata, get_ytdlp_path, _extract_video_id, get_video_info
 from database import get_db, init_db, User, get_tier_limits, engine, SessionLocal, ChatSession, ChatMessage, GeneratedContent, ContentVector, Collection, CREDIT_COSTS, TIER_CREDITS, TOPUP_PACKS
 from auth import (
     UserCreate, UserLogin, UserResponse, Token,
@@ -966,46 +966,33 @@ async def add_video(
             try:
                 print(f"[Job {job.id}] Starting processing for: {request.url_or_path[:50]}")
 
-                # Check video duration against tier limits (for URLs)
-                # Also capture YouTube metadata for creator mode analytics
-                youtube_stats = None
-                duration_min = 0
-                if request.url_or_path.startswith(("http://", "https://")):
-                    # Check if video is already cached locally (skip slow yt-dlp probe)
-                    video_id = _extract_video_id(request.url_or_path)
-                    cached_path = None
-                    if video_id:
-                        from pathlib import Path as _Path
-                        videos_dir = _Path("data/videos")
-                        if videos_dir.exists():
-                            for ext in ['*.mp4', '*.webm', '*.mkv']:
-                                files = [f for f in videos_dir.glob(ext) if video_id in f.stem]
-                                if files:
-                                    cached_path = str(max(files, key=lambda f: f.stat().st_mtime))
-                                    break
+                # Set up cookies temp file if provided (used for all yt-dlp calls)
+                cookies_temp_path = None
+                if cookies_str and is_youtube:
+                    cookies_temp = tempfile.NamedTemporaryFile(
+                        mode='w', suffix='.txt', delete=False, prefix='vmem_cookies_'
+                    )
+                    cookies_temp.write(cookies_str)
+                    cookies_temp.close()
+                    cookies_temp_path = cookies_temp.name
 
-                    if cached_path:
-                        print(f"[Job {job.id}] Video cached: {cached_path}, skipping yt-dlp probe")
-                        JobService.update_job_progress(db=bg_db, job_id=job.id, progress=3, status="Video cached")
+                try:
+                    # Download audio + metadata in one yt-dlp call (replaces separate probe)
+                    youtube_stats = None
+                    duration_min = 0
+                    if request.url_or_path.startswith(("http://", "https://")):
                         try:
-                            info = get_video_info(cached_path)
-                            duration_min = info.get("duration", 0) / 60
-                        except Exception as e:
-                            print(f"[Job {job.id}] Local duration check failed (proceeding): {e}")
-                    else:
-                        # Not cached — run yt-dlp metadata probe
-                        try:
-                            JobService.update_job_progress(db=bg_db, job_id=job.id, progress=2, status="Checking video info...")
-                            ytdlp = get_ytdlp_path()
-                            probe = subprocess.run(
-                                [ytdlp, "--dump-json", "--no-download", request.url_or_path],
-                                capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30
+                            JobService.update_job_progress(db=bg_db, job_id=job.id, progress=2, status="Downloading audio & metadata...")
+                            _audio_path, meta = download_audio_with_metadata(
+                                request.url_or_path,
+                                output_dir="data/videos",
+                                cookies_file=cookies_temp_path
                             )
-                            if probe.returncode == 0:
-                                meta = json.loads(probe.stdout)
-                                duration_sec = meta.get("duration", 0)
-                                duration_min = duration_sec / 60
-                                # Capture YouTube stats for creator mode
+                            duration_sec = meta.get("duration", 0)
+                            duration_min = duration_sec / 60
+
+                            # Build YouTube stats from metadata
+                            if meta.get("view_count") or meta.get("title"):
                                 youtube_stats = {
                                     "view_count": meta.get("view_count", 0),
                                     "like_count": meta.get("like_count", 0),
@@ -1014,76 +1001,74 @@ async def add_video(
                                     "upload_date": meta.get("upload_date", ""),
                                     "channel": meta.get("uploader", ""),
                                     "categories": meta.get("categories", []),
-                                    "description": (meta.get("description") or "")[:500],
+                                    "description": meta.get("description", "")[:500],
                                 }
                                 print(f"[Job {job.id}] YouTube stats: {youtube_stats.get('view_count', 0)} views, {youtube_stats.get('like_count', 0)} likes")
-                        except Exception as dur_err:
-                            print(f"[Job {job.id}] Duration/metadata check failed (proceeding): {dur_err}")
 
-                # Feature gate: check video duration against tier limits
-                if duration_min > 0:
-                    dur_check = BillingService.check_video_duration(bg_db, user_id, duration_min)
-                    if not dur_check["allowed"]:
+                            print(f"[Job {job.id}] Audio downloaded: {_audio_path}, duration: {duration_min:.1f} min")
+                        except Exception as dur_err:
+                            print(f"[Job {job.id}] Audio download/metadata failed (proceeding): {dur_err}")
+
+                    # Feature gate: check video duration against tier limits
+                    if duration_min > 0:
+                        dur_check = BillingService.check_video_duration(bg_db, user_id, duration_min)
+                        if not dur_check["allowed"]:
+                            JobService.complete_job(
+                                db=bg_db,
+                                job_id=job.id,
+                                error=f"Video is {int(duration_min)} min. Your plan allows up to {dur_check['max_duration']} min. Upgrade to {dur_check['required_tier'].capitalize()} for longer videos."
+                            )
+                            return
+
+                    # Deduct credits based on actual duration (per-minute model)
+                    actual_cost = BillingService.get_video_credit_cost(duration_min, request.analyze_frames)
+                    try:
+                        BillingService.deduct_credits(
+                            bg_db, user_id, actual_cost, "video_processing",
+                            content_id=job.id,
+                            description=f"Video processing ({int(duration_min)} min)"
+                        )
+                        # Store deducted amount on job for potential refund
+                        from database import Job as JobModel
+                        job_row = bg_db.query(JobModel).filter(JobModel.id == job.id).first()
+                        if job_row:
+                            job_row.credits_deducted = actual_cost
+                            bg_db.commit()
+                        print(f"[Job {job.id}] Deducted {actual_cost} credits")
+                    except ValueError:
+                        # Insufficient credits — fail the job
+                        balance = BillingService.get_credit_balance(bg_db, user_id)
                         JobService.complete_job(
                             db=bg_db,
                             job_id=job.id,
-                            error=f"Video is {int(duration_min)} min. Your plan allows up to {dur_check['max_duration']} min. Upgrade to {dur_check['required_tier'].capitalize()} for longer videos."
+                            error=f"Insufficient credits: need {actual_cost}, have {balance}. Upgrade for more credits."
                         )
                         return
 
-                # Deduct credits based on actual duration (per-minute model)
-                actual_cost = BillingService.get_video_credit_cost(duration_min, request.analyze_frames)
-                try:
-                    BillingService.deduct_credits(
-                        bg_db, user_id, actual_cost, "video_processing",
-                        content_id=job.id,
-                        description=f"Video processing ({int(duration_min)} min)"
-                    )
-                    # Store deducted amount on job for potential refund
-                    from database import Job as JobModel
-                    job_row = bg_db.query(JobModel).filter(JobModel.id == job.id).first()
-                    if job_row:
-                        job_row.credits_deducted = actual_cost
-                        bg_db.commit()
-                    print(f"[Job {job.id}] Deducted {actual_cost} credits")
-                except ValueError:
-                    # Insufficient credits — fail the job
-                    balance = BillingService.get_credit_balance(bg_db, user_id)
-                    JobService.complete_job(
-                        db=bg_db,
-                        job_id=job.id,
-                        error=f"Insufficient credits: need {actual_cost}, have {balance}. Upgrade for more credits."
-                    )
-                    return
-
-                def progress_callback(percent, status):
-                    JobService.update_job_progress(
-                        db=bg_db,
-                        job_id=job.id,
-                        progress=percent,
-                        status=status or "processing"
-                    )
-                    print(f"[Job {job.id}] Progress: {percent}% - {status}")
-
-                # Create AI instance for processing
-                ai = get_app(user_id, bg_db)
-
-                # If cookies provided, pre-download with yt-dlp using cookies
-                source_path = request.url_or_path
-                cookies_temp_path = None
-                try:
-                    if cookies_str and is_youtube:
-                        JobService.update_job_progress(db=bg_db, job_id=job.id, progress=5, status="Downloading with cookies...")
-                        cookies_temp = tempfile.NamedTemporaryFile(
-                            mode='w', suffix='.txt', delete=False, prefix='vmem_cookies_'
+                    def progress_callback(percent, status):
+                        JobService.update_job_progress(
+                            db=bg_db,
+                            job_id=job.id,
+                            progress=percent,
+                            status=status or "processing"
                         )
-                        cookies_temp.write(cookies_str)
-                        cookies_temp.close()
-                        cookies_temp_path = cookies_temp.name
+                        print(f"[Job {job.id}] Progress: {percent}% - {status}")
 
-                        local_path = download_video(request.url_or_path, cookies_file=cookies_temp_path)
-                        source_path = local_path
-                        print(f"[Job {job.id}] Downloaded with cookies to: {local_path}")
+                    # Create AI instance for processing
+                    ai = get_app(user_id, bg_db)
+
+                    # process_video now handles audio-only download internally
+                    # (audio already cached from download_audio_with_metadata above)
+                    result = ai.process_video(
+                        request.url_or_path,
+                        analyze_frames=request.analyze_frames,
+                        progress_callback=progress_callback,
+                        detect_speakers=True,
+                        user_id=user_id,
+                        mode=mode,
+                        youtube_stats=youtube_stats,
+                        language=request.language
+                    )
                 finally:
                     # Always delete the cookies temp file
                     if cookies_temp_path:
@@ -1091,18 +1076,6 @@ async def add_video(
                             os.unlink(cookies_temp_path)
                         except OSError:
                             pass
-
-                # Process video with mode and language
-                result = ai.process_video(
-                    source_path,
-                    analyze_frames=request.analyze_frames,
-                    progress_callback=progress_callback,
-                    detect_speakers=True,
-                    user_id=user_id,
-                    mode=mode,
-                    youtube_stats=youtube_stats,
-                    language=request.language
-                )
 
                 # If user cancelled while we were processing, do not save or mark complete
                 j = JobService.get_job(bg_db, job.id)

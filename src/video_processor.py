@@ -148,6 +148,204 @@ def download_video(url: str, output_dir: str = "data/videos", cookies_file: str 
     raise Exception("Could not find downloaded video")
 
 
+def download_audio(url: str, output_dir: str = "data/videos", cookies_file: str = None) -> str:
+    """Download audio-only from YouTube or other platforms using yt-dlp.
+
+    Downloads ~5MB audio instead of ~300MB video. The resulting m4a file
+    is accepted directly by the OpenAI Whisper API.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+
+    output_template = os.path.join(output_dir, "%(id)s.%(ext)s")
+
+    # Check if audio already downloaded
+    video_id = _extract_video_id(url)
+    if video_id:
+        for ext in ['*.m4a', '*.opus', '*.webm']:
+            files = [f for f in Path(output_dir).glob(ext) if video_id in f.stem]
+            if files:
+                cached = str(max(files, key=os.path.getmtime))
+                print(f"  Audio already downloaded: {cached}")
+                return cached
+
+    ytdlp = get_ytdlp_path()
+
+    download_cmd = [
+        ytdlp,
+        "-f", "bestaudio[ext=m4a]/bestaudio",
+        "--extract-audio",
+        "--audio-format", "m4a",
+        "-o", output_template,
+        "--no-playlist",
+        "--print", "after_move:filepath",
+    ]
+
+    if cookies_file:
+        download_cmd.extend(["--cookies", cookies_file])
+
+    download_cmd.append(url)
+
+    result = subprocess.run(download_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+    if result.returncode != 0:
+        raise Exception(f"Failed to download audio: {result.stderr}")
+
+    # --print after_move:filepath prints the final path
+    printed_path = result.stdout.strip().split('\n')[-1].strip() if result.stdout.strip() else None
+    if printed_path and Path(printed_path).exists():
+        return printed_path
+
+    # Fallback: find most recent audio file with the video ID
+    if video_id:
+        for ext in ['*.m4a', '*.opus', '*.webm']:
+            files = [f for f in Path(output_dir).glob(ext) if video_id in str(f)]
+            if files:
+                return str(max(files, key=os.path.getmtime))
+
+    raise Exception("Could not find downloaded audio")
+
+
+def download_audio_with_metadata(
+    url: str, output_dir: str = "data/videos", cookies_file: str = None
+) -> tuple:
+    """Download audio and extract metadata in a single yt-dlp invocation.
+
+    Returns:
+        (audio_path, metadata_dict) where metadata_dict contains duration,
+        title, view_count, like_count, etc.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+
+    output_template = os.path.join(output_dir, "%(id)s.%(ext)s")
+
+    # Check if audio already downloaded — still need metadata though
+    video_id = _extract_video_id(url)
+    cached_audio = None
+    if video_id:
+        for ext in ['*.m4a', '*.opus', '*.webm']:
+            files = [f for f in Path(output_dir).glob(ext) if video_id in f.stem]
+            if files:
+                cached_audio = str(max(files, key=os.path.getmtime))
+                break
+
+    ytdlp = get_ytdlp_path()
+
+    # Metadata fields to extract via --print (one per line)
+    meta_fields = [
+        "duration", "title", "view_count", "like_count",
+        "comment_count", "channel_follower_count", "upload_date",
+        "uploader", "categories", "description", "id",
+    ]
+    # Build --print flags: each field printed on its own line after download
+    print_template = "|||".join(f"%({f})s" for f in meta_fields)
+
+    if cached_audio:
+        # Audio cached — just fetch metadata with --no-download
+        probe_cmd = [
+            ytdlp, "--no-download",
+            "--print", print_template,
+            "--no-playlist",
+        ]
+        if cookies_file:
+            probe_cmd.extend(["--cookies", cookies_file])
+        probe_cmd.append(url)
+
+        result = subprocess.run(
+            probe_cmd, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=30
+        )
+        metadata = _parse_metadata_output(result.stdout, meta_fields)
+        print(f"  Audio already downloaded: {cached_audio}")
+        return cached_audio, metadata
+
+    # Download audio + print metadata in one call
+    download_cmd = [
+        ytdlp,
+        "-f", "bestaudio[ext=m4a]/bestaudio",
+        "--extract-audio",
+        "--audio-format", "m4a",
+        "-o", output_template,
+        "--no-playlist",
+        "--print", "after_move:filepath",
+        "--print", print_template,
+    ]
+
+    if cookies_file:
+        download_cmd.extend(["--cookies", cookies_file])
+
+    download_cmd.append(url)
+
+    result = subprocess.run(download_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+    if result.returncode != 0:
+        raise Exception(f"Failed to download audio: {result.stderr}")
+
+    lines = result.stdout.strip().split('\n') if result.stdout.strip() else []
+
+    # Last line is the filepath (from after_move:filepath), second-to-last is metadata
+    audio_path = None
+    metadata = {}
+
+    # Find the filepath line and metadata line from --print output
+    # --print after_move:filepath outputs after download, --print outputs before
+    # So metadata line comes first, filepath line comes last
+    for line in reversed(lines):
+        line = line.strip()
+        if not line:
+            continue
+        if audio_path is None and Path(line).exists():
+            audio_path = line
+        elif "|||" in line:
+            metadata = _parse_metadata_output(line, meta_fields)
+            break
+
+    if not audio_path:
+        # Fallback: find most recent audio file
+        if video_id:
+            for ext in ['*.m4a', '*.opus', '*.webm']:
+                files = [f for f in Path(output_dir).glob(ext) if video_id in str(f)]
+                if files:
+                    audio_path = str(max(files, key=os.path.getmtime))
+                    break
+
+    if not audio_path:
+        raise Exception("Could not find downloaded audio")
+
+    return audio_path, metadata
+
+
+def _parse_metadata_output(output: str, fields: list) -> dict:
+    """Parse yt-dlp --print output with ||| delimiters into a metadata dict."""
+    metadata = {}
+    # Find the line containing ||| delimiters
+    for line in output.strip().split('\n'):
+        if '|||' in line:
+            values = line.split('|||')
+            for i, field in enumerate(fields):
+                if i < len(values):
+                    val = values[i].strip()
+                    # Convert numeric fields
+                    if field in ("duration", "view_count", "like_count",
+                                 "comment_count", "channel_follower_count"):
+                        try:
+                            metadata[field] = int(float(val)) if val and val != "NA" else 0
+                        except (ValueError, TypeError):
+                            metadata[field] = 0
+                    elif field == "categories":
+                        # yt-dlp prints categories as a Python-style list string
+                        if val and val != "NA":
+                            metadata[field] = [c.strip().strip("'\"") for c in val.strip("[]").split(",") if c.strip()]
+                        else:
+                            metadata[field] = []
+                    elif field == "description":
+                        metadata[field] = (val or "")[:500]
+                    else:
+                        metadata[field] = val if val and val != "NA" else ""
+            break
+
+    return metadata
+
+
 def extract_audio(video_path: str, output_path: str = None) -> str:
     """Extract audio from video file for transcription.
 
