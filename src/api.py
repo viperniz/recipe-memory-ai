@@ -1294,7 +1294,8 @@ async def get_thumbnail(
     content_id: str,
     filename: str,
 ):
-    """Serve a frame thumbnail image (no auth — loaded by <img> tags)"""
+    """Serve a frame thumbnail image (no auth — loaded by <img> tags).
+    Checks local disk first, then redirects to Vercel Blob if available."""
     # Sanitise content_id and filename to prevent path traversal
     import re as _re
     if not _re.match(r'^content_\d{8}_\d{6}$', content_id):
@@ -1302,15 +1303,32 @@ async def get_thumbnail(
     if not _re.match(r'^\d+\.jpg$', filename):
         raise HTTPException(status_code=400, detail="Invalid filename")
 
+    # 1. Try local filesystem first
     filepath = Path("data/thumbnails") / content_id / filename
-    if not filepath.exists():
-        raise HTTPException(status_code=404, detail="Thumbnail not found")
+    if filepath.exists():
+        return FileResponse(
+            str(filepath),
+            media_type="image/jpeg",
+            headers={"Cache-Control": "public, max-age=86400"}
+        )
 
-    return FileResponse(
-        str(filepath),
-        media_type="image/jpeg",
-        headers={"Cache-Control": "public, max-age=86400"}
-    )
+    # 2. Try Vercel Blob – look up the URL from blob storage
+    try:
+        from blob_storage import get_thumbnail_url, is_blob_enabled
+        if is_blob_enabled():
+            blob_path = f"thumbnails/{content_id}/{filename}"
+            blob_url = get_thumbnail_url(blob_path)
+            if blob_url:
+                from fastapi.responses import RedirectResponse
+                return RedirectResponse(
+                    url=blob_url,
+                    status_code=302,
+                    headers={"Cache-Control": "public, max-age=86400"}
+                )
+    except Exception:
+        pass  # blob_storage not available or error – fall through to 404
+
+    raise HTTPException(status_code=404, detail="Thumbnail not found")
 
 
 @app.post("/api/content/{content_id}/generate-thumbnails")
