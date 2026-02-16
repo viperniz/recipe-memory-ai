@@ -23,6 +23,16 @@ from content_creator import TopTenGenerator, ContentSpinner, TopTenScript, SpunC
 import json
 from config import get_config
 
+# Pre-import openai submodules to prevent import deadlock in threads.
+# Python's import lock can deadlock when two threads trigger lazy imports
+# of the same module simultaneously (e.g. openai.resources.chat).
+try:
+    import openai
+    import openai.resources.audio
+    import openai.resources.chat
+except ImportError:
+    pass
+
 
 class VideoMemoryAI:
     def __init__(
