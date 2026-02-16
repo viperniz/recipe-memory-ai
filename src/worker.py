@@ -186,80 +186,91 @@ def process_video_job(
                 except OSError:
                     pass
 
-        # If user cancelled while we were processing, do not save
-        j = JobService.get_job(bg_db, job_id)
-        if j and j.status == "cancelled":
-            print(f"[Job {job_id}] Cancelled by user, skipping save.")
-            return
+        # Fresh DB session for save operations — the original bg_db has been
+        # open for the entire processing duration and the connection is likely stale.
+        bg_db.close()
+        save_db = SessionLocal()
+        try:
+            print(f"[Job {job_id}] Processing done, saving results...")
 
-        # Get file size for storage tracking
-        file_size_bytes = 0
-        if result.source_video:
-            try:
-                file_size_bytes = os.path.getsize(result.source_video)
-            except OSError:
-                pass
-
-        # Storage check
-        if file_size_bytes > 0:
-            storage_check = BillingService.check_storage(bg_db, user_id, file_size_bytes)
-            if not storage_check["allowed"]:
-                job_row = bg_db.query(JobModel).filter(JobModel.id == job_id).first()
-                if job_row and job_row.credits_deducted:
-                    try:
-                        BillingService.refund_credits(
-                            bg_db, user_id, job_row.credits_deducted,
-                            "video_processing", content_id=job_id,
-                            description="Refund: storage limit exceeded",
-                        )
-                    except Exception:
-                        pass
-                JobService.complete_job(
-                    db=bg_db, job_id=job_id,
-                    error=(
-                        f"Storage full: using {storage_check['used_mb']:.0f} MB of "
-                        f"{storage_check['limit_mb']} MB. Upgrade your plan for more storage."
-                    ),
-                )
+            # If user cancelled while we were processing, do not save
+            j = JobService.get_job(save_db, job_id)
+            if j and j.status == "cancelled":
+                print(f"[Job {job_id}] Cancelled by user, skipping save.")
                 return
 
-        # Save to vector database (dedup by source URL)
-        vector_memory = VectorMemory(bg_db, user_id)
-        result_dict = result.to_dict()
-        result_dict["file_size_bytes"] = file_size_bytes
+            # Get file size for storage tracking
+            file_size_bytes = 0
+            if result.source_video:
+                try:
+                    file_size_bytes = os.path.getsize(result.source_video)
+                except OSError:
+                    pass
 
-        source_url = result_dict.get("source_url", "")
-        new_content_id = result_dict.get("id", "")
-        if source_url:
-            existing_id = vector_memory.find_by_source_url(source_url, user_id)
-            if existing_id and existing_id != new_content_id:
-                print(f"[Job {job_id}] Dedup: overwriting {existing_id} (same source URL)")
-                import shutil
-                thumb_base = Path("data/thumbnails")
-                old_thumb_dir = thumb_base / existing_id
-                new_thumb_dir = thumb_base / new_content_id
-                if old_thumb_dir.exists():
-                    shutil.rmtree(old_thumb_dir, ignore_errors=True)
-                if new_thumb_dir.exists():
-                    new_thumb_dir.rename(old_thumb_dir)
-                    thumbs = (result_dict.get("metadata") or {}).get("thumbnails", [])
-                    for t in thumbs:
-                        if "path" in t:
-                            t["path"] = t["path"].replace(new_content_id, existing_id)
-                result_dict["id"] = existing_id
+            # Storage check
+            if file_size_bytes > 0:
+                storage_check = BillingService.check_storage(save_db, user_id, file_size_bytes)
+                if not storage_check["allowed"]:
+                    job_row = save_db.query(JobModel).filter(JobModel.id == job_id).first()
+                    if job_row and job_row.credits_deducted:
+                        try:
+                            BillingService.refund_credits(
+                                save_db, user_id, job_row.credits_deducted,
+                                "video_processing", content_id=job_id,
+                                description="Refund: storage limit exceeded",
+                            )
+                        except Exception:
+                            pass
+                    JobService.complete_job(
+                        db=save_db, job_id=job_id,
+                        error=(
+                            f"Storage full: using {storage_check['used_mb']:.0f} MB of "
+                            f"{storage_check['limit_mb']} MB. Upgrade your plan for more storage."
+                        ),
+                    )
+                    return
 
-        vector_memory.add_content(result_dict, user_id)
+            # Save to vector database (dedup by source URL)
+            print(f"[Job {job_id}] Generating embedding...")
+            vector_memory = VectorMemory(save_db, user_id)
+            result_dict = result.to_dict()
+            result_dict["file_size_bytes"] = file_size_bytes
 
-        # Auto-add to collection if specified
-        if collection_id:
-            content_id = result_dict.get("id")
-            if content_id:
-                vector_memory.add_to_collection(content_id, collection_id, user_id)
-                print(f"[Job {job_id}] Added to collection {collection_id}")
+            source_url = result_dict.get("source_url", "")
+            new_content_id = result_dict.get("id", "")
+            if source_url:
+                existing_id = vector_memory.find_by_source_url(source_url, user_id)
+                if existing_id and existing_id != new_content_id:
+                    print(f"[Job {job_id}] Dedup: overwriting {existing_id} (same source URL)")
+                    import shutil
+                    thumb_base = Path("data/thumbnails")
+                    old_thumb_dir = thumb_base / existing_id
+                    new_thumb_dir = thumb_base / new_content_id
+                    if old_thumb_dir.exists():
+                        shutil.rmtree(old_thumb_dir, ignore_errors=True)
+                    if new_thumb_dir.exists():
+                        new_thumb_dir.rename(old_thumb_dir)
+                        thumbs = (result_dict.get("metadata") or {}).get("thumbnails", [])
+                        for t in thumbs:
+                            if "path" in t:
+                                t["path"] = t["path"].replace(new_content_id, existing_id)
+                    result_dict["id"] = existing_id
 
-        # Mark job complete
-        JobService.complete_job(db=bg_db, job_id=job_id, result=result_dict)
-        print(f"[Job {job_id}] Completed successfully!")
+            print(f"[Job {job_id}] Writing to database...")
+            vector_memory.add_content(result_dict, user_id)
+
+            # Auto-add to collection if specified
+            if collection_id:
+                content_id = result_dict.get("id")
+                if content_id:
+                    vector_memory.add_to_collection(content_id, collection_id, user_id)
+                    print(f"[Job {job_id}] Added to collection {collection_id}")
+
+            # Mark job complete
+            JobService.complete_job(db=save_db, job_id=job_id, result=result_dict)
+            print(f"[Job {job_id}] Completed successfully!")
+        finally:
+            save_db.close()
 
     except Exception as e:
         error_msg = str(e)
@@ -382,58 +393,68 @@ def process_upload_job(
             save_content=False,
         )
 
-        # Check cancellation
-        j = JobService.get_job(bg_db, job_id)
-        if j and j.status == "cancelled":
-            print(f"[Job {job_id}] Cancelled by user, skipping save.")
-            return
+        # Fresh DB session for save operations — original bg_db connection is stale.
+        bg_db.close()
+        save_db = SessionLocal()
+        try:
+            print(f"[Job {job_id}] Processing done, saving results...")
 
-        # File size for storage tracking
-        file_size_bytes = 0
-        if result.source_video:
-            try:
-                file_size_bytes = os.path.getsize(result.source_video)
-            except OSError:
-                pass
-
-        # Storage check
-        if file_size_bytes > 0:
-            storage_check = BillingService.check_storage(bg_db, user_id, file_size_bytes)
-            if not storage_check["allowed"]:
-                job_row = bg_db.query(JobModel).filter(JobModel.id == job_id).first()
-                if job_row and job_row.credits_deducted:
-                    try:
-                        BillingService.refund_credits(
-                            bg_db, user_id, job_row.credits_deducted,
-                            "video_processing", content_id=job_id,
-                            description="Refund: storage limit exceeded",
-                        )
-                    except Exception:
-                        pass
-                JobService.complete_job(
-                    db=bg_db, job_id=job_id,
-                    error=(
-                        f"Storage full: using {storage_check['used_mb']:.0f} MB of "
-                        f"{storage_check['limit_mb']} MB. Upgrade your plan for more storage."
-                    ),
-                )
+            # Check cancellation
+            j = JobService.get_job(save_db, job_id)
+            if j and j.status == "cancelled":
+                print(f"[Job {job_id}] Cancelled by user, skipping save.")
                 return
 
-        # Save to vector database
-        vector_memory = VectorMemory(bg_db, user_id)
-        result_dict = result.to_dict()
-        result_dict["file_size_bytes"] = file_size_bytes
-        vector_memory.add_content(result_dict, user_id)
+            # File size for storage tracking
+            file_size_bytes = 0
+            if result.source_video:
+                try:
+                    file_size_bytes = os.path.getsize(result.source_video)
+                except OSError:
+                    pass
 
-        # Auto-add to collection
-        if collection_id:
-            content_id = result_dict.get("id")
-            if content_id:
-                vector_memory.add_to_collection(content_id, collection_id, user_id)
-                print(f"[Job {job_id}] Added to collection {collection_id}")
+            # Storage check
+            if file_size_bytes > 0:
+                storage_check = BillingService.check_storage(save_db, user_id, file_size_bytes)
+                if not storage_check["allowed"]:
+                    job_row = save_db.query(JobModel).filter(JobModel.id == job_id).first()
+                    if job_row and job_row.credits_deducted:
+                        try:
+                            BillingService.refund_credits(
+                                save_db, user_id, job_row.credits_deducted,
+                                "video_processing", content_id=job_id,
+                                description="Refund: storage limit exceeded",
+                            )
+                        except Exception:
+                            pass
+                    JobService.complete_job(
+                        db=save_db, job_id=job_id,
+                        error=(
+                            f"Storage full: using {storage_check['used_mb']:.0f} MB of "
+                            f"{storage_check['limit_mb']} MB. Upgrade your plan for more storage."
+                        ),
+                    )
+                    return
 
-        JobService.complete_job(db=bg_db, job_id=job_id, result=result_dict)
-        print(f"[Job {job_id}] Upload completed successfully!")
+            # Save to vector database
+            print(f"[Job {job_id}] Generating embedding...")
+            vector_memory = VectorMemory(save_db, user_id)
+            result_dict = result.to_dict()
+            result_dict["file_size_bytes"] = file_size_bytes
+            print(f"[Job {job_id}] Writing to database...")
+            vector_memory.add_content(result_dict, user_id)
+
+            # Auto-add to collection
+            if collection_id:
+                content_id = result_dict.get("id")
+                if content_id:
+                    vector_memory.add_to_collection(content_id, collection_id, user_id)
+                    print(f"[Job {job_id}] Added to collection {collection_id}")
+
+            JobService.complete_job(db=save_db, job_id=job_id, result=result_dict)
+            print(f"[Job {job_id}] Upload completed successfully!")
+        finally:
+            save_db.close()
 
     except Exception as e:
         error_msg = str(e)
