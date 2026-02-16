@@ -74,4 +74,35 @@ def delete_thumbnail(url: str) -> None:
 
 def is_blob_enabled() -> bool:
       """Check if Vercel Blob storage is configured."""
-    return bool(BLOB_TOKEN)
+      return bool(BLOB_TOKEN)
+
+
+def get_thumbnail_url(blob_path: str) -> str | None:
+      """Look up the public URL for a thumbnail stored in Vercel Blob.
+
+      Uses the Vercel Blob list API to find the blob by pathname prefix.
+
+      Args:
+            blob_path: Storage path, e.g. "thumbnails/content_20260211_132324/0.jpg"
+
+      Returns:
+            The public URL if found, None otherwise.
+      """
+      if not BLOB_TOKEN:
+            return None
+
+      try:
+            resp = httpx.get(
+                  f"{BLOB_API_URL}",
+                  params={"prefix": blob_path, "limit": "1"},
+                  headers={"Authorization": f"Bearer {BLOB_TOKEN}"},
+                  timeout=10,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            blobs = data.get("blobs", [])
+            if blobs:
+                  return blobs[0].get("url")
+      except Exception:
+            pass
+      return None
