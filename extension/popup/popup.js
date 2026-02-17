@@ -81,7 +81,7 @@ async function showMainView(user) {
 
   // Library link
   const wb = await sendMessage({ type: 'GET_WEBAPP_BASE' });
-  const webappBase = wb.webappBase || 'http://localhost:3000';
+  const webappBase = wb.webappBase || 'https://recipe-memory-ai.vercel.app';
   $('#link-library').href = `${webappBase}/app`;
   $('#link-library').addEventListener('click', (e) => {
     e.preventDefault();
@@ -95,7 +95,7 @@ function bindEvents() {
   // Sign in
   $('#btn-sign-in').addEventListener('click', async () => {
     const wb = await sendMessage({ type: 'GET_WEBAPP_BASE' });
-    const webappBase = wb.webappBase || 'http://localhost:3000';
+    const webappBase = wb.webappBase || 'https://recipe-memory-ai.vercel.app';
     chrome.tabs.create({ url: `${webappBase}/login?source=extension` });
     window.close();
   });
@@ -127,14 +127,14 @@ function bindEvents() {
         $('#btn-save').disabled = false;
         const wb = await sendMessage({ type: 'GET_WEBAPP_BASE' });
         $('#btn-save').onclick = () => {
-          chrome.tabs.create({ url: `${(wb.webappBase || 'http://localhost:3000')}/pricing` });
+          chrome.tabs.create({ url: `${(wb.webappBase || 'https://recipe-memory-ai.vercel.app')}/pricing` });
         };
       } else if (result.status === 403 && result.error_type === 'insufficient_credits') {
         $('#btn-save').textContent = 'No credits — Get more';
         $('#btn-save').disabled = false;
         const wb = await sendMessage({ type: 'GET_WEBAPP_BASE' });
         $('#btn-save').onclick = () => {
-          chrome.tabs.create({ url: `${(wb.webappBase || 'http://localhost:3000')}/pricing` });
+          chrome.tabs.create({ url: `${(wb.webappBase || 'https://recipe-memory-ai.vercel.app')}/pricing` });
         };
       } else {
         $('#btn-save').textContent = 'Failed — Try again';
