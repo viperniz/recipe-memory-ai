@@ -988,6 +988,9 @@ async def add_video(
     # Enqueue processing in background (RQ worker or thread fallback)
     user_id = current_user.id
     cookies_str = request.cookies  # Captured here, never stored in job settings
+    is_youtube = any(d in request.url_or_path for d in ['youtube.com', 'youtu.be'])
+    if is_youtube:
+        print(f"[API] YouTube video submitted. Cookies provided: {bool(cookies_str)}, length: {len(cookies_str) if cookies_str else 0}")
 
     _enqueue_or_thread(
         "worker.process_video_job",
@@ -1003,6 +1006,7 @@ async def add_video(
         job_timeout="30m",
     )
 
+    has_cookies = bool(cookies_str) if is_youtube else None
     return {
         "job": {
             "id": job.id,
@@ -1012,7 +1016,8 @@ async def add_video(
             "video_url": job.video_url,
             "mode": job.mode,
             "started_at": job.started_at.isoformat() if job.started_at else None,
-            "error": None
+            "error": None,
+            "cookies_provided": has_cookies
         }
     }
 
