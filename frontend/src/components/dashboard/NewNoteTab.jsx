@@ -480,4 +480,4 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
       )
 }
 
-export default NewNoteTab</></></></></div>
+export default NewNoteTab
