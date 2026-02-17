@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Library, FolderOpen, X, Menu, Clock, Sparkles, Users, ArrowUpRight } from 'lucide-react'
+import { Plus, Library, FolderOpen, X, Menu, Clock, Sparkles, Users, ArrowUpRight, Share2 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import { billingApi } from '../../api/billing'
@@ -99,6 +99,15 @@ function Sidebar({
             <Library className="inline-block w-4 h-4 mr-2" />
             Knowledge Base
           </button>
+          {tier === 'team' && (
+            <button
+              className="nav-btn"
+              onClick={() => { navigate('/team'); setIsMobileOpen(false); }}
+            >
+              <Share2 className="inline-block w-4 h-4 mr-2" />
+              Team
+            </button>
+          )}
         </div>
 
         {/* Zone 2: Research Collections */}
@@ -197,9 +206,9 @@ function Sidebar({
               </div>
               <button
                 className="sidebar-cta-btn"
-                onClick={() => { navigate('/profile'); setIsMobileOpen(false); }}
+                onClick={() => { navigate('/team'); setIsMobileOpen(false); }}
               >
-                Manage members
+                Manage team
               </button>
             </div>
           )}

@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from app import VideoMemoryAI
 from video_processor import _extract_video_id
-from database import get_db, init_db, User, get_tier_limits, engine, SessionLocal, ChatSession, ChatMessage, GeneratedContent, ContentVector, Collection, CREDIT_COSTS, TIER_CREDITS, TOPUP_PACKS
+from database import get_db, init_db, User, get_tier_limits, engine, SessionLocal, ChatSession, ChatMessage, GeneratedContent, ContentVector, Collection, CREDIT_COSTS, TIER_CREDITS, TOPUP_PACKS, Team, TeamMember, TeamInvitation, TeamContent
 from auth import (
     UserCreate, UserLogin, UserResponse, Token,
     ForgotPasswordRequest, ResetPasswordRequest, GoogleAuthRequest,
@@ -42,6 +42,7 @@ from middleware.rate_limit import RateLimitMiddleware, rate_limiter
 from job_service import JobService
 from vector_memory import VectorMemory
 from redis_client import cache_set, cache_get, cache_delete
+from team.service import TeamService
 
 import subprocess
 import json
@@ -2847,6 +2848,284 @@ async def generate_guide(
     except Exception as e:
         logger.error(f"Guide generation failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate guide: {str(e)}")
+
+
+# =============================================
+# Team Workspace Endpoints
+# =============================================
+
+class TeamCreateRequest(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class TeamUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
+class TeamInviteRequest(BaseModel):
+    email: str
+    role: str = "member"
+
+class TeamMemberRoleRequest(BaseModel):
+    role: str
+
+class TeamShareContentRequest(BaseModel):
+    content_id: str
+
+
+@app.post("/api/teams")
+async def create_team(
+    request: TeamCreateRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Create a new team (team tier only)."""
+    try:
+        team = TeamService.create_team(db, current_user.id, request.name, request.description)
+        return {"team": {"id": team.id, "name": team.name, "description": team.description}}
+    except PermissionError as e:
+        args = e.args
+        if args and args[0] == "feature_locked":
+            raise HTTPException(status_code=403, detail={
+                "error": "feature_locked",
+                "feature": args[1] if len(args) > 1 else "team_workspaces",
+                "required_tier": args[2] if len(args) > 2 else "team",
+                "current_tier": args[3] if len(args) > 3 else "free",
+                "message": "Team workspaces require the Department (Team) plan."
+            })
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/teams")
+async def list_teams(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """List teams the user belongs to."""
+    teams = TeamService.get_user_teams(db, current_user.id)
+    return {"teams": teams}
+
+
+@app.get("/api/teams/{team_id}")
+async def get_team(
+    team_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get team details + members."""
+    try:
+        team = TeamService.get_team(db, team_id, current_user.id)
+        return {"team": team}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="You are not a member of this team")
+
+
+@app.put("/api/teams/{team_id}")
+async def update_team(
+    team_id: str,
+    request: TeamUpdateRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update team name/description."""
+    try:
+        result = TeamService.update_team(db, team_id, current_user.id, request.name, request.description)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Only owner or admin can update team")
+
+
+@app.delete("/api/teams/{team_id}")
+async def delete_team(
+    team_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Delete team (owner only)."""
+    try:
+        TeamService.delete_team(db, team_id, current_user.id)
+        return {"message": "Team deleted"}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Only the owner can delete the team")
+
+
+@app.post("/api/teams/{team_id}/invite")
+async def invite_member(
+    team_id: str,
+    request: TeamInviteRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Invite a user by email."""
+    try:
+        invite = TeamService.invite_member(db, team_id, current_user.id, request.email, request.role)
+
+        # Send invitation email
+        try:
+            from email_service import send_team_invite_email
+            team = db.query(Team).filter(Team.id == team_id).first()
+            inviter = db.query(User).filter(User.id == current_user.id).first()
+            send_team_invite_email(
+                to_email=request.email,
+                team_name=team.name if team else "a team",
+                inviter_name=inviter.full_name or inviter.email if inviter else "Someone",
+                invite_token=invite.token
+            )
+        except Exception as email_err:
+            logger.warning(f"Failed to send invite email: {email_err}")
+
+        return {"invitation": {"id": invite.id, "email": request.email, "token": invite.token, "status": "pending"}}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Only owner or admin can invite members")
+
+
+@app.get("/api/teams/{team_id}/members")
+async def list_members(
+    team_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """List team members."""
+    try:
+        members = TeamService.get_members(db, team_id, current_user.id)
+        return {"members": members}
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="You are not a member of this team")
+
+
+@app.put("/api/teams/{team_id}/members/{user_id}")
+async def update_member_role(
+    team_id: str,
+    user_id: int,
+    request: TeamMemberRoleRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update a member's role."""
+    try:
+        TeamService.update_member_role(db, team_id, current_user.id, user_id, request.role)
+        return {"message": "Role updated"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+
+@app.delete("/api/teams/{team_id}/members/{user_id}")
+async def remove_member(
+    team_id: str,
+    user_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Remove a member from team."""
+    try:
+        TeamService.remove_member(db, team_id, current_user.id, user_id)
+        return {"message": "Member removed"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+
+@app.post("/api/teams/{team_id}/content")
+async def share_content_to_team(
+    team_id: str,
+    request: TeamShareContentRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Share content to a team."""
+    try:
+        result = TeamService.share_content(db, team_id, current_user.id, request.content_id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="You are not a member of this team")
+
+
+@app.delete("/api/teams/{team_id}/content/{content_id}")
+async def unshare_content(
+    team_id: str,
+    content_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Unshare content from team."""
+    try:
+        TeamService.unshare_content(db, team_id, current_user.id, content_id)
+        return {"message": "Content unshared"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+
+@app.get("/api/teams/{team_id}/content")
+async def get_team_content(
+    team_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get shared content in a team."""
+    try:
+        content = TeamService.get_shared_content(db, team_id, current_user.id)
+        return {"content": content}
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="You are not a member of this team")
+
+
+@app.get("/api/invitations")
+async def get_invitations(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get pending team invitations for the current user."""
+    invitations = TeamService.get_user_invitations(db, current_user.id)
+    return {"invitations": invitations}
+
+
+@app.post("/api/invitations/{token}/accept")
+async def accept_invitation(
+    token: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Accept a team invitation."""
+    try:
+        result = TeamService.accept_invitation(db, token, current_user.id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+
+@app.post("/api/invitations/{token}/decline")
+async def decline_invitation(
+    token: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Decline a team invitation."""
+    try:
+        TeamService.decline_invitation(db, token, current_user.id)
+        return {"message": "Invitation declined"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 
 if __name__ == "__main__":

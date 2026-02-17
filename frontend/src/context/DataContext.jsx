@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import axios from 'axios'
 import { useAuth } from './AuthContext'
 import { toast } from '../hooks/use-toast'
+import { searchApi } from '../api/search'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
@@ -29,6 +30,12 @@ export function DataProvider({ children }) {
   const [collections, setCollections] = useState([])
   const [collectionContents, setCollectionContents] = useState([])
   const [isLoadingCollectionContents, setIsLoadingCollectionContents] = useState(false)
+
+  // Search state (persists across navigation)
+  const [searchResults, setSearchResults] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchFilters, setSearchFilters] = useState({})
+  const [isSearching, setIsSearching] = useState(false)
 
   // --- Refs ---
   const previousJobStates = useRef(new Map())
@@ -190,6 +197,40 @@ export function DataProvider({ children }) {
     }
   }, [startJobPolling])
 
+  // --- Search methods ---
+  const performSearch = useCallback(async (query, filters = {}) => {
+    setSearchQuery(query)
+    setSearchFilters(filters)
+
+    if (!query && !filters.content_type && !filters.tag_ids?.length && !filters.has_notes) {
+      setSearchResults(null)
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const data = await searchApi.search(token, {
+        query: query || null,
+        content_type: filters.content_type || null,
+        tag_ids: filters.tag_ids?.length ? filters.tag_ids : null,
+        has_notes: filters.has_notes || null,
+        n_results: 50
+      })
+      setSearchResults(data.results || [])
+    } catch (err) {
+      console.error('Search failed:', err)
+      setSearchResults(null)
+    } finally {
+      setIsSearching(false)
+    }
+  }, [token])
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery('')
+    setSearchFilters({})
+    setSearchResults(null)
+  }, [])
+
   // --- Initial load on token ---
   useEffect(() => {
     if (!token) {
@@ -198,6 +239,9 @@ export function DataProvider({ children }) {
       setJobs([])
       setCollections([])
       setCollectionContents([])
+      setSearchResults(null)
+      setSearchQuery('')
+      setSearchFilters({})
       libraryLoaded.current = false
       hasInitialized.current = false
       previousJobStates.current.clear()
@@ -229,6 +273,12 @@ export function DataProvider({ children }) {
     updateJobStatus,
     startJobPolling,
     stopJobPolling,
+    searchResults,
+    searchQuery,
+    searchFilters,
+    isSearching,
+    performSearch,
+    clearSearch,
   }
 
   return (

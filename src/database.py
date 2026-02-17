@@ -384,6 +384,87 @@ class GeneratedContent(Base):
 
 
 # =============================================
+# Team Model
+# =============================================
+class Team(Base):
+    __tablename__ = "teams"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    max_members = Column(Integer, default=10)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = relationship("User", foreign_keys=[owner_id])
+    members = relationship("TeamMember", back_populates="team", cascade="all, delete-orphan")
+    invitations = relationship("TeamInvitation", back_populates="team", cascade="all, delete-orphan")
+    shared_content = relationship("TeamContent", back_populates="team", cascade="all, delete-orphan")
+
+
+# =============================================
+# Team Member Model
+# =============================================
+class TeamMember(Base):
+    __tablename__ = "team_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(String, ForeignKey("teams.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    role = Column(String(20), default="member")  # owner, admin, member
+    joined_at = Column(DateTime, default=datetime.utcnow)
+
+    team = relationship("Team", back_populates="members")
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint("team_id", "user_id", name="uq_team_member"),
+    )
+
+
+# =============================================
+# Team Invitation Model
+# =============================================
+class TeamInvitation(Base):
+    __tablename__ = "team_invitations"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    team_id = Column(String, ForeignKey("teams.id", ondelete="CASCADE"), nullable=False, index=True)
+    email = Column(String(255), nullable=False)
+    invited_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    role = Column(String(20), default="member")
+    status = Column(String(20), default="pending")  # pending, accepted, declined, expired
+    token = Column(String(255), unique=True, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+
+    team = relationship("Team", back_populates="invitations")
+    inviter = relationship("User", foreign_keys=[invited_by])
+
+
+# =============================================
+# Team Content (shared content) Model
+# =============================================
+class TeamContent(Base):
+    __tablename__ = "team_content"
+
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(String, ForeignKey("teams.id", ondelete="CASCADE"), nullable=False, index=True)
+    content_id = Column(String, ForeignKey("content_vectors.id", ondelete="CASCADE"), nullable=False, index=True)
+    shared_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    shared_at = Column(DateTime, default=datetime.utcnow)
+
+    team = relationship("Team", back_populates="shared_content")
+    content = relationship("ContentVector")
+    sharer = relationship("User", foreign_keys=[shared_by])
+
+    __table_args__ = (
+        UniqueConstraint("team_id", "content_id", name="uq_team_content"),
+    )
+
+
+# =============================================
 # Database Initialization
 # =============================================
 def _add_column_if_missing(conn, table: str, column: str, col_type: str, default=None):

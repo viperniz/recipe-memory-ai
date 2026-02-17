@@ -16,6 +16,7 @@ import HelpPage from './pages/HelpPage'
 import TermsPage from './pages/TermsPage'
 import PrivacyPage from './pages/PrivacyPage'
 import ExtensionCallbackPage from './pages/ExtensionCallbackPage'
+import TeamPage from './pages/TeamPage'
 import NotFoundPage from './pages/NotFoundPage'
 import './App.css'
 
@@ -149,6 +150,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/team"
+        element={
+          <ProtectedRoute>
+            <TeamPage />
           </ProtectedRoute>
         }
       />

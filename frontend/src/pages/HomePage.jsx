@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { toast } from '../hooks/use-toast'
@@ -26,6 +26,8 @@ import ContentDetailModal from '../components/content/ContentDetailModal'
 import ExportModal from '../components/modals/ExportModal'
 import NewCollectionModal from '../components/modals/NewCollectionModal'
 import AddToCollectionModal from '../components/modals/AddToCollectionModal'
+import OnboardingModal from '../components/modals/OnboardingModal'
+import { teamApi } from '../api/team'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
@@ -123,6 +125,7 @@ const createApiClient = (getToken) => {
 function HomePage() {
   const { user, token, logout } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   // Data from context (persistent across route changes)
   const {
@@ -139,9 +142,50 @@ function HomePage() {
     [token]
   )
 
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
   useEffect(() => {
     document.title = 'Dashboard — Second Mind'
   }, [])
+
+  // Show onboarding for new users with empty libraries
+  useEffect(() => {
+    if (user && !isLoadingLibrary && libraryContents.length === 0 && jobs.length === 0) {
+      const key = `onboarding_completed_${user.id}`
+      if (!localStorage.getItem(key)) {
+        setShowOnboarding(true)
+      }
+    }
+  }, [user, isLoadingLibrary, libraryContents.length, jobs.length])
+
+  const handleOnboardingClose = () => {
+    setShowOnboarding(false)
+    if (user) {
+      localStorage.setItem(`onboarding_completed_${user.id}`, 'true')
+    }
+  }
+
+  const handleOnboardingTryVideo = (url) => {
+    handleOnboardingClose()
+    handleAddYoutube(url)
+  }
+
+  // Handle team invitation query param: /app?invite=TOKEN
+  useEffect(() => {
+    const inviteToken = searchParams.get('invite')
+    if (inviteToken && token) {
+      teamApi.acceptInvitation(token, inviteToken)
+        .then(result => {
+          toast({ variant: 'success', title: 'Team joined!', description: `You've joined ${result.team_name || 'the team'}` })
+          navigate('/team', { replace: true })
+        })
+        .catch(err => {
+          const detail = err.response?.data?.detail
+          toast({ variant: 'destructive', title: 'Invitation error', description: typeof detail === 'string' ? detail : err.message })
+        })
+    }
+  }, [searchParams, token]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Navigation state
   const [activeTab, setActiveTab] = useState('library')
@@ -716,6 +760,14 @@ function HomePage() {
           collectionName={activeTab === 'collection' ? selectedCollection?.name : null}
           selectedContent={selectedContent}
         />
+
+        {/* Onboarding Modal */}
+        {showOnboarding && (
+          <OnboardingModal
+            onClose={handleOnboardingClose}
+            onTryVideo={handleOnboardingTryVideo}
+          />
+        )}
         </main>
       </div>
     </div>

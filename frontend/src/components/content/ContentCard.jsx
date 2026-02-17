@@ -27,12 +27,25 @@ function ContentCard({
     || (firstThumb?.url)
     || (firstThumb ? `${import.meta.env.VITE_API_URL || ''}/api/thumbnails/${content.id}/${firstThumb.filename}` : null)
 
+  const similarity = content._similarity
+  const matchPercent = similarity != null ? Math.round(similarity * 100) : null
+
   return (
     <div className={`library-card ${mode !== 'general' ? `library-card-${mode}` : ''}`}>
       {cardThumbnail && (
         <div className="library-card-thumb-wrap" onClick={onClick} style={{ cursor: 'pointer' }}>
           <img src={cardThumbnail} alt="" className="library-card-thumb" loading="lazy" />
+          {matchPercent !== null && (
+            <span className={`relevance-badge ${matchPercent >= 80 ? 'relevance-high' : matchPercent >= 50 ? 'relevance-mid' : 'relevance-low'}`}>
+              {matchPercent}% match
+            </span>
+          )}
         </div>
+      )}
+      {!cardThumbnail && matchPercent !== null && (
+        <span className={`relevance-badge relevance-badge-inline ${matchPercent >= 80 ? 'relevance-high' : matchPercent >= 50 ? 'relevance-mid' : 'relevance-low'}`}>
+          {matchPercent}% match
+        </span>
       )}
       <div className="library-card-header">
         <div className="library-card-title-row" onClick={onClick} style={{ cursor: 'pointer', flex: 1 }}>
