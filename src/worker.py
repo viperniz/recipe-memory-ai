@@ -72,6 +72,7 @@ def process_video_job(
     bg_db = SessionLocal()
     try:
         print(f"[Job {job_id}] Starting processing for: {url_or_path[:50]}")
+        print(f"[Job {job_id}] Cookies provided: {bool(cookies_str)}, YouTube: {is_youtube}")
 
         # Set up cookies temp file if provided
         cookies_temp_path = None
@@ -187,6 +188,7 @@ def process_video_job(
                 youtube_stats=youtube_stats,
                 language=language,
                 save_content=False,
+                cookies_file=cookies_temp_path,
             )
         finally:
             if cookies_temp_path:

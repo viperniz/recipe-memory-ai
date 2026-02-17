@@ -404,7 +404,8 @@ class VideoMemoryAI:
         user_id: int = None,
         mode: str = "general",
         youtube_stats: dict = None,
-        language: str = None
+        language: str = None,
+        cookies_file: str = None
     ) -> ContentExtract:
         """
         Process a video and extract structured information
@@ -457,13 +458,13 @@ class VideoMemoryAI:
                 if analyze_frames:
                     # Need both audio (for transcription) and video (for frames)
                     # Download sequentially to limit peak memory (avoid 2 concurrent yt-dlp subprocesses)
-                    audio_path = download_audio(source, videos_dir)
+                    audio_path = download_audio(source, videos_dir, cookies_file=cookies_file)
                     print(f"  Audio: {audio_path}")
-                    video_path = download_video(source, videos_dir)
+                    video_path = download_video(source, videos_dir, cookies_file=cookies_file)
                     print(f"  Video: {video_path}")
                 else:
                     # No frame analysis — only need audio (~5MB instead of ~300MB)
-                    audio_path = download_audio(source, videos_dir)
+                    audio_path = download_audio(source, videos_dir, cookies_file=cookies_file)
                     video_path = audio_path  # Used for get_video_info fallback
                     print(f"  Audio only: {audio_path}")
             finally:
