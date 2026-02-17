@@ -9,6 +9,7 @@ self-contained.
 import os
 import sys
 import tempfile
+import threading
 import traceback
 from pathlib import Path
 
@@ -26,6 +27,54 @@ from billing import BillingService
 from video_processor import download_audio_with_metadata, get_video_info
 from vector_memory import VectorMemory
 from config import get_config, init_config
+
+# ---------------------------------------------------------------------------
+# Concurrency limiter — prevents OOM when multiple users submit videos.
+# Excess jobs wait in "Queued" status until a slot opens.
+# ---------------------------------------------------------------------------
+MAX_CONCURRENT_JOBS = int(os.getenv("MAX_CONCURRENT_JOBS", "2"))
+_processing_semaphore = threading.Semaphore(MAX_CONCURRENT_JOBS)
+_queue_lock = threading.Lock()
+_queued_count = 0  # Number of jobs waiting for a slot
+
+
+def _acquire_slot(job_id: str):
+    """Wait for a processing slot. Updates job status while queued."""
+    global _queued_count
+    # Try to acquire immediately
+    if _processing_semaphore.acquire(blocking=False):
+        print(f"[Job {job_id}] Got processing slot immediately")
+        return
+
+    # No slot available — update status and wait
+    with _queue_lock:
+        _queued_count += 1
+        position = _queued_count
+
+    print(f"[Job {job_id}] Waiting for processing slot (position ~{position})")
+    _qdb = SessionLocal()
+    try:
+        JobService.update_job_progress(
+            db=_qdb, job_id=job_id, progress=0,
+            status=f"Queued — waiting for slot ({position} ahead)...",
+        )
+    except Exception:
+        pass
+    finally:
+        _qdb.close()
+
+    # Block until a slot opens
+    _processing_semaphore.acquire()
+
+    with _queue_lock:
+        _queued_count = max(0, _queued_count - 1)
+
+    print(f"[Job {job_id}] Got processing slot")
+
+
+def _release_slot():
+    """Release a processing slot."""
+    _processing_semaphore.release()
 
 
 def _get_app(user_id, db):
@@ -63,6 +112,9 @@ def process_video_job(
     provider: str = "openai",
 ):
     """RQ job: download + process a video URL."""
+
+    # Wait for a processing slot (prevents OOM with concurrent users)
+    _acquire_slot(job_id)
 
     # Speaker diarization controlled by env var (off on small instances)
     detect_speakers = os.getenv("ENABLE_SPEAKER_DETECTION", "false").lower() == "true"
@@ -311,8 +363,10 @@ def process_video_job(
         finally:
             error_db.close()
     finally:
+        _release_slot()
         try:
-            bg_db.close()
+            if bg_db is not None:
+                bg_db.close()
         except Exception:
             pass
 
@@ -333,6 +387,9 @@ def process_upload_job(
     provider: str = "openai",
 ):
     """RQ job: process an uploaded local video file."""
+
+    # Wait for a processing slot (prevents OOM with concurrent users)
+    _acquire_slot(job_id)
 
     detect_speakers = os.getenv("ENABLE_SPEAKER_DETECTION", "false").lower() == "true"
 
@@ -502,7 +559,9 @@ def process_upload_job(
         finally:
             error_db.close()
     finally:
+        _release_slot()
         try:
-            bg_db.close()
+            if bg_db is not None:
+                bg_db.close()
         except Exception:
             pass
