@@ -97,7 +97,7 @@ def download_video(url: str, output_dir: str = "data/videos", cookies_file: str 
         ytdlp,
         "-f", "best[height<=720]",
         "-o", output_template,
-        "--no-playlist",
+        "--no-playlist", "--js-runtimes", "nodejs",
         "--print", "after_move:filepath",
     ]
 
@@ -176,7 +176,7 @@ def download_audio(url: str, output_dir: str = "data/videos", cookies_file: str 
         "--extract-audio",
         "--audio-format", "m4a",
         "-o", output_template,
-        "--no-playlist",
+        "--no-playlist", "--js-runtimes", "nodejs",
         "--print", "after_move:filepath",
     ]
 
@@ -244,7 +244,7 @@ def download_audio_with_metadata(
         probe_cmd = [
             ytdlp, "--no-download",
             "--print", print_template,
-            "--no-playlist",
+            "--no-playlist", "--js-runtimes", "nodejs",
         ]
         if cookies_file:
             probe_cmd.extend(["--cookies", cookies_file])
@@ -265,7 +265,7 @@ def download_audio_with_metadata(
         "--extract-audio",
         "--audio-format", "m4a",
         "-o", output_template,
-        "--no-playlist",
+        "--no-playlist", "--js-runtimes", "nodejs",
         "--print", "after_move:filepath",
         "--print", print_template,
     ]
