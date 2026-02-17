@@ -1,7 +1,7 @@
 # Core dependencies
 opencv-python-headless>=4.8.0
 openai>=1.0.0
-yt-dlp>=2024.1.0
+yt-dlp[default]>=2024.1.0
 curl_cffi>=0.5.0
 
 # FastAPI Backend
