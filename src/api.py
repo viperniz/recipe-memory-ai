@@ -1424,6 +1424,23 @@ async def generate_thumbnails(
     return {"message": f"Generated {len(manifest)} thumbnails", "thumbnails": manifest}
 
 
+@app.post("/api/admin/set-tier")
+async def admin_set_tier(
+    tier: str = "pro",
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """DEV ONLY: Set user tier for testing. Remove before production."""
+    from billing.service import BillingService, TIER_CREDITS
+    if tier not in TIER_CREDITS:
+        raise HTTPException(status_code=400, detail=f"Invalid tier: {tier}")
+    sub = BillingService._ensure_subscription(db, current_user.id)
+    sub.tier = tier
+    sub.credit_balance = TIER_CREDITS[tier]["credits_monthly"]
+    db.commit()
+    return {"message": f"Tier set to {tier}", "credits": sub.credit_balance}
+
+
 @app.post("/api/admin/backfill-thumbnails")
 async def backfill_all_thumbnails(
     current_user: User = Depends(get_current_active_user),
