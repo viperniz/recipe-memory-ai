@@ -25,7 +25,7 @@ if "postgresql" in DATABASE_URL or "postgres" in DATABASE_URL:
         pool_size=5,
         max_overflow=10,
         pool_pre_ping=True,
-        pool_recycle=3600,
+        pool_recycle=300,  # 5 min — Render/Supabase may close idle connections
         connect_args={
             "connect_timeout": 10,
             "sslmode": "require",

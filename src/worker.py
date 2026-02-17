@@ -178,6 +178,12 @@ def process_video_job(
 
             ai = _get_app(user_id, bg_db)
 
+            # Close bg_db BEFORE the long process_video() call.
+            # It's no longer needed — progress callbacks use their own sessions,
+            # and save operations will use a fresh save_db.
+            bg_db.close()
+            bg_db = None  # Prevent accidental reuse
+
             result = ai.process_video(
                 url_or_path,
                 analyze_frames=analyze_frames,
@@ -197,12 +203,7 @@ def process_video_job(
                 except OSError:
                     pass
 
-        # Fresh DB session for save operations — the original bg_db has been
-        # open for the entire processing duration and the connection is likely stale.
-try:
-                bg_db.close()
-except Exception:
-                pass  # Stale connection after long processing
+        # Fresh DB session for save operations (bg_db already closed above)
         save_db = SessionLocal()
         try:
             print(f"[Job {job_id}] Processing done, saving results...")
@@ -400,6 +401,10 @@ def process_upload_job(
 
         ai = _get_app(user_id, bg_db)
 
+        # Close bg_db BEFORE the long process_video() call.
+        bg_db.close()
+        bg_db = None
+
         result = ai.process_video(
             dest_path,
             analyze_frames=analyze_frames,
@@ -411,11 +416,7 @@ def process_upload_job(
             save_content=False,
         )
 
-        # Fresh DB session for save operations — original bg_db connection is stale.
-try:
-                bg_db.close()
-except Exception:
-                pass  # Stale connection after long processing
+        # Fresh DB session for save operations (bg_db already closed above)
         save_db = SessionLocal()
         try:
             print(f"[Job {job_id}] Processing done, saving results...")
