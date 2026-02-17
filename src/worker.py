@@ -199,7 +199,10 @@ def process_video_job(
 
         # Fresh DB session for save operations — the original bg_db has been
         # open for the entire processing duration and the connection is likely stale.
-        bg_db.close()
+try:
+                bg_db.close()
+except Exception:
+                pass  # Stale connection after long processing
         save_db = SessionLocal()
         try:
             print(f"[Job {job_id}] Processing done, saving results...")
@@ -409,7 +412,10 @@ def process_upload_job(
         )
 
         # Fresh DB session for save operations — original bg_db connection is stale.
-        bg_db.close()
+try:
+                bg_db.close()
+except Exception:
+                pass  # Stale connection after long processing
         save_db = SessionLocal()
         try:
             print(f"[Job {job_id}] Processing done, saving results...")
