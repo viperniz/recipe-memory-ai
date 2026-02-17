@@ -40,20 +40,20 @@ function ExtensionCallbackPage() {
               <main id="main-content" className="auth-page">
                           <div className="auth-container" style={{ textAlign: 'center' }}>
                                           <div className="auth-header">
-                                                              <h1>{sent ? 'Connected!' : 'Connecting...'}</h1>h1>
+                                                              <h1>{sent ? 'Connected!' : 'Connecting...'}</h1>
                                                               <p>
                                                                 {sent
                                                                                           ? 'Your extension is now connected to Second Mind. You can close this tab.'
                                                                                           : 'Sending credentials to extension...'}
-                                                              </p>p>
-                                          </div>div>
+                                                              </p>
+                                          </div>
                             {sent && (
                                     <p style={{ marginTop: '1rem', color: 'var(--color-text-muted)' }}>
                                                             Go to any YouTube video and click "Save to Second Mind" to get started.
-                                    </p>p>
+                                    </p>
                                           )}
-                          </div>div>
-              </main>main>
+                          </div>
+              </main>
           )
 }
 
