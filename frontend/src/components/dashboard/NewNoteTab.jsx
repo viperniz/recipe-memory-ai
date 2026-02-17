@@ -4,7 +4,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { useNavigate } from 'react-router-dom'
 import { useCreditBalance } from '../billing/FeatureGate'
-import { useExtensionDetection, useCookieReadinehss, requestExtensionCookies } from '../../hooks/useExtensionDetection'
+import { useExtensionDetection, useCookieReadiness, requestExtensionCookies } from '../../hooks/useExtensionDetection'
 
 const ALLOWED_EXTENSIONS = ['.mp4', '.mkv', '.webm', '.avi', '.mov']
 
