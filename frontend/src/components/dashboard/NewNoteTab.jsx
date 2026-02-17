@@ -4,7 +4,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { useNavigate } from 'react-router-dom'
 import { useCreditBalance } from '../billing/FeatureGate'
-import { useExtensionDetection, useCookieReadiness, requestExtensionCookies } from '../../hooks/useExtensionDetection'
+import { useExtensionDetection, useCookieReadinehss, requestExtensionCookies } from '../../hooks/useExtensionDetection'
 
 const ALLOWED_EXTENSIONS = ['.mp4', '.mkv', '.webm', '.avi', '.mov']
 
@@ -422,7 +422,7 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
                                                                     : 'Transcript and notes will be translated to this language.'}
                                               </span>
                                 </div>
-                    </>>
+                    </>
                   ) : (
                     <>
                       {/* Web URL Input */}
@@ -454,7 +454,7 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
                                                               <span className="inline-hint">Extracts actionable tools, methods, and opportunities — not just a summary</span>
                                               </label>
                                 </div>
-                    </>>
+                    </>
                   )}
               
                       <Button
@@ -467,12 +467,12 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
                                               <>
                                                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                                 {uploadProgress !== null ? `Uploading ${uploadProgress}%...` : 'Processing...'}
-                                              </>>
+                                              </>
                                             ) : (
                                               <>
                                                             <Plus className="w-4 h-4 mr-2" />
                                                             Add to Knowledge Base
-                                              </>>
+                                              </>
                                             )}
                       </Button>
               </div>
