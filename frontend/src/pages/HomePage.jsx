@@ -157,10 +157,10 @@ function HomePage() {
   const [selectedContent, setSelectedContent] = useState(null)
   const [isLoadingContent, setIsLoadingContent] = useState(false)
 
-  // Settings state
+  // Settings state (analyzeFrames defaults off — Pro+ users can enable via toggle)
   const [settings, setSettings] = useState({
     provider: 'openai',
-    analyzeFrames: true
+    analyzeFrames: false
   })
 
   // Export state

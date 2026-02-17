@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Plus, Loader2, Video, Globe, Search, GraduationCap, Mic, Users, FileText, Upload, X, Youtube, Chrome, ArrowRight, ExternalLink, RefreshCw, LogIn } from 'lucide-react'
+import { Plus, Loader2, Video, Globe, Search, GraduationCap, Mic, Users, FileText, Upload, X, Youtube, Chrome, ArrowRight, ExternalLink, RefreshCw, LogIn, Eye, Lock } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { useNavigate } from 'react-router-dom'
@@ -50,6 +50,7 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
     const { detected: extensionDetected, loading: extensionLoading } = useExtensionDetection()
     const { cookiesReady, cookiesLoading, recheckCookies } = useCookieReadiness(extensionDetected)
     const isPaid = tier !== 'free'
+    const hasVisionAccess = tier === 'pro' || tier === 'team'
 
   const handleFileSelect = (file) => {
         if (!file) return
@@ -421,6 +422,35 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
                                                                     ? 'Language will be auto-detected. Transcript stays in original language.'
                                                                     : 'Transcript and notes will be translated to this language.'}
                                               </span>
+                                </div>
+
+                      {/* Vision AI Toggle */}
+                                <div className="inline-settings">
+                                              <label className={`vision-toggle ${!hasVisionAccess ? 'vision-toggle-locked' : ''}`}>
+                                                              <input
+                                                                                  type="checkbox"
+                                                                                  checked={hasVisionAccess && settings.analyzeFrames}
+                                                                                  onChange={(e) => {
+                                                                                    if (hasVisionAccess) {
+                                                                                      setSettings(s => ({ ...s, analyzeFrames: e.target.checked }))
+                                                                                    }
+                                                                                  }}
+                                                                                  disabled={isProcessing || !hasVisionAccess}
+                                                                                />
+                                                              <Eye className="w-4 h-4" />
+                                                              <span>Vision AI</span>
+                                                              {!hasVisionAccess && (
+                                                                <span className="vision-pro-badge">
+                                                                  <Lock className="w-3 h-3" />
+                                                                  Pro
+                                                                </span>
+                                                              )}
+                                                              <span className="inline-hint">
+                                                                {hasVisionAccess
+                                                                  ? 'Analyzes video frames for visual context (+1 credit/min)'
+                                                                  : 'Upgrade to Pro to analyze video frames'}
+                                                              </span>
+                                              </label>
                                 </div>
                     </>
                   ) : (
