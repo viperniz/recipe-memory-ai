@@ -57,4 +57,4 @@ function ExtensionCallbackPage() {
           )
 }
 
-export default ExtensionCallbackPage</main>
+export default ExtensionCallbackPage
