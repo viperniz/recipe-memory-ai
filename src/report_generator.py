@@ -338,15 +338,15 @@ class ReportGenerator:
         return "\n\n".join(parts)
 
     def _infer_topic(self, sources: list) -> str:
-        """Infer search query from source tags, topics, and entities.
+        """Infer search query from source tags and topics.
 
-        Priority: tags > topics > entities > title keywords.
-        These fields are already extracted during content analysis and
-        contain the best search terms for web enrichment.
+        Uses tags and topics only — these are subject-matter keywords
+        extracted during content analysis. Entities (people, brands) are
+        excluded because they lead to biographical/product pages instead
+        of useful supplementary research.
         """
         all_tags = []
         all_topics = []
-        all_entities = []
         seen = set()
 
         for src in sources[:5]:
@@ -360,21 +360,15 @@ class ReportGenerator:
                 if tp_lower not in seen:
                     seen.add(tp_lower)
                     all_topics.append(tp)
-            for ent in src.get("entities", []):
-                name = ent.get("name", ent) if isinstance(ent, dict) else str(ent)
-                name_lower = name.lower()
-                if name_lower not in seen:
-                    seen.add(name_lower)
-                    all_entities.append(name)
 
-        # Build query from the best available metadata
-        # Tags are most search-friendly, then topics, then entities
-        keywords = all_tags[:6] + all_topics[:4] + all_entities[:3]
+        # Build query: tags first (most search-friendly), then topics
+        # Keep it concise — long queries dilute search relevance
+        keywords = all_tags[:5] + all_topics[:3]
 
         if keywords:
             query = " ".join(keywords)
-            print(f"[ReportGenerator] Inferred search query from metadata: {query[:100]}")
-            return query[:100]
+            print(f"[ReportGenerator] Inferred search query from metadata: {query[:80]}")
+            return query[:80]
 
         # Last resort: extract key phrases from titles
         titles = [src.get("title", "") for src in sources[:3] if src.get("title")]
