@@ -497,6 +497,12 @@ def _add_column_if_missing(conn, table: str, column: str, col_type: str, default
         if col_type == "BOOLEAN" and default is not None:
             default = "TRUE" if str(default) in ("1", "true", "TRUE") else "FALSE"
 
+        # Use IF NOT EXISTS — most reliable way on PostgreSQL 9.6+
+        default_clause = f" DEFAULT {default}" if default is not None else ""
+        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_type}{default_clause}"))
+        conn.commit()
+        return  # done, no need to check exists
+
         result = conn.execute(text(
             "SELECT 1 FROM information_schema.columns "
             f"WHERE table_name = '{table}' AND column_name = '{column}'"
