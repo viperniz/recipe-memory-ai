@@ -21,7 +21,7 @@ import { buildYouTubeTimestampUrl, formatTimestamp } from '../../lib/utils'
 import { useData } from '../../context/DataContext'
 import { tagsApi } from '../../api/tags'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+import { API_BASE } from '../../lib/apiBase'
 
 const MODE_ICONS = {
   recipe: ChefHat,
