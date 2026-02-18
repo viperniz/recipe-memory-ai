@@ -6,8 +6,10 @@ import { Badge } from '../ui/badge'
 import ReportCard from './ReportCard'
 import {
   X, Loader2, AlertTriangle, RefreshCw, Trash2, Clock,
-  FileText, Code, Film, Briefcase, Copy, Check
+  FileText, Code, Film, Briefcase, Copy, Check, Download
 } from 'lucide-react'
+import ReportExportModal from '../modals/ReportExportModal'
+import { reportToMarkdown } from '../modals/ReportExportModal'
 
 const TYPE_CONFIG = {
   thesis: { label: 'Thesis', color: '#a855f7', icon: FileText },
@@ -21,6 +23,7 @@ function ReportPanel({ reportId, report: initialReport, onClose, onDelete }) {
   const [report, setReport] = useState(initialReport || null)
   const [isLoading, setIsLoading] = useState(!initialReport)
   const [copied, setCopied] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
 
   useEffect(() => {
     if (!reportId || !token || initialReport?.result) return
@@ -66,7 +69,7 @@ function ReportPanel({ reportId, report: initialReport, onClose, onDelete }) {
 
   const handleCopyMarkdown = () => {
     if (!report?.result) return
-    const md = JSON.stringify(report.result, null, 2)
+    const md = reportToMarkdown(report)
     navigator.clipboard.writeText(md).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
@@ -115,9 +118,14 @@ function ReportPanel({ reportId, report: initialReport, onClose, onDelete }) {
         </div>
         <div className="report-panel-actions">
           {report.status === 'completed' && (
-            <button className="btn-icon-sm" onClick={handleCopyMarkdown} title="Copy as JSON">
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </button>
+            <>
+              <button className="btn-icon-sm" onClick={() => setShowExportModal(true)} title="Export report">
+                <Download className="w-4 h-4" />
+              </button>
+              <button className="btn-icon-sm" onClick={handleCopyMarkdown} title="Copy as Markdown">
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </>
           )}
           <button className="btn-icon-sm btn-danger-sm" onClick={handleDelete} title="Delete report">
             <Trash2 className="w-4 h-4" />
@@ -150,6 +158,11 @@ function ReportPanel({ reportId, report: initialReport, onClose, onDelete }) {
           <ReportCard report={report} />
         )}
       </div>
+      <ReportExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        report={report}
+      />
     </div>
   )
 }

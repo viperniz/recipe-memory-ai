@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Bell, CheckCircle, Coins, Users, Info } from 'lucide-react'
+import { Bell, CheckCircle, Coins, Users, Info, FileText } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { notificationsApi } from '../../api/notifications'
@@ -8,6 +8,7 @@ const TYPE_ICONS = {
   job_complete: CheckCircle,
   team_invite: Users,
   low_credits: Coins,
+  report_ready: FileText,
   system: Info,
 }
 

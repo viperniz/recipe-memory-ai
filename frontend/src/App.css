@@ -10895,12 +10895,24 @@
   /* Smaller modals: centered card instead of full-screen on larger phones */
   .buy-credits-modal,
   .export-modal,
-  .collection-modal {
+  .collection-modal,
+  .report-export-modal {
     min-height: auto;
     max-height: 90vh;
     max-height: 90dvh;
     border-radius: 12px;
     margin: auto;
+  }
+
+  .report-preview-modal {
+    border-radius: 0;
+    max-width: 100%;
+    max-height: 100vh;
+    max-height: 100dvh;
+  }
+
+  .report-export-actions {
+    flex-direction: column;
   }
 }
 
@@ -12647,6 +12659,61 @@
 
 .report-ref-relevance {
   color: #71717a;
+}
+
+.report-ref-link {
+  color: #60a5fa;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.report-ref-link:hover {
+  color: #93bbfc;
+  text-decoration: underline;
+}
+
+/* Report Preview Modal */
+.report-preview-modal {
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.report-preview-modal .report-panel {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+/* Report Export Modal */
+.report-export-modal {
+  max-width: 480px;
+}
+
+.report-export-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.report-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+}
+
+.export-format-ext {
+  color: #71717a;
+  font-size: 12px;
+  margin-left: 4px;
 }
 
 

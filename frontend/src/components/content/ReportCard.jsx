@@ -3,7 +3,7 @@ import { Badge } from '../ui/badge'
 import {
   ChevronDown, ChevronRight, FileText, Code, Film, Briefcase,
   Target, BookOpen, AlertTriangle, CheckCircle, Clock, Users,
-  Lightbulb, Shield, Layers, List
+  Lightbulb, Shield, Layers, List, ExternalLink
 } from 'lucide-react'
 
 const REPORT_TYPE_CONFIG = {
@@ -378,7 +378,14 @@ function ReportCard({ report }) {
             <div className="report-block-content">
               {result.references.map((ref, i) => (
                 <div key={i} className="report-reference">
-                  <span className="report-ref-title">{ref.title || ref.source_id}</span>
+                  {ref.source_id?.startsWith('http') ? (
+                    <a href={ref.source_id} target="_blank" rel="noopener noreferrer" className="report-ref-link">
+                      <ExternalLink className="w-3 h-3" />
+                      {ref.title || ref.source_id}
+                    </a>
+                  ) : (
+                    <span className="report-ref-title">{ref.title || ref.source_id}</span>
+                  )}
                   {ref.relevance && <span className="report-ref-relevance"> — {ref.relevance}</span>}
                 </div>
               ))}

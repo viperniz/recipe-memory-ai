@@ -245,6 +245,7 @@ function HomePage() {
       // Escape — close any open modal
       if (e.key === 'Escape') {
         if (selectedContent) { setSelectedContent(null); return }
+        if (selectedReportId) { setSelectedReportId(null); return }
         if (showExportModal) { setShowExportModal(false); return }
         if (showNewCollectionModal) { setShowNewCollectionModal(false); return }
         if (showAddToCollectionModal) { setShowAddToCollectionModal(false); return }
@@ -271,7 +272,7 @@ function HomePage() {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [selectedContent, showExportModal, showNewCollectionModal, showAddToCollectionModal, showOnboarding]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedContent, selectedReportId, showExportModal, showNewCollectionModal, showAddToCollectionModal, showOnboarding]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch collection contents when switching to collection tab
   useEffect(() => {
@@ -847,14 +848,18 @@ function HomePage() {
               </div>
             )}
             {selectedReportId && (
-              <ReportPanel
-                reportId={selectedReportId}
-                onClose={() => setSelectedReportId(null)}
-                onDelete={(id) => {
-                  setReports(prev => prev.filter(r => r.id !== id))
-                  setSelectedReportId(null)
-                }}
-              />
+              <div className="modal-overlay" onClick={() => setSelectedReportId(null)}>
+                <div className="modal-content report-preview-modal" onClick={(e) => e.stopPropagation()}>
+                  <ReportPanel
+                    reportId={selectedReportId}
+                    onClose={() => setSelectedReportId(null)}
+                    onDelete={(id) => {
+                      setReports(prev => prev.filter(r => r.id !== id))
+                      setSelectedReportId(null)
+                    }}
+                  />
+                </div>
+              </div>
             )}
           </div>
         )}
