@@ -338,11 +338,67 @@ class ReportGenerator:
         return "\n\n".join(parts)
 
     def _infer_topic(self, sources: list) -> str:
-        """Infer a search topic from the first source title."""
-        first_title = sources[0].get("title", "") if sources else ""
-        topics = sources[0].get("topics", [])[:3] if sources else []
-        query = first_title or " ".join(topics)
-        return query[:100]
+        """Infer search query from source tags, topics, and entities.
+
+        Priority: tags > topics > entities > title keywords.
+        These fields are already extracted during content analysis and
+        contain the best search terms for web enrichment.
+        """
+        all_tags = []
+        all_topics = []
+        all_entities = []
+        seen = set()
+
+        for src in sources[:5]:
+            for tag in src.get("tags", []):
+                tag_lower = tag.lower()
+                if tag_lower not in seen:
+                    seen.add(tag_lower)
+                    all_tags.append(tag)
+            for tp in src.get("topics", []):
+                tp_lower = tp.lower()
+                if tp_lower not in seen:
+                    seen.add(tp_lower)
+                    all_topics.append(tp)
+            for ent in src.get("entities", []):
+                name = ent.get("name", ent) if isinstance(ent, dict) else str(ent)
+                name_lower = name.lower()
+                if name_lower not in seen:
+                    seen.add(name_lower)
+                    all_entities.append(name)
+
+        # Build query from the best available metadata
+        # Tags are most search-friendly, then topics, then entities
+        keywords = all_tags[:6] + all_topics[:4] + all_entities[:3]
+
+        if keywords:
+            query = " ".join(keywords)
+            print(f"[ReportGenerator] Inferred search query from metadata: {query[:100]}")
+            return query[:100]
+
+        # Last resort: extract key phrases from titles
+        titles = [src.get("title", "") for src in sources[:3] if src.get("title")]
+        if not titles:
+            return ""
+
+        stop_words = {
+            "a", "an", "the", "is", "are", "was", "were", "of", "to", "in",
+            "for", "on", "with", "and", "or", "but", "by", "at", "from",
+            "how", "what", "why", "when", "where", "who", "which", "that",
+            "this", "your", "my", "our", "their", "his", "her", "its",
+            "simple", "guide", "complete", "ultimate", "best", "top",
+            "introduction", "overview", "part", "episode",
+        }
+        import re
+        words = re.findall(r'[a-zA-Z0-9]+', " ".join(titles).lower())
+        unique_words = []
+        word_seen = set()
+        for w in words:
+            if w not in stop_words and len(w) > 2 and w not in word_seen:
+                word_seen.add(w)
+                unique_words.append(w)
+
+        return " ".join(unique_words[:8])[:100]
 
     def _enrich_with_web(self, topic: str, manual_urls: list, source_context: str) -> tuple:
         """Fetch web content to enrich the report.
