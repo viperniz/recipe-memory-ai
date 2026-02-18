@@ -13,7 +13,7 @@ import {
   MessageCircle, Send, Loader2
 } from 'lucide-react'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+import { API_BASE } from '../lib/apiBase'
 
 // Feature cards data — pain-point driven
 const FEATURES = [
