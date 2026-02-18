@@ -3,7 +3,7 @@ import { MessageSquare, X, Send, Loader2, ChevronDown, Sparkles, FileText, Globe
 import { billingApi } from '../../api/billing'
 import { toast } from '../../hooks/use-toast'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+import { API_BASE } from '../../lib/apiBase'
 
 function AIChatWidget({ onContentClick, collectionId, collectionName, selectedContent }) {
   const [isOpen, setIsOpen] = useState(false)
