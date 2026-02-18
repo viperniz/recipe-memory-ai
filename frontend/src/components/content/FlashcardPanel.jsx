@@ -5,7 +5,7 @@ import UpgradePrompt from '../billing/UpgradePrompt'
 import axios from 'axios'
 import { toast } from '../../hooks/use-toast'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+import { API_BASE } from '../../lib/apiBase'
 
 function FlashcardPanel({ contentId }) {
   const [cards, setCards] = useState(null)
