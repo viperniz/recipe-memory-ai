@@ -247,8 +247,18 @@ class ProfileUpdateRequest(BaseModel):
 # =============================================
 # Catch-all OPTIONS handler for CORS preflight requests
 @app.options("/{rest_of_path:path}")
-async def options_handler(rest_of_path: str):
-    return {}
+async def options_handler(rest_of_path: str, request: Request):
+    origin = request.headers.get("origin", "*")
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Max-Age": "600",
+        }
+    )
 
 # Auth Endpoints
 # =============================================
