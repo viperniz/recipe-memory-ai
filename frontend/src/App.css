@@ -10891,6 +10891,17 @@
     max-height: 100vh;
     max-height: 100dvh;
   }
+
+  /* Smaller modals: centered card instead of full-screen on larger phones */
+  .buy-credits-modal,
+  .export-modal,
+  .collection-modal {
+    min-height: auto;
+    max-height: 90vh;
+    max-height: 90dvh;
+    border-radius: 12px;
+    margin: auto;
+  }
 }
 
 /* ContentDetailModal: scrollable tabs on mobile */
@@ -12636,5 +12647,407 @@
 
 .report-ref-relevance {
   color: #71717a;
+}
+
+
+/* =============================================
+   MODAL FOOTER & BUTTON STYLES
+   ============================================= */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #27272a;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: transparent;
+  color: #a1a1aa;
+  border: 1px solid #3f3f46;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #d4d4d8;
+  border-color: #52525b;
+}
+
+.btn-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid #3f3f46;
+  background: #27272a;
+  color: #d4d4d8;
+  transition: all 0.2s;
+}
+
+.btn-sm:hover {
+  background: #3f3f46;
+  color: #e4e4e7;
+}
+
+.btn-primary.btn-sm {
+  padding: 6px 14px;
+  font-size: 12px;
+  border: none;
+}
+
+
+/* =============================================
+   RESPONSIVE: ALL MODALS & REPORT COMPONENTS
+   ============================================= */
+
+/* --- Small phones (320-400px) --- */
+@media (max-width: 400px) {
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 16px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .modal-header {
+    padding: 16px;
+  }
+
+  .modal-header h2 {
+    font-size: 18px;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  /* Report type grid: single column on tiny screens */
+  .report-type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-type-card {
+    padding: 12px 10px;
+  }
+
+  /* Report panel */
+  .report-panel-header {
+    padding: 12px;
+  }
+
+  .report-panel-title {
+    font-size: 15px;
+  }
+
+  .report-panel-body {
+    padding: 12px;
+  }
+
+  /* Report card sections */
+  .report-block-content {
+    padding: 10px;
+  }
+
+  .report-section-header {
+    padding: 8px 10px;
+  }
+
+  /* Options grid: single column */
+  .report-options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Reports tab */
+  .reports-tab {
+    padding: 12px;
+  }
+
+  .reports-tab-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  /* Report list card */
+  .report-list-card {
+    padding: 12px;
+  }
+
+  /* Phase header: stack on tiny screens */
+  .report-phase-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  /* Risk header: wrap badges */
+  .report-risk-header {
+    gap: 6px;
+  }
+
+  /* URL inputs */
+  .report-urls {
+    padding-left: 0;
+  }
+
+  /* Credit summary */
+  .report-credit-summary {
+    padding: 10px;
+  }
+
+  /* Buy credits grid */
+  .buy-credits-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Export modal */
+  .export-format-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Pricing modal */
+  .pricing-modal {
+    padding: 12px;
+  }
+
+  .pricing-modal-plans {
+    gap: 10px;
+  }
+}
+
+/* --- Phones (401-640px) --- */
+@media (max-width: 640px) {
+  /* Report config modal */
+  .report-config-modal {
+    max-height: 100vh;
+    max-height: 100dvh;
+  }
+
+  /* Report type grid: single column */
+  .report-type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Report panel body: allow more scroll area */
+  .report-panel-body {
+    max-height: none;
+    padding: 14px;
+  }
+
+  /* Report panel meta: wrap */
+  .report-panel-meta {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Report panel actions: smaller gap */
+  .report-panel-actions {
+    gap: 4px;
+  }
+
+  /* Reports tab */
+  .reports-tab {
+    padding: 14px;
+  }
+
+  .reports-tab-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .reports-tab-header h2 {
+    font-size: 17px;
+  }
+
+  /* Report list title: allow wrapping */
+  .report-list-title {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  /* Options grid: single column */
+  .report-options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Script sections */
+  .report-script-section {
+    padding: 10px;
+  }
+
+  /* Arguments */
+  .report-argument {
+    padding: 10px;
+  }
+
+  /* Pricing modal */
+  .pricing-modal {
+    padding: 16px;
+    max-height: 95vh;
+    max-height: 95dvh;
+  }
+
+  .pricing-modal-plans .plan-card {
+    padding: 14px;
+  }
+
+  /* Buy credits */
+  .buy-credits-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Modal footer: slightly tighter */
+  .modal-footer {
+    padding: 14px 16px;
+    gap: 10px;
+  }
+
+  /* Ensure modal header doesn't get too cramped */
+  .modal-header {
+    padding: 16px 18px;
+  }
+
+  .modal-body {
+    padding: 16px 18px;
+  }
+}
+
+/* --- Tablets (641-768px) --- */
+@media (max-width: 768px) {
+  /* Report type grid: keep 2 columns but tighter */
+  .report-type-grid {
+    gap: 8px;
+  }
+
+  .report-type-desc {
+    font-size: 10px;
+  }
+
+  /* Reports tab: full width */
+  .reports-tab {
+    padding: 16px;
+  }
+
+  /* Report panel body: flexible height */
+  .report-panel-body {
+    max-height: 500px;
+  }
+
+  /* Report panel: tap-friendly action buttons */
+  .btn-icon-sm {
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* --- Small laptops / tablets (769-1024px) --- */
+@media (max-width: 1024px) {
+  .reports-tab {
+    max-width: 100%;
+  }
+}
+
+/* --- Large / ultrawide screens (1440px+) --- */
+@media (min-width: 1440px) {
+  .reports-tab {
+    max-width: 1200px;
+  }
+
+  /* Report panel body: more room */
+  .report-panel-body {
+    max-height: 800px;
+  }
+
+  /* Options grid: potentially 3 columns on wide screens */
+  .report-options-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  /* Report list cards: wider touch */
+  .report-list-card {
+    padding: 16px 20px;
+  }
+}
+
+/* --- Ultrawide (1920px+) --- */
+@media (min-width: 1920px) {
+  .reports-tab {
+    max-width: 1400px;
+  }
+
+  /* Modal default: larger on ultrawide */
+  .report-config-modal {
+    max-width: 700px;
+  }
+
+  /* Report panel: larger body area */
+  .report-panel-body {
+    max-height: 900px;
+  }
+}
+
+/* --- ConfirmModal inline styles fix --- */
+/* ConfirmModal uses inline styles but we add safety responsive overrides */
+@media (max-width: 640px) {
+  div[style*="maxWidth"][style*="420"] {
+    max-width: 100% !important;
+    margin: 16px !important;
+    border-radius: 12px !important;
+  }
 }
 
