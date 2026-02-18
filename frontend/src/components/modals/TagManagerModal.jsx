@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import ConfirmModal from './ConfirmModal'
 import { X, Plus, Trash2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -54,8 +55,15 @@ function TagManagerModal({ isOpen, onClose }) {
     } catch {}
   }
 
-  const handleDelete = async (tagId) => {
-    if (!window.confirm('Delete this tag? It will be removed from all content.')) return
+  const [confirmState, setConfirmState] = useState({ isOpen: false, tagId: null })
+
+  const handleDelete = (tagId) => {
+    setConfirmState({ isOpen: true, tagId })
+  }
+
+  const confirmDelete = async () => {
+    const tagId = confirmState.tagId
+    setConfirmState({ isOpen: false, tagId: null })
     try {
       await tagsApi.deleteTag(token, tagId)
       loadTags()
