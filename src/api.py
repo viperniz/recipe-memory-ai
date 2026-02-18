@@ -245,6 +245,11 @@ class ProfileUpdateRequest(BaseModel):
 
 
 # =============================================
+# Catch-all OPTIONS handler for CORS preflight requests
+@app.options("/{rest_of_path:path}")
+async def options_handler(rest_of_path: str):
+    return {}
+
 # Auth Endpoints
 # =============================================
 @app.post("/api/auth/register", response_model=Token)
