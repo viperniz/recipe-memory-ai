@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Loader2, FileText, ExternalLink } from 'lucide-react'
 import { Button } from '../ui/button'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+import { API_BASE } from '../../lib/apiBase'
 
 function ChatTab({ onContentClick }) {
   const [messages, setMessages] = useState([
