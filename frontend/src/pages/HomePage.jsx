@@ -28,6 +28,7 @@ import NewCollectionModal from '../components/modals/NewCollectionModal'
 import AddToCollectionModal from '../components/modals/AddToCollectionModal'
 import OnboardingModal from '../components/modals/OnboardingModal'
 import { teamApi } from '../api/team'
+import ConfirmModal from '../components/modals/ConfirmModal'
 
 import { API_BASE } from '../lib/apiBase'
 
@@ -209,6 +210,9 @@ function HomePage() {
 
   // Export state
   const [showExportModal, setShowExportModal] = useState(false)
+  const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: null })
+  const openConfirm = (title, message, onConfirm) => setConfirmState({ isOpen: true, title, message, onConfirm })
+  const closeConfirm = () => setConfirmState(s => ({ ...s, isOpen: false, onConfirm: null }))
   const [exportFormat, setExportFormat] = useState('markdown')
   const [exportContentIds, setExportContentIds] = useState([])
   const [isExporting, setIsExporting] = useState(false)
@@ -284,28 +288,29 @@ function HomePage() {
     }
   }
 
-  const handleDeleteContent = async (contentId, title) => {
-    if (!window.confirm(`Are you sure you want to delete "${title || 'this content'}"?`)) {
-      return
-    }
-    try {
-      await api.delete(`/content/${contentId}`)
-      removeLibraryItem(contentId)
-      if (selectedContent && selectedContent.id === contentId) {
-        setSelectedContent(null)
+  const handleDeleteContent = (contentId, title) => {
+    openConfirm(
+      'Delete content?',
+      `"${title || 'this content'}" will be permanently removed from your knowledge base.`,
+      async () => {
+        closeConfirm()
+        try {
+          await api.delete(`/content/${contentId}`)
+          removeLibraryItem(contentId)
+          if (selectedContent?.id === contentId) {
+            setSelectedContent(null)
+          }
+          toast({ variant: 'success', title: 'Content deleted' })
+        } catch (err) {
+          console.error('Failed to delete content:', err)
+          toast({
+            variant: 'destructive',
+            title: 'Failed to delete content',
+            description: err.response?.data?.detail || err.message
+          })
+        }
       }
-      toast({
-        variant: 'success',
-        title: 'Content deleted'
-      })
-    } catch (err) {
-      console.error('Failed to delete content:', err)
-      toast({
-        variant: 'destructive',
-        title: 'Failed to delete content',
-        description: err.response?.data?.detail || err.message
-      })
-    }
+    )
   }
 
   const handleCancelJob = async (job) => {
@@ -599,27 +604,30 @@ function HomePage() {
     }
   }
 
-  const handleDeleteCollection = async (collectionId) => {
-    if (!window.confirm('Delete this collection?')) return
-    try {
-      await api.delete(`/collections/${collectionId}`)
-      refreshCollections()
-      refreshLibrary()
-      if (selectedCollectionId === collectionId) {
-        setSelectedCollectionId(null)
-        setActiveTab('library')
+  const handleDeleteCollection = (collectionId) => {
+    openConfirm(
+      'Delete collection?',
+      'This collection and its organization will be permanently removed.',
+      async () => {
+        closeConfirm()
+        try {
+          await api.delete(`/collections/${collectionId}`)
+          refreshCollections()
+          refreshLibrary()
+          if (selectedCollectionId === collectionId) {
+            setSelectedCollectionId(null)
+            setActiveTab('library')
+          }
+          toast({ variant: 'success', title: 'Collection deleted' })
+        } catch (err) {
+          toast({
+            variant: 'destructive',
+            title: 'Failed to delete collection',
+            description: err.response?.data?.detail || err.message
+          })
+        }
       }
-      toast({
-        variant: 'success',
-        title: 'Collection deleted'
-      })
-    } catch (err) {
-      toast({
-        variant: 'destructive',
-        title: 'Failed to delete collection',
-        description: err.response?.data?.detail || err.message
-      })
-    }
+    )
   }
 
   const handleAddToCollection = async (collectionId) => {
@@ -791,7 +799,16 @@ function HomePage() {
         />
 
         {/* AI Chat Widget - Floating */}
-        <AIChatWidget
+        <ConfirmModal
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="Delete"
+        variant="danger"
+        onConfirm={confirmState.onConfirm}
+        onCancel={closeConfirm}
+      />
+      <AIChatWidget
           onContentClick={handleCardClick}
           collectionId={activeTab === 'collection' ? selectedCollectionId : null}
           collectionName={activeTab === 'collection' ? selectedCollection?.name : null}
