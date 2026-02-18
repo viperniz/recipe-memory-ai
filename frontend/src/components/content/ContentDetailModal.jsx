@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { X, Download, ChefHat, GraduationCap, Video, Users, BookOpen, Loader2, Copy, Check, Globe, MessageSquare, Layers, Network, CheckCircle, RotateCcw, Eye, Lock, Camera, Grid3X3, Search } from 'lucide-react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { X, Download, ChefHat, GraduationCap, Video, Users, BookOpen, Loader2, Copy, Check, Globe, MessageSquare, Layers, Network, CheckCircle, RotateCcw, Eye, Lock, Camera, Grid3X3, Search, StickyNote, Bookmark as BookmarkIcon } from 'lucide-react'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import RecipeCard from './RecipeCard'
@@ -18,6 +18,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { billingApi } from '../../api/billing'
 import { buildYouTubeTimestampUrl, formatTimestamp } from '../../lib/utils'
+import { useData } from '../../context/DataContext'
+import { tagsApi } from '../../api/tags'
 
 
 const MODE_ICONS = {
@@ -29,6 +31,119 @@ const MODE_ICONS = {
   web: Globe
 }
 
+/**
+ * Inline Notes panel: free-form notes with auto-save + bookmark pills
+ */
+function NotesPanel({ contentId }) {
+  const { token } = useAuth()
+  const [notes, setNotes] = useState([])
+  const [noteText, setNoteText] = useState('')
+  const [bookmarks, setBookmarks] = useState([])
+  const [saveStatus, setSaveStatus] = useState('') // '', 'saving', 'saved'
+  const [isLoading, setIsLoading] = useState(true)
+  const debounceRef = useRef(null)
+
+  // Load notes & bookmarks
+  useEffect(() => {
+    if (!contentId || !token) return
+    setIsLoading(true)
+    Promise.all([
+      axios.get(`/api/notes?content_id=${contentId}`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`/api/bookmarks?content_id=${contentId}`, { headers: { Authorization: `Bearer ${token}` } }),
+    ]).then(([notesRes, bookmarksRes]) => {
+      const loaded = notesRes.data.notes || []
+      setNotes(loaded)
+      // Combine all note texts for a single textarea
+      setNoteText(loaded.map(n => n.note_text).join('\n\n'))
+      setBookmarks(bookmarksRes.data.bookmarks || [])
+    }).catch(() => {}).finally(() => setIsLoading(false))
+  }, [contentId, token])
+
+  // Auto-save with debounce
+  const saveNotes = useCallback(async (text) => {
+    setSaveStatus('saving')
+    try {
+      // Delete existing notes for this content then create new one
+      for (const n of notes) {
+        await axios.delete(`/api/notes/${n.id}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {})
+      }
+      if (text.trim()) {
+        const res = await axios.post('/api/notes', {
+          content_id: contentId,
+          note_text: text.trim()
+        }, { headers: { Authorization: `Bearer ${token}` } })
+        setNotes([res.data])
+      } else {
+        setNotes([])
+      }
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus(''), 2000)
+    } catch {
+      setSaveStatus('')
+    }
+  }, [contentId, token, notes])
+
+  const handleChange = (e) => {
+    const text = e.target.value
+    setNoteText(text)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => saveNotes(text), 1000)
+  }
+
+  const handleDeleteBookmark = async (id) => {
+    try {
+      await axios.delete(`/api/bookmarks/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+      setBookmarks(prev => prev.filter(b => b.id !== id))
+    } catch {}
+  }
+
+  if (isLoading) return <div className="loading-state" style={{ padding: '2rem' }}>Loading notes...</div>
+
+  return (
+    <div className="notes-panel">
+      <textarea
+        className="notes-textarea"
+        value={noteText}
+        onChange={handleChange}
+        placeholder="Add your notes here... Auto-saves as you type."
+      />
+      <div className="notes-meta-row">
+        <span>{noteText.length} characters</span>
+        {saveStatus && (
+          <span className={`notes-save-indicator ${saveStatus}`}>
+            {saveStatus === 'saving' ? (
+              <><Loader2 className="w-3 h-3 animate-spin" /> Saving...</>
+            ) : (
+              <><Check className="w-3 h-3" /> Saved</>
+            )}
+          </span>
+        )}
+      </div>
+      {bookmarks.length > 0 && (
+        <>
+          <h4 style={{ fontSize: 13, color: '#a1a1aa', marginTop: 16, marginBottom: 8 }}>Bookmarks</h4>
+          <div className="bookmark-pills">
+            {bookmarks.map(b => {
+              const mins = Math.floor((b.timestamp_seconds || 0) / 60)
+              const secs = Math.floor((b.timestamp_seconds || 0) % 60)
+              return (
+                <span key={b.id} className="bookmark-pill">
+                  <BookmarkIcon className="w-3 h-3" />
+                  {mins}:{secs.toString().padStart(2, '0')}
+                  {b.label && ` — ${b.label}`}
+                  <button className="bookmark-remove" onClick={() => handleDeleteBookmark(b.id)}>
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [isGeneratingGuide, setIsGeneratingGuide] = useState(false)
   const [generatedGuide, setGeneratedGuide] = useState(null)
@@ -38,8 +153,37 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [timelineView, setTimelineView] = useState('timeline') // 'timeline' | 'visual-grid' | 'transcript'
   const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false)
   const [subscription, setSubscription] = useState(null)
+  const [contentTags, setContentTags] = useState([])
+  const [showTagDropdown, setShowTagDropdown] = useState(false)
   const navigate = useNavigate()
   const { token } = useAuth()
+  const { tags: allTags, loadTags } = useData()
+
+  // Load content tags
+  useEffect(() => {
+    if (!content?.id || !token) return
+    tagsApi.getContentTags(token, content.id)
+      .then(res => setContentTags(res.tags || []))
+      .catch(() => {})
+  }, [content?.id, token])
+
+  const handleAddTag = async (tagId) => {
+    try {
+      await tagsApi.addTagsToContent(token, content.id, [tagId])
+      const res = await tagsApi.getContentTags(token, content.id)
+      setContentTags(res.tags || [])
+      loadTags()
+      setShowTagDropdown(false)
+    } catch {}
+  }
+
+  const handleRemoveTag = async (tagId) => {
+    try {
+      await tagsApi.removeTagFromContent(token, content.id, tagId)
+      setContentTags(prev => prev.filter(t => t.id !== tagId))
+      loadTags()
+    } catch {}
+  }
 
   // Fetch subscription for feature access checks
   useEffect(() => {
@@ -494,6 +638,39 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
           <div className="modal-header-title">
             {ModeIcon && <ModeIcon className="w-5 h-5 mr-2 text-purple-400" />}
             <h2>{content.title || 'Untitled'}</h2>
+            {/* Tag pills */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 8, flexWrap: 'wrap' }}>
+              {contentTags.map(tag => (
+                <span key={tag.id} className="tag-pill" style={{ background: `${tag.color || '#3B82F6'}20` }}>
+                  <span className="tag-pill-dot" style={{ background: tag.color || '#3B82F6' }} />
+                  {tag.name}
+                  <button className="tag-pill-remove" onClick={(e) => { e.stopPropagation(); handleRemoveTag(tag.id) }}>
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </span>
+              ))}
+              <div className="tag-assign-dropdown">
+                <button
+                  style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 10, padding: '2px 8px', color: '#71717a', fontSize: 11, cursor: 'pointer' }}
+                  onClick={() => setShowTagDropdown(!showTagDropdown)}
+                >
+                  + Tag
+                </button>
+                {showTagDropdown && (
+                  <div className="tag-assign-menu">
+                    {allTags.filter(t => !contentTags.some(ct => ct.id === t.id)).map(tag => (
+                      <button key={tag.id} className="tag-assign-option" onClick={() => handleAddTag(tag.id)}>
+                        <span className="tag-pill-dot" style={{ background: tag.color || '#3B82F6' }} />
+                        {tag.name}
+                      </button>
+                    ))}
+                    {allTags.filter(t => !contentTags.some(ct => ct.id === t.id)).length === 0 && (
+                      <span style={{ padding: '8px 10px', fontSize: 12, color: '#52525b' }}>No more tags</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           <div className="modal-header-actions">
             <Button
@@ -583,6 +760,13 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             Mind Map
             {!subscription?.mindmap_generation && <Lock className="w-3 h-3 text-zinc-500" />}
           </button>
+          <button
+            className={`content-tab ${activeTab === 'notes' ? 'active' : ''}`}
+            onClick={() => setActiveTab('notes')}
+          >
+            <StickyNote className="w-3.5 h-3.5" />
+            Notes
+          </button>
         </div>
 
         <div className="modal-body">
@@ -605,6 +789,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                 )}
               </Button>
             </div>
+          ) : activeTab === 'notes' ? (
+            <NotesPanel contentId={content.id} />
           ) : activeTab === 'chat' ? (
             <VideoChatPanel contentId={content.id} sourceUrl={content.source_url} />
           ) : activeTab === 'flashcards' ? (

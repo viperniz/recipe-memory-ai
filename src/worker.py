@@ -38,6 +38,33 @@ _queue_lock = threading.Lock()
 _queued_count = 0  # Number of jobs waiting for a slot
 
 
+def _send_completion_notifications(db, user_id: int, result_dict: dict):
+    """Send job-complete email and create in-app notification."""
+    try:
+        from database import User as _User
+        user = db.query(_User).filter(_User.id == user_id).first()
+        if not user:
+            return
+        content_title = result_dict.get("title", "Untitled")
+        content_id = result_dict.get("id", "")
+        # Email
+        from email_service import send_job_complete_email
+        send_job_complete_email(user.email, user.full_name or "", content_title, content_id)
+        # In-app notification
+        try:
+            from notification_service import create_notification
+            create_notification(
+                db, user_id, "job_complete",
+                "Source ready",
+                f"{content_title} has been processed and is ready to explore.",
+                link=f"/app?content={content_id}",
+            )
+        except Exception:
+            pass  # notification_service may not exist yet during migration
+    except Exception as e:
+        print(f"[Worker] Completion notification failed: {e}")
+
+
 def _acquire_slot(job_id: str):
     """Wait for a processing slot. Updates job status while queued."""
     global _queued_count
@@ -336,6 +363,9 @@ def process_video_job(
             # Mark job complete
             JobService.complete_job(db=save_db, job_id=job_id, result=result_dict)
             print(f"[Job {job_id}] Completed successfully!")
+
+            # Send job complete email + notification
+            _send_completion_notifications(save_db, user_id, result_dict)
         finally:
             save_db.close()
 
@@ -532,6 +562,9 @@ def process_upload_job(
 
             JobService.complete_job(db=save_db, job_id=job_id, result=result_dict)
             print(f"[Job {job_id}] Upload completed successfully!")
+
+            # Send job complete email + notification
+            _send_completion_notifications(save_db, user_id, result_dict)
         finally:
             save_db.close()
 

@@ -167,6 +167,43 @@ class BillingService:
         )
         db.add(tx)
         db.commit()
+
+        # Low credit warning (once per billing cycle)
+        tier_info = TIER_CREDITS.get(sub.tier or "free", TIER_CREDITS["free"])
+        monthly_total = tier_info["credits_monthly"]
+        monthly_remaining = sub.credit_balance or 0
+        threshold = max(1, int(monthly_total * 0.10))
+        if monthly_remaining <= threshold and monthly_remaining >= 0:
+            already_warned = (
+                sub.low_credit_warned_at is not None
+                and sub.credits_reset_at is not None
+                and sub.low_credit_warned_at >= sub.credits_reset_at
+            )
+            if not already_warned:
+                sub.low_credit_warned_at = datetime.utcnow()
+                db.commit()
+                try:
+                    user = db.query(User).filter(User.id == user_id).first()
+                    if user:
+                        from email_service import send_low_credit_warning
+                        send_low_credit_warning(
+                            user.email, user.full_name or "", monthly_remaining, sub.tier or "free"
+                        )
+                        # In-app notification
+                        try:
+                            from notification_service import create_notification
+                            create_notification(
+                                db, user_id, "low_credits",
+                                "Credits running low",
+                                f"You have {monthly_remaining} credits remaining this month.",
+                                link="/pricing",
+                            )
+                        except Exception:
+                            pass
+                except Exception as _e:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Low credit warning failed: {_e}")
+
         return new_total
 
     @staticmethod

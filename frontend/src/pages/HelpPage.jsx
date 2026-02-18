@@ -3,6 +3,9 @@ import { MessageCircle, X, Send, Loader2, CheckCircle } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import Navbar from '../components/layout/Navbar'
+import axios from 'axios'
+
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 const FAQ_ITEMS = [
   {
@@ -19,7 +22,7 @@ const FAQ_ITEMS = [
   },
   {
     question: 'What are the billing plans?',
-    answer: 'We offer three plans: Free (10 videos, basic features), Pro ($12/month — 100 videos, Vision AI, advanced search, content tools), and Team ($29/month — unlimited videos, API access, priority processing). Yearly billing saves 20%. You can upgrade or downgrade anytime.'
+    answer: 'We offer four plans: Free ($0 — 50 credits/mo, basic features), Researcher ($12.99/mo — 250 credits, flashcards, semantic search), Scholar ($29.99/mo — 750 credits, Vision AI, mind maps, study guides), and Department ($59.99/mo — 2000 credits, team collaboration, unlimited video length). You can upgrade or downgrade anytime.'
   },
   {
     question: 'What is Vision AI?',
@@ -67,10 +70,24 @@ function ContactBubble() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSending(true)
-    // Simulate sending — replace with real API call
-    await new Promise(r => setTimeout(r, 1000))
-    setSending(false)
-    setSubmitted(true)
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert('Please log in to send a support message.')
+        setSending(false)
+        return
+      }
+      await axios.post(`${API_BASE}/support`, {
+        subject: `${form.firstName} ${form.lastName} — ${form.category || 'General'}`,
+        message: form.message,
+        category: form.category
+      }, { headers: { Authorization: `Bearer ${token}` } })
+      setSubmitted(true)
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to send message. Please try again.')
+    } finally {
+      setSending(false)
+    }
   }
 
   const handleReset = () => {

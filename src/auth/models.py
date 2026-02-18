@@ -32,6 +32,7 @@ class UserResponse(BaseModel):
     is_active: bool
     created_at: datetime
     tier: str = "free"
+    has_password: bool = True
 
     class Config:
         from_attributes = True

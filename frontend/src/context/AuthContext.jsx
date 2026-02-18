@@ -125,6 +125,13 @@ export function AuthProvider({ children }) {
     }
   }, [token, logout])
 
+  const updateProfile = useCallback(async (data) => {
+    if (!token) throw new Error('Not authenticated')
+    const response = await authApi.updateProfile(token, data)
+    setUser(prev => ({ ...prev, ...response }))
+    return response
+  }, [token])
+
   const value = {
     user,
     token,
@@ -136,6 +143,7 @@ export function AuthProvider({ children }) {
     googleLogin,
     logout,
     refreshUser,
+    updateProfile,
     clearError: () => setError(null)
   }
 

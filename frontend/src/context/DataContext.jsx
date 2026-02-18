@@ -3,6 +3,7 @@ import axios from 'axios'
 import { useAuth } from './AuthContext'
 import { toast } from '../hooks/use-toast'
 import { searchApi } from '../api/search'
+import { tagsApi } from '../api/tags'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
@@ -30,6 +31,10 @@ export function DataProvider({ children }) {
   const [collections, setCollections] = useState([])
   const [collectionContents, setCollectionContents] = useState([])
   const [isLoadingCollectionContents, setIsLoadingCollectionContents] = useState(false)
+
+  // Tags state
+  const [tags, setTags] = useState([])
+  const [tagContentMap, setTagContentMap] = useState({})
 
   // Search state (persists across navigation)
   const [searchResults, setSearchResults] = useState(null)
@@ -77,6 +82,19 @@ export function DataProvider({ children }) {
       console.error('Failed to fetch collection contents:', err)
     } finally {
       setIsLoadingCollectionContents(false)
+    }
+  }, [api])
+
+  const loadTags = useCallback(async () => {
+    try {
+      const [tagsRes, mapRes] = await Promise.all([
+        api.get('/tags'),
+        api.get('/tags/content-map'),
+      ])
+      setTags(tagsRes.data.tags || [])
+      setTagContentMap(mapRes.data.content_map || {})
+    } catch (err) {
+      console.error('Failed to load tags:', err)
     }
   }, [api])
 
@@ -239,6 +257,8 @@ export function DataProvider({ children }) {
       setJobs([])
       setCollections([])
       setCollectionContents([])
+      setTags([])
+      setTagContentMap({})
       setSearchResults(null)
       setSearchQuery('')
       setSearchFilters({})
@@ -251,6 +271,7 @@ export function DataProvider({ children }) {
 
     refreshLibrary()
     refreshCollections()
+    loadTags()
     startJobPolling()
 
     return () => stopJobPolling()
@@ -273,6 +294,9 @@ export function DataProvider({ children }) {
     updateJobStatus,
     startJobPolling,
     stopJobPolling,
+    tags,
+    tagContentMap,
+    loadTags,
     searchResults,
     searchQuery,
     searchFilters,

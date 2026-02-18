@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { billingApi } from '../../api/billing'
 import { Progress } from '../ui/progress'
-import { Sparkles, LogOut, CreditCard, ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen, BarChart3, ArrowUpRight } from 'lucide-react'
+import { Sparkles, LogOut, CreditCard, ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen, BarChart3, ArrowUpRight, User as UserIcon } from 'lucide-react'
+import NotificationBell from './NotificationBell'
 
 const TIER_DISPLAY_NAMES = {
   free: 'Free',
@@ -111,6 +112,9 @@ function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar }) {
           </div>
         )}
 
+        {/* Notification Bell */}
+        <NotificationBell />
+
         {/* User dropdown */}
         <div className="app-topnav-user" ref={dropdownRef}>
           <button
@@ -140,6 +144,13 @@ function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar }) {
               </div>
               <div className="app-topnav-dropdown-divider" />
 
+              <button
+                className="app-topnav-dropdown-item"
+                onClick={() => { setIsDropdownOpen(false); navigate('/profile'); }}
+              >
+                <UserIcon className="w-4 h-4" />
+                Profile
+              </button>
               <button
                 className="app-topnav-dropdown-item"
                 onClick={() => { setIsDropdownOpen(false); navigate('/pricing'); }}

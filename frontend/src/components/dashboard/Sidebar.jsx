@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Library, FolderOpen, X, Menu, Clock, Sparkles, Users, ArrowUpRight, Share2 } from 'lucide-react'
+import { Plus, Library, FolderOpen, X, Menu, Clock, Sparkles, Users, ArrowUpRight, Share2, Tag, Settings2 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import { billingApi } from '../../api/billing'
 import { Progress } from '../ui/progress'
 import BuyCreditsModal from '../modals/BuyCreditsModal'
+import TagManagerModal from '../modals/TagManagerModal'
 
 const TIER_DISPLAY_NAMES = {
   free: 'Free',
@@ -27,10 +28,12 @@ function Sidebar({
 }) {
   const navigate = useNavigate()
   const { token } = useAuth()
-  const { libraryContents } = useData()
+  const { libraryContents, tags, tagContentMap, performSearch, clearSearch } = useData()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [subscription, setSubscription] = useState(null)
   const [showBuyCredits, setShowBuyCredits] = useState(false)
+  const [showTagManager, setShowTagManager] = useState(false)
+  const [activeTagId, setActiveTagId] = useState(null)
 
   useEffect(() => {
     if (!token) return
@@ -45,6 +48,18 @@ function Sidebar({
   const handleCollectionSelect = (collId) => {
     setSelectedCollectionId(collId)
     setActiveTab('collection')
+    setIsMobileOpen(false)
+  }
+
+  const handleTagClick = (tagId) => {
+    if (activeTagId === tagId) {
+      setActiveTagId(null)
+      clearSearch()
+    } else {
+      setActiveTagId(tagId)
+      performSearch('', { tag_ids: [tagId] })
+      setActiveTab('library')
+    }
     setIsMobileOpen(false)
   }
 
@@ -146,6 +161,34 @@ function Sidebar({
           )}
         </div>
 
+        {/* Zone 2.5: Tags */}
+        {tags.length > 0 && (
+          <div className="sidebar-section">
+            <div className="sidebar-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Tags
+              <button
+                style={{ background: 'none', border: 'none', color: '#71717a', cursor: 'pointer', padding: 2 }}
+                onClick={() => { setShowTagManager(true); setIsMobileOpen(false) }}
+                title="Manage tags"
+              >
+                <Settings2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="sidebar-tags-wrap">
+              {tags.map(tag => (
+                <button
+                  key={tag.id}
+                  className={`sidebar-tag-pill ${activeTagId === tag.id ? 'active' : ''}`}
+                  onClick={() => handleTagClick(tag.id)}
+                >
+                  <span className="tag-pill-dot" style={{ background: tag.color || '#3B82F6' }} />
+                  {tag.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Zone 3: Recent sources */}
         {recentItems.length > 0 && (
           <div className="sidebar-section">
@@ -218,6 +261,10 @@ function Sidebar({
       <BuyCreditsModal
         isOpen={showBuyCredits}
         onClose={() => setShowBuyCredits(false)}
+      />
+      <TagManagerModal
+        isOpen={showTagManager}
+        onClose={() => setShowTagManager(false)}
       />
     </>
   )

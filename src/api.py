@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from app import VideoMemoryAI
 from video_processor import _extract_video_id
-from database import get_db, init_db, User, get_tier_limits, engine, SessionLocal, ChatSession, ChatMessage, GeneratedContent, ContentVector, Collection, CREDIT_COSTS, TIER_CREDITS, TOPUP_PACKS, Team, TeamMember, TeamInvitation, TeamContent
+from database import get_db, init_db, User, get_tier_limits, engine, SessionLocal, ChatSession, ChatMessage, GeneratedContent, ContentVector, Collection, CREDIT_COSTS, TIER_CREDITS, TOPUP_PACKS, Team, TeamMember, TeamInvitation, TeamContent, Notification
 from auth import (
     UserCreate, UserLogin, UserResponse, Token,
     ForgotPasswordRequest, ResetPasswordRequest, GoogleAuthRequest,
@@ -229,6 +229,21 @@ class SearchRequest(BaseModel):
     match_all_tags: bool = False
 
 
+class SupportRequest(BaseModel):
+    subject: str
+    message: str
+    category: Optional[str] = None
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class ProfileUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+
+
 # =============================================
 # Auth Endpoints
 # =============================================
@@ -242,6 +257,13 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
 
     # Create user
     user = AuthService.create_user(db, user_data)
+
+    # Send welcome email (non-blocking)
+    try:
+        from email_service import send_welcome_email
+        send_welcome_email(user.email, user.full_name)
+    except Exception as e:
+        logger.warning(f"Welcome email failed: {e}")
 
     # Get subscription tier
     tier = AuthService.get_user_tier(db, user.id)
@@ -279,7 +301,8 @@ async def get_me(
         full_name=current_user.full_name,
         is_active=current_user.is_active,
         created_at=current_user.created_at,
-        tier=tier
+        tier=tier,
+        has_password=current_user.hashed_password is not None,
     )
 
 
@@ -363,6 +386,92 @@ async def verify_edu(
         db.commit()
         return {"verified": True}
     return {"verified": False, "message": "Only .edu email addresses qualify for the education discount."}
+
+
+# =============================================
+# Support Endpoint
+# =============================================
+@app.post("/api/support")
+async def submit_support(
+    request: SupportRequest,
+    current_user: User = Depends(get_current_active_user),
+):
+    """Submit a support request — sends email to support inbox."""
+    from email_service import send_support_email
+    subject = f"[{request.category}] {request.subject}" if request.category else request.subject
+    send_support_email(
+        user_email=current_user.email,
+        user_name=current_user.full_name or current_user.email.split("@")[0],
+        subject=subject,
+        message=request.message,
+    )
+    return {"message": "Support request sent. We'll get back to you within 24 hours."}
+
+
+# =============================================
+# User Profile Endpoints
+# =============================================
+@app.put("/api/users/profile")
+async def update_profile(
+    request: ProfileUpdateRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Update user profile (name)."""
+    if request.full_name is not None:
+        current_user.full_name = request.full_name.strip()
+    db.commit()
+    db.refresh(current_user)
+    tier = AuthService.get_user_tier(db, current_user.id)
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "is_active": current_user.is_active,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+        "tier": tier,
+    }
+
+
+@app.put("/api/users/password")
+async def change_password(
+    request: PasswordChangeRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Change password (requires current password)."""
+    if not current_user.hashed_password:
+        raise HTTPException(status_code=400, detail="Account uses Google sign-in. Password cannot be changed.")
+    if not AuthService.verify_password(request.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if len(request.new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+    AuthService.change_password(db, current_user, request.new_password)
+    return {"message": "Password changed successfully"}
+
+
+@app.delete("/api/users/account")
+async def delete_account(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Soft-delete the user account: deactivate, anonymize PII, cancel Stripe."""
+    import stripe as _stripe
+    # Cancel Stripe subscription if exists
+    sub = BillingService._ensure_subscription(db, current_user.id)
+    if sub.stripe_subscription_id:
+        try:
+            _stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+            if _stripe.api_key:
+                _stripe.Subscription.cancel(sub.stripe_subscription_id)
+        except Exception as e:
+            logger.warning(f"Stripe cancel failed during account deletion: {e}")
+    # Soft-delete user
+    current_user.is_active = False
+    current_user.deleted_at = datetime.utcnow()
+    current_user.full_name = "Deleted User"
+    db.commit()
+    return {"message": "Account deleted successfully"}
 
 
 # =============================================
@@ -863,6 +972,85 @@ async def get_content_tags(
 ):
     """Get tags for a content"""
     return TagsService.get_content_tags(db, current_user.id, content_id)
+
+
+@app.get("/api/tags/content-map")
+async def get_tag_content_map(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Return {tag_id: [content_id, ...]} mapping for efficient frontend display."""
+    from database import ContentTag
+    rows = db.query(ContentTag.tag_id, ContentTag.content_id).filter(
+        ContentTag.user_id == current_user.id
+    ).all()
+    mapping = {}
+    for tag_id, content_id in rows:
+        mapping.setdefault(tag_id, []).append(content_id)
+    return {"content_map": mapping}
+
+
+# =============================================
+# Notification Endpoints
+# =============================================
+@app.get("/api/notifications")
+async def list_notifications(
+    limit: int = 30,
+    offset: int = 0,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """List user notifications (paginated, newest first)."""
+    from notification_service import get_notifications
+    notifications = get_notifications(db, current_user.id, limit=limit, offset=offset)
+    return {
+        "notifications": [
+            {
+                "id": n.id,
+                "type": n.type,
+                "title": n.title,
+                "message": n.message,
+                "link": n.link,
+                "is_read": n.is_read,
+                "created_at": n.created_at.isoformat() if n.created_at else None,
+            }
+            for n in notifications
+        ]
+    }
+
+
+@app.get("/api/notifications/unread-count")
+async def unread_notification_count(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Get count of unread notifications."""
+    from notification_service import get_unread_count
+    return {"count": get_unread_count(db, current_user.id)}
+
+
+@app.put("/api/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Mark a single notification as read."""
+    from notification_service import mark_read
+    if not mark_read(db, current_user.id, notification_id):
+        raise HTTPException(status_code=404, detail="Notification not found")
+    return {"message": "Marked as read"}
+
+
+@app.put("/api/notifications/read-all")
+async def mark_all_notifications_read(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Mark all notifications as read."""
+    from notification_service import mark_all_read
+    count = mark_all_read(db, current_user.id)
+    return {"message": f"Marked {count} notifications as read"}
 
 
 # =============================================
@@ -1431,6 +1619,8 @@ async def backfill_all_thumbnails(
     db: Session = Depends(get_db)
 ):
     """Backfill thumbnails for all content that has frame_descriptions but no thumbnails"""
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Admin access required")
     from video_processor import save_frame_thumbnails, extract_frames_at_timestamps, _extract_video_id as _evi
     import re as _re
 

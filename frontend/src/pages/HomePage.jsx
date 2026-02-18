@@ -187,6 +187,43 @@ function HomePage() {
     }
   }, [searchParams, token]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const target = e.target
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+
+      // Escape — close any open modal
+      if (e.key === 'Escape') {
+        if (selectedContent) { setSelectedContent(null); return }
+        if (showExportModal) { setShowExportModal(false); return }
+        if (showNewCollectionModal) { setShowNewCollectionModal(false); return }
+        if (showAddToCollectionModal) { setShowAddToCollectionModal(false); return }
+        if (showOnboarding) { handleOnboardingClose(); return }
+      }
+
+      // Ctrl+K or / (outside input) — focus search bar
+      if ((e.key === 'k' && (e.ctrlKey || e.metaKey)) || (e.key === '/' && !isInput)) {
+        e.preventDefault()
+        setActiveTab('library')
+        setTimeout(() => {
+          const searchInput = document.querySelector('.search-bar-input, .library-search input, [data-search-input]')
+          if (searchInput) searchInput.focus()
+        }, 50)
+        return
+      }
+
+      // N (outside input) — switch to Add Source tab
+      if (e.key === 'n' && !isInput && !e.ctrlKey && !e.metaKey) {
+        setActiveTab('new')
+        return
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [selectedContent, showExportModal, showNewCollectionModal, showAddToCollectionModal, showOnboarding]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Navigation state
   const [activeTab, setActiveTab] = useState('library')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)

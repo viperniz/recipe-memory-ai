@@ -68,6 +68,7 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     is_edu_verified = Column(Boolean, default=False)
+    deleted_at = Column(DateTime, nullable=True)
 
     # Relationships
     subscription = relationship("Subscription", back_populates="user", uselist=False)
@@ -94,6 +95,7 @@ class Subscription(Base):
     credit_balance = Column(Integer, default=50)
     topup_balance = Column(Integer, default=0)  # Purchased credits (never expire, never reset)
     credits_reset_at = Column(DateTime, nullable=True)
+    low_credit_warned_at = Column(DateTime, nullable=True)  # Dedup: only warn once per billing cycle
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -465,6 +467,22 @@ class TeamContent(Base):
 
 
 # =============================================
+# Notification Model
+# =============================================
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    type = Column(String(50), nullable=False)  # job_complete, team_invite, low_credits, system
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=True)
+    link = Column(String(500), nullable=True)  # e.g., "/app?content=xyz"
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+# =============================================
 # Database Initialization
 # =============================================
 def _add_column_if_missing(conn, table: str, column: str, col_type: str, default=None):
@@ -514,6 +532,9 @@ def init_db():
         ("jobs", "credits_deducted", "INTEGER", None),
         # Storage tracking
         ("content_vectors", "file_size_bytes", "INTEGER", "0"),
+        # Phase 2: soft-delete + low credit warning dedup
+        ("users", "deleted_at", "DATETIME", None),
+        ("subscriptions", "low_credit_warned_at", "DATETIME", None),
     ]
     with engine.connect() as conn:
         for table, column, col_type, default in migrations:

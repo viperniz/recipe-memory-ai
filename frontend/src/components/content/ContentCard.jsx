@@ -1,6 +1,7 @@
 import React from 'react'
 import { Trash2, FolderPlus, ChefHat, GraduationCap, Video, Users } from 'lucide-react'
 import { Badge } from '../ui/badge'
+import { useData } from '../../context/DataContext'
 
 const MODE_CONFIG = {
   recipe: { icon: ChefHat, color: 'from-orange-500 to-red-500', label: 'Recipe' },
@@ -16,9 +17,16 @@ function ContentCard({
   onAddToCollection,
   showCollectionButton = true
 }) {
+  const { tags: allTags, tagContentMap } = useData()
   const mode = content.mode || 'general'
   const modeConfig = MODE_CONFIG[mode]
   const ModeIcon = modeConfig?.icon
+
+  // Find user tags assigned to this content
+  const contentUserTags = allTags.filter(tag => {
+    const contentIds = tagContentMap[tag.id] || []
+    return contentIds.includes(content.id)
+  })
 
   // Thumbnail source priority: youtube_thumbnail > blob URL > API proxy > none
   const metadata = content.metadata || {}
@@ -87,6 +95,20 @@ function ContentCard({
         </div>
       </div>
       <div onClick={onClick} style={{ cursor: 'pointer' }}>
+        {/* User tag pills */}
+        {contentUserTags.length > 0 && (
+          <div className="card-tag-pills">
+            {contentUserTags.slice(0, 3).map(tag => (
+              <span key={tag.id} className="tag-pill" style={{ background: `${tag.color || '#3B82F6'}20` }}>
+                <span className="tag-pill-dot" style={{ background: tag.color || '#3B82F6' }} />
+                {tag.name}
+              </span>
+            ))}
+            {contentUserTags.length > 3 && (
+              <span className="card-tag-more">+{contentUserTags.length - 3}</span>
+            )}
+          </div>
+        )}
         {content.summary && (
           <p className="library-card-summary">{content.summary}</p>
         )}

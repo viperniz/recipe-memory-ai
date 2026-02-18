@@ -223,6 +223,23 @@ class TeamService:
         db.add(invite)
         db.commit()
         db.refresh(invite)
+
+        # Create in-app notification for the invitee (if they have an account)
+        existing_user = db.query(User).filter(User.email == email).first()
+        if existing_user:
+            try:
+                from notification_service import create_notification
+                inviter = db.query(User).filter(User.id == user_id).first()
+                inviter_name = inviter.full_name if inviter else "Someone"
+                create_notification(
+                    db, existing_user.id, "team_invite",
+                    "Team invitation",
+                    f"{inviter_name} invited you to join {team.name}",
+                    link=f"/app?invite={invite.token}",
+                )
+            except Exception:
+                pass  # Non-critical
+
         return invite
 
     @staticmethod
