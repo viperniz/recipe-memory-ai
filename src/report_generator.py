@@ -287,13 +287,21 @@ class ReportGenerator:
                 for s in sources
             ]
 
-        # Append web sources to references
+        # Append web sources to references (deduplicate by title)
+        existing_titles = {r.get("title", "").lower() for r in result.get("references", [])}
         for ws in web_sources:
-            result.setdefault("references", []).append({
-                "source_id": ws["url"],
-                "title": ws["title"],
-                "relevance": "Web research used for enrichment/cross-reference",
-            })
+            if ws["title"].lower() not in existing_titles:
+                result.setdefault("references", []).append({
+                    "source_id": ws["url"],
+                    "title": ws["title"],
+                    "relevance": "Web research used for enrichment/cross-reference",
+                })
+            else:
+                # Update existing reference with URL if it used a placeholder source_id
+                for ref in result.get("references", []):
+                    if ref.get("title", "").lower() == ws["title"].lower() and "http" not in str(ref.get("source_id", "")):
+                        ref["source_id"] = ws["url"]
+                        break
 
         return result
 
@@ -365,42 +373,38 @@ class ReportGenerator:
         # Auto web search if topic is available
         if topic:
             try:
+                from ddgs import DDGS
+                search_results = list(DDGS().text(topic, max_results=4))
+                print(f"[ReportGenerator] DuckDuckGo returned {len(search_results)} results for: {topic}")
                 from web_scraper import WebScraper
-                import requests
-                # Use a simple search approach — fetch top results via DuckDuckGo Lite
                 scraper = WebScraper()
-                search_url = f"https://lite.duckduckgo.com/lite/?q={requests.utils.quote(topic)}"
-                try:
-                    resp = scraper.session.get(search_url, timeout=10)
-                    from bs4 import BeautifulSoup
-                    soup = BeautifulSoup(resp.text, 'html.parser')
-                    links = []
-                    for a in soup.find_all('a', href=True):
-                        href = a['href']
-                        if href.startswith('http') and 'duckduckgo' not in href:
-                            links.append(href)
-                    # Fetch first 2 unique results
-                    seen = set()
-                    for link in links[:5]:
-                        if link in seen:
-                            continue
-                        seen.add(link)
-                        if len(web_parts) >= 4:
-                            break
-                        try:
-                            content = scraper.fetch(link)
+                for sr in search_results:
+                    if len(web_parts) >= 4:
+                        break
+                    link = sr.get("href", "")
+                    title = sr.get("title", "")
+                    body = sr.get("body", "")
+                    if not link:
+                        continue
+                    try:
+                        content = scraper.fetch(link)
+                        web_parts.append(
+                            f"--- WEB RESEARCH: {content.title} ---\n"
+                            f"URL: {content.url}\n"
+                            f"Content: {content.content[:2000]}\n"
+                        )
+                        web_sources.append({"title": content.title, "url": content.url})
+                    except Exception:
+                        # Fall back to search snippet if page fetch fails
+                        if body:
                             web_parts.append(
-                                f"--- WEB RESEARCH: {content.title} ---\n"
-                                f"URL: {content.url}\n"
-                                f"Content: {content.content[:2000]}\n"
+                                f"--- WEB RESEARCH: {title} ---\n"
+                                f"URL: {link}\n"
+                                f"Content: {body}\n"
                             )
-                            web_sources.append({"title": content.title, "url": content.url})
-                        except Exception:
-                            continue
-                except Exception as e:
-                    print(f"[ReportGenerator] Web search failed: {e}")
+                            web_sources.append({"title": title, "url": link})
             except Exception as e:
-                print(f"[ReportGenerator] Web enrichment error: {e}")
+                print(f"[ReportGenerator] Web search error: {e}")
 
         if web_parts:
             return "\n\n".join(web_parts), web_sources

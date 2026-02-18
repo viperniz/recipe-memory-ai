@@ -610,7 +610,7 @@ def generate_report_job(report_id: str, user_id: int):
 
     db = SessionLocal()
     try:
-        print(f"[Report {report_id}] Starting report generation")
+        print(f"[Report {report_id}] Starting report generation", flush=True)
 
         # Load report row
         report = db.query(Report).filter(Report.id == report_id).first()
@@ -658,7 +658,7 @@ def generate_report_job(report_id: str, user_id: int):
             print(f"[Report {report_id}] Failed: no sources")
             return
 
-        print(f"[Report {report_id}] Generating {report.report_type} from {len(sources)} sources (tier={tier})")
+        print(f"[Report {report_id}] Generating {report.report_type} from {len(sources)} sources (tier={tier})", flush=True)
 
         # Generate the report
         from report_generator import ReportGenerator
@@ -706,7 +706,7 @@ def generate_report_job(report_id: str, user_id: int):
         except Exception as ne:
             print(f"[Report {report_id}] Notification failed: {ne}")
 
-        print(f"[Report {report_id}] Completed successfully! ({credit_cost} credits)")
+        print(f"[Report {report_id}] Completed successfully! ({credit_cost} credits)", flush=True)
 
     except Exception as e:
         error_msg = str(e)

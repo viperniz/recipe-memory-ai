@@ -47,4 +47,7 @@ httpx>=0.25.0
 requests>=2.31.0
 beautifulsoup4>=4.12.0
 
+# Web search (DuckDuckGo search for report web enrichment)
+ddgs>=7.0.0
+
 # Vector embeddings (via OpenAI API — no local model needed)
