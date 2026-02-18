@@ -7,7 +7,7 @@ import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { toast } from '../../hooks/use-toast'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+import { API_BASE } from '../../lib/apiBase'
 
 const ALL_FORMATS = [
   {
