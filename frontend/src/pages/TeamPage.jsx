@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import ConfirmModal from '../components/modals/ConfirmModal'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { teamApi } from '../api/team'
@@ -27,6 +28,9 @@ function TeamPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: null })
+  const openConfirm = (title, message, onConfirm) => setConfirmState({ isOpen: true, title, message, onConfirm })
+  const closeConfirm = () => setConfirmState(s => ({ ...s, isOpen: false, onConfirm: null }))
   const [isInviting, setIsInviting] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
 
@@ -116,16 +120,22 @@ function TeamPage() {
     }
   }
 
-  const handleDeleteTeam = async (teamId) => {
-    if (!window.confirm('Are you sure you want to delete this team? This cannot be undone.')) return
-    try {
-      await teamApi.deleteTeam(token, teamId)
-      toast({ variant: 'success', title: 'Team deleted' })
-      setSelectedTeam(null)
-      loadTeams()
-    } catch (err) {
-      toast({ variant: 'destructive', title: 'Failed to delete team', description: err.response?.data?.detail || err.message })
-    }
+  const handleDeleteTeam = (teamId) => {
+    openConfirm(
+      'Delete team?',
+      'This team and all its settings will be permanently deleted. This cannot be undone.',
+      async () => {
+        closeConfirm()
+        try {
+          await teamApi.deleteTeam(token, teamId)
+          toast({ variant: 'success', title: 'Team deleted' })
+          setSelectedTeam(null)
+          loadTeams()
+        } catch (err) {
+          toast({ variant: 'destructive', title: 'Failed to delete team', description: err.response?.data?.detail || err.message })
+        }
+      }
+    )
   }
 
   const handleInvite = async (email, role) => {
@@ -175,16 +185,22 @@ function TeamPage() {
     }
   }
 
-  const handleRemoveMember = async (userId, name) => {
-    if (!window.confirm(`Remove ${name} from the team?`)) return
-    if (!selectedTeam) return
-    try {
-      await teamApi.removeMember(token, selectedTeam.id, userId)
-      toast({ variant: 'success', title: 'Member removed' })
-      loadTeamDetails(selectedTeam.id)
-    } catch (err) {
-      toast({ variant: 'destructive', title: 'Failed to remove member', description: err.response?.data?.detail || err.message })
-    }
+  const handleRemoveMember = (userId, name) => {
+    openConfirm(
+      'Remove member?',
+      `${name} will be removed from the team and lose access.`,
+      async () => {
+        closeConfirm()
+        if (!selectedTeam) return
+        try {
+          await teamApi.removeMember(token, selectedTeam.id, userId)
+          toast({ variant: 'success', title: 'Member removed' })
+          loadTeamDetails(selectedTeam.id)
+        } catch (err) {
+          toast({ variant: 'destructive', title: 'Failed to remove member', description: err.response?.data?.detail || err.message })
+        }
+      }
+    )
   }
 
   const handleShareContent = async (teamId, contentId) => {
@@ -430,6 +446,15 @@ function TeamPage() {
           )}
         </main>
       </div>
+          <ConfirmModal
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="Confirm"
+        variant="danger"
+        onConfirm={confirmState.onConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   )
 }
