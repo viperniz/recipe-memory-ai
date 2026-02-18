@@ -5,7 +5,7 @@ import { Input } from '../components/ui/input'
 import Navbar from '../components/layout/Navbar'
 import axios from 'axios'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+import { API_BASE } from '../lib/apiBase'
 
 const FAQ_ITEMS = [
   {
