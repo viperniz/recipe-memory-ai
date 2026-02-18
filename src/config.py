@@ -104,7 +104,7 @@ class CORSConfig:
         origin.strip()
         for origin in os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:3000,http://localhost:5173"
+            "http://localhost:3000,http://localhost:5173,https://recipe-memory-ai.vercel.app"
         ).split(",")
     ])
 
