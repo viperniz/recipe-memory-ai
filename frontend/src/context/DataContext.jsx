@@ -5,7 +5,7 @@ import { toast } from '../hooks/use-toast'
 import { searchApi } from '../api/search'
 import { tagsApi } from '../api/tags'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+import { API_BASE } from '../lib/apiBase'
 
 const DataContext = createContext(null)
 
