@@ -6,6 +6,8 @@ import UpgradePrompt from '../billing/UpgradePrompt'
 import axios from 'axios'
 import { toast } from '../../hooks/use-toast'
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
+
 function MindMapNode({ node, sourceUrl, depth = 0 }) {
   const [expanded, setExpanded] = useState(depth < 2)
   const hasChildren = node.children && node.children.length > 0
@@ -55,7 +57,7 @@ function MindMapPanel({ contentId, sourceUrl }) {
       try {
         const token = localStorage.getItem('token')
         const response = await axios.get(
-          `/api/content/${contentId}/generated/mindmap`,
+          `${API_BASE}/content/${contentId}/generated/mindmap`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
         if (response.data.data) {
@@ -76,8 +78,8 @@ function MindMapPanel({ contentId, sourceUrl }) {
     try {
       const token = localStorage.getItem('token')
       const url = regenerate
-        ? `/api/content/${contentId}/mindmap?regenerate=true`
-        : `/api/content/${contentId}/mindmap`
+        ? `${API_BASE}/content/${contentId}/mindmap?regenerate=true`
+        : `${API_BASE}/content/${contentId}/mindmap`
       const response = await axios.post(
         url,
         {},

@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Loader2, FileText, ExternalLink } from 'lucide-react'
 import { Button } from '../ui/button'
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
+
 function ChatTab({ onContentClick }) {
   const [messages, setMessages] = useState([
     {
@@ -35,7 +37,7 @@ function ChatTab({ onContentClick }) {
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -13,6 +13,8 @@ import {
   MessageCircle, Send, Loader2
 } from 'lucide-react'
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
+
 // Feature cards data — pain-point driven
 const FEATURES = [
   {
@@ -234,7 +236,7 @@ function LandingPage() {
     setChatSending(true)
     // Send to support endpoint (or mailto fallback)
     try {
-      await fetch('/api/support', {
+      await fetch(`${API_BASE}/support`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(chatForm)

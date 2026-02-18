@@ -5,6 +5,8 @@ import UpgradePrompt from '../billing/UpgradePrompt'
 import axios from 'axios'
 import { toast } from '../../hooks/use-toast'
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
+
 function FlashcardPanel({ contentId }) {
   const [cards, setCards] = useState(null)
   const [ankiCsv, setAnkiCsv] = useState('')
@@ -20,7 +22,7 @@ function FlashcardPanel({ contentId }) {
       try {
         const token = localStorage.getItem('token')
         const response = await axios.get(
-          `/api/content/${contentId}/generated/flashcards`,
+          `${API_BASE}/content/${contentId}/generated/flashcards`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
         if (response.data.data) {
@@ -43,8 +45,8 @@ function FlashcardPanel({ contentId }) {
     try {
       const token = localStorage.getItem('token')
       const url = regenerate
-        ? `/api/content/${contentId}/flashcards?regenerate=true`
-        : `/api/content/${contentId}/flashcards`
+        ? `${API_BASE}/content/${contentId}/flashcards?regenerate=true`
+        : `${API_BASE}/content/${contentId}/flashcards`
       const response = await axios.post(
         url,
         {},

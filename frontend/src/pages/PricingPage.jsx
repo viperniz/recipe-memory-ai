@@ -16,6 +16,8 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
+
 const COMPARISON_SECTIONS = [
   {
     heading: 'Research & Analysis',
@@ -346,7 +348,7 @@ function PricingPage() {
                     className="education-cta"
                     onClick={async () => {
                       try {
-                        const res = await fetch('/api/auth/verify-edu', {
+                        const res = await fetch(`${API_BASE}/auth/verify-edu`, {
                           method: 'POST',
                           headers: { Authorization: `Bearer ${token}` }
                         })

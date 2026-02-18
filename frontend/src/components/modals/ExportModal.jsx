@@ -7,6 +7,8 @@ import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { toast } from '../../hooks/use-toast'
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
+
 const ALL_FORMATS = [
   {
     id: 'txt',
@@ -210,7 +212,7 @@ function ExportModal({
                 // Copy markdown to clipboard for Notion paste
                 try {
                   const token = localStorage.getItem('token')
-                  const response = await fetch('/api/export', {
+                  const response = await fetch(`${API_BASE}/export`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ format: 'md', include_transcript: includeTranscript })

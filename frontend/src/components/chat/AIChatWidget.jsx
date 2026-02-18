@@ -3,6 +3,8 @@ import { MessageSquare, X, Send, Loader2, ChevronDown, Sparkles, FileText, Globe
 import { billingApi } from '../../api/billing'
 import { toast } from '../../hooks/use-toast'
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
+
 function AIChatWidget({ onContentClick, collectionId, collectionName, selectedContent }) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([])
@@ -53,7 +55,7 @@ function AIChatWidget({ onContentClick, collectionId, collectionName, selectedCo
         if (scope_id) params.append('scope_id', scope_id)
 
         console.log('[AIChatWidget] Loading session for:', contextKey)
-        const response = await fetch(`/api/chat/sessions?${params}`, {
+        const response = await fetch(`${API_BASE}/chat/sessions?${params}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         if (stale) return // context changed while we were fetching
@@ -123,7 +125,7 @@ function AIChatWidget({ onContentClick, collectionId, collectionName, selectedCo
     const token = localStorage.getItem('token')
     if (!token || newMessages.length === 0) return
 
-    fetch('/api/chat/sessions/messages', {
+    fetch(`${API_BASE}/chat/sessions/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -191,7 +193,7 @@ function AIChatWidget({ onContentClick, collectionId, collectionName, selectedCo
       }
       console.log('[AIChatWidget] payload:', JSON.stringify(payload))
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -249,7 +251,7 @@ function AIChatWidget({ onContentClick, collectionId, collectionName, selectedCo
     if (!sessionId) return
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/chat/sessions/${sessionId}`, {
+      const response = await fetch(`${API_BASE}/chat/sessions/${sessionId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })

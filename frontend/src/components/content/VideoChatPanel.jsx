@@ -7,6 +7,8 @@ import UpgradePrompt from '../billing/UpgradePrompt'
 import { toast } from '../../hooks/use-toast'
 import axios from 'axios'
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
+
 function VideoChatPanel({ contentId, sourceUrl }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -30,7 +32,7 @@ function VideoChatPanel({ contentId, sourceUrl }) {
       setIsLoadingSession(true)
       try {
         const params = new URLSearchParams({ scope_type: 'content', scope_id: contentId })
-        const response = await fetch(`/api/chat/sessions?${params}`, {
+        const response = await fetch(`${API_BASE}/chat/sessions?${params}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         if (response.ok) {
@@ -54,7 +56,7 @@ function VideoChatPanel({ contentId, sourceUrl }) {
     const token = localStorage.getItem('token')
     if (!token || newMessages.length === 0) return
 
-    fetch('/api/chat/sessions/messages', {
+    fetch(`${API_BASE}/chat/sessions/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,7 +89,7 @@ function VideoChatPanel({ contentId, sourceUrl }) {
     try {
       const token = localStorage.getItem('token')
       const response = await axios.post(
-        `/api/content/${contentId}/chat`,
+        `${API_BASE}/content/${contentId}/chat`,
         {
           message: text,
           conversation_history: messages
@@ -115,7 +117,7 @@ function VideoChatPanel({ contentId, sourceUrl }) {
     if (!sessionId) return
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/chat/sessions/${sessionId}`, {
+      const response = await fetch(`${API_BASE}/chat/sessions/${sessionId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })

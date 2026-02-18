@@ -21,6 +21,7 @@ import { buildYouTubeTimestampUrl, formatTimestamp } from '../../lib/utils'
 import { useData } from '../../context/DataContext'
 import { tagsApi } from '../../api/tags'
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 const MODE_ICONS = {
   recipe: ChefHat,
@@ -48,8 +49,8 @@ function NotesPanel({ contentId }) {
     if (!contentId || !token) return
     setIsLoading(true)
     Promise.all([
-      axios.get(`/api/notes?content_id=${contentId}`, { headers: { Authorization: `Bearer ${token}` } }),
-      axios.get(`/api/bookmarks?content_id=${contentId}`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`${API_BASE}/notes?content_id=${contentId}`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`${API_BASE}/bookmarks?content_id=${contentId}`, { headers: { Authorization: `Bearer ${token}` } }),
     ]).then(([notesRes, bookmarksRes]) => {
       const loaded = notesRes.data.notes || []
       setNotes(loaded)
@@ -65,10 +66,10 @@ function NotesPanel({ contentId }) {
     try {
       // Delete existing notes for this content then create new one
       for (const n of notes) {
-        await axios.delete(`/api/notes/${n.id}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {})
+        await axios.delete(`${API_BASE}/notes/${n.id}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {})
       }
       if (text.trim()) {
-        const res = await axios.post('/api/notes', {
+        const res = await axios.post(`${API_BASE}/notes`, {
           content_id: contentId,
           note_text: text.trim()
         }, { headers: { Authorization: `Bearer ${token}` } })
@@ -92,7 +93,7 @@ function NotesPanel({ contentId }) {
 
   const handleDeleteBookmark = async (id) => {
     try {
-      await axios.delete(`/api/bookmarks/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+      await axios.delete(`${API_BASE}/bookmarks/${id}`, { headers: { Authorization: `Bearer ${token}` } })
       setBookmarks(prev => prev.filter(b => b.id !== id))
     } catch {}
   }
@@ -200,7 +201,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       try {
         const token = localStorage.getItem('token')
         const response = await axios.get(
-          `/api/content/${content.id}/generated/guide`,
+          `${API_BASE}/content/${content.id}/generated/guide`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
         if (response.data.data) {
@@ -233,7 +234,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     try {
       const token = localStorage.getItem('token')
       const response = await axios.post(
-        `/api/content/${content.id}/generate-thumbnails`,
+        `${API_BASE}/content/${content.id}/generate-thumbnails`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -261,7 +262,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     try {
       const token = localStorage.getItem('token')
       const response = await axios.post(
-        `/api/content/${content.id}/generate-guide`,
+        `${API_BASE}/content/${content.id}/generate-guide`,
         { format: 'json', regenerate },
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -321,7 +322,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     try {
       const token = localStorage.getItem('token')
       const response = await axios.post(
-        `/api/content/${content.id}/generate-guide`,
+        `${API_BASE}/content/${content.id}/generate-guide`,
         { format: 'markdown' },
         {
           headers: { Authorization: `Bearer ${token}` },
