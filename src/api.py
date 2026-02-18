@@ -129,9 +129,8 @@ app = FastAPI(
 # CORS middleware must be added FIRST so it runs outermost (handles OPTIONS preflights before rate limiting)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=config.cors.allowed_origins,
-    allow_origin_regex=r"^(chrome-extension://.*|https://recipe-memory-ai.*\.vercel\.app)$",
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
