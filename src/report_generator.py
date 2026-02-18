@@ -268,10 +268,11 @@ class ReportGenerator:
 
         # Web enrichment
         web_context = ""
+        web_sources = []
         if config.get("web_enrichment"):
             topic = config.get("focus_area") or self._infer_topic(sources)
             manual_urls = config.get("manual_urls", [])
-            web_context = self._enrich_with_web(topic, manual_urls, source_context)
+            web_context, web_sources = self._enrich_with_web(topic, manual_urls, source_context)
 
         # Build prompt
         prompt = self._get_prompt(report_type, source_context, web_context, config)
@@ -279,12 +280,20 @@ class ReportGenerator:
         # Call LLM
         result = self._call_llm(prompt)
 
-        # Ensure sources_used is populated
+        # Ensure references is populated
         if "references" not in result:
             result["references"] = [
                 {"source_id": s.get("id", ""), "title": s.get("title", "Untitled"), "relevance": "Source material"}
                 for s in sources
             ]
+
+        # Append web sources to references
+        for ws in web_sources:
+            result.setdefault("references", []).append({
+                "source_id": ws["url"],
+                "title": ws["title"],
+                "relevance": "Web research used for enrichment/cross-reference",
+            })
 
         return result
 
@@ -321,17 +330,21 @@ class ReportGenerator:
         return "\n\n".join(parts)
 
     def _infer_topic(self, sources: list) -> str:
-        """Infer a search topic from source titles and topics."""
-        titles = [s.get("title", "") for s in sources]
-        topics = []
-        for s in sources:
-            topics.extend(s.get("topics", []))
-        combined = " ".join(titles[:3] + topics[:5])
-        return combined[:200]
+        """Infer a search topic from the first source title."""
+        first_title = sources[0].get("title", "") if sources else ""
+        topics = sources[0].get("topics", [])[:3] if sources else []
+        query = first_title or " ".join(topics)
+        return query[:100]
 
-    def _enrich_with_web(self, topic: str, manual_urls: list, source_context: str) -> str:
-        """Fetch web content to enrich the report."""
+    def _enrich_with_web(self, topic: str, manual_urls: list, source_context: str) -> tuple:
+        """Fetch web content to enrich the report.
+
+        Returns:
+            (web_context_str, web_sources_list) where web_sources_list is
+            a list of {"title": ..., "url": ...} dicts for references.
+        """
         web_parts = []
+        web_sources = []
 
         # Fetch manual URLs
         if manual_urls:
@@ -345,6 +358,7 @@ class ReportGenerator:
                         f"URL: {content.url}\n"
                         f"Content: {content.content[:3000]}\n"
                     )
+                    web_sources.append({"title": content.title, "url": content.url})
                 except Exception as e:
                     print(f"[ReportGenerator] Failed to fetch {url}: {e}")
 
@@ -380,6 +394,7 @@ class ReportGenerator:
                                 f"URL: {content.url}\n"
                                 f"Content: {content.content[:2000]}\n"
                             )
+                            web_sources.append({"title": content.title, "url": content.url})
                         except Exception:
                             continue
                 except Exception as e:
@@ -388,8 +403,8 @@ class ReportGenerator:
                 print(f"[ReportGenerator] Web enrichment error: {e}")
 
         if web_parts:
-            return "\n\n".join(web_parts)
-        return ""
+            return "\n\n".join(web_parts), web_sources
+        return "", web_sources
 
     def _get_prompt(self, report_type: str, source_context: str, web_context: str, config: dict) -> str:
         """Build the final prompt for the LLM."""
@@ -397,7 +412,12 @@ class ReportGenerator:
 
         web_section = ""
         if web_context:
-            web_section = f"ADDITIONAL WEB RESEARCH:\n{web_context}"
+            web_section = (
+                f"ADDITIONAL WEB RESEARCH:\n{web_context}\n\n"
+                f"IMPORTANT: Cross-reference the web research against the video/source material above. "
+                f"Explicitly note where the web findings CONFIRM, CONTRADICT, or ADD NEW CONTEXT "
+                f"to what was found in the sources. Highlight any gaps or discrepancies between the two."
+            )
 
         focus = config.get("focus_area", "Provide a comprehensive analysis based on the source materials.")
 
