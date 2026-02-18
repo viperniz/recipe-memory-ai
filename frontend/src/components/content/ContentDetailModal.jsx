@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { X, Download, ChefHat, GraduationCap, Video, Users, BookOpen, Loader2, Copy, Check, Globe, MessageSquare, Layers, Network, CheckCircle, RotateCcw, Eye, Lock, Camera, Grid3X3, Search, StickyNote, Bookmark as BookmarkIcon } from 'lucide-react'
+import { X, Download, ChefHat, GraduationCap, Video, Users, BookOpen, Loader2, Copy, Check, Globe, MessageSquare, Layers, Network, CheckCircle, RotateCcw, Eye, Lock, Camera, Grid3X3, Search, StickyNote, Bookmark as BookmarkIcon, FileText, Sparkles } from 'lucide-react'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import RecipeCard from './RecipeCard'
@@ -20,6 +20,7 @@ import { billingApi } from '../../api/billing'
 import { buildYouTubeTimestampUrl, formatTimestamp } from '../../lib/utils'
 import { useData } from '../../context/DataContext'
 import { tagsApi } from '../../api/tags'
+import ReportConfigModal from '../modals/ReportConfigModal'
 
 import { API_BASE } from '../../lib/apiBase'
 
@@ -154,6 +155,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [timelineView, setTimelineView] = useState('timeline') // 'timeline' | 'visual-grid' | 'transcript'
   const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false)
   const [subscription, setSubscription] = useState(null)
+  const [showReportModal, setShowReportModal] = useState(false)
   const [contentTags, setContentTags] = useState([])
   const [showTagDropdown, setShowTagDropdown] = useState(false)
   const navigate = useNavigate()
@@ -768,6 +770,14 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             <StickyNote className="w-3.5 h-3.5" />
             Notes
           </button>
+          <button
+            className="content-tab"
+            onClick={() => setShowReportModal(true)}
+            title="Generate a report from this content"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Report
+          </button>
         </div>
 
         <div className="modal-body">
@@ -1208,6 +1218,11 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         </div>
       </div>
 
+      <ReportConfigModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        contentIds={content?.id ? [content.id] : []}
+      />
     </div>
   )
 }

@@ -21,14 +21,18 @@ import AppNavbar from '../components/layout/AppNavbar'
 
 // Content components
 import ContentDetailModal from '../components/content/ContentDetailModal'
+import ReportPanel from '../components/content/ReportPanel'
 
 // Modal components
 import ExportModal from '../components/modals/ExportModal'
 import NewCollectionModal from '../components/modals/NewCollectionModal'
 import AddToCollectionModal from '../components/modals/AddToCollectionModal'
 import OnboardingModal from '../components/modals/OnboardingModal'
+import ReportConfigModal from '../components/modals/ReportConfigModal'
 import { teamApi } from '../api/team'
 import ConfirmModal from '../components/modals/ConfirmModal'
+import { reportsApi } from '../api/reports'
+import { Sparkles, FileText, Loader2 } from 'lucide-react'
 
 import { API_BASE } from '../lib/apiBase'
 
@@ -226,6 +230,12 @@ function HomePage() {
   const [showAddToCollectionModal, setShowAddToCollectionModal] = useState(false)
   const [addToCollectionContentId, setAddToCollectionContentId] = useState(null)
 
+  // Reports state
+  const [reports, setReports] = useState([])
+  const [selectedReportId, setSelectedReportId] = useState(null)
+  const [isLoadingReports, setIsLoadingReports] = useState(false)
+  const [showReportConfig, setShowReportConfig] = useState(false)
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -269,6 +279,44 @@ function HomePage() {
       fetchCollectionContents(selectedCollectionId)
     }
   }, [activeTab, selectedCollectionId, fetchCollectionContents])
+
+  // Fetch reports when switching to reports tab
+  const fetchReports = useCallback(async () => {
+    if (!token) return
+    setIsLoadingReports(true)
+    try {
+      const data = await reportsApi.listReports(token)
+      setReports(data.reports || [])
+    } catch {
+      // silent fail
+    } finally {
+      setIsLoadingReports(false)
+    }
+  }, [token])
+
+  useEffect(() => {
+    if (activeTab === 'reports') {
+      fetchReports()
+    }
+  }, [activeTab, fetchReports])
+
+  // Poll generating reports
+  useEffect(() => {
+    const generating = reports.filter(r => r.status === 'generating')
+    if (generating.length === 0) return
+    const interval = setInterval(fetchReports, 5000)
+    return () => clearInterval(interval)
+  }, [reports, fetchReports])
+
+  // Check URL for ?report= param
+  useEffect(() => {
+    const reportParam = searchParams.get('report')
+    if (reportParam) {
+      setSelectedReportId(reportParam)
+      setActiveTab('reports')
+      searchParams.delete('report')
+    }
+  }, [searchParams])
 
   // Event handlers
   const handleCardClick = async (contentId) => {
@@ -749,6 +797,68 @@ function HomePage() {
           />
         )}
 
+        {activeTab === 'reports' && (
+          <div className="reports-tab">
+            <div className="reports-tab-header">
+              <h2>Reports</h2>
+              <button className="btn-primary btn-sm" onClick={() => setShowReportConfig(true)}>
+                <Sparkles className="w-4 h-4" /> New Report
+              </button>
+            </div>
+            {isLoadingReports && reports.length === 0 ? (
+              <div className="reports-loading"><Loader2 className="w-6 h-6 animate-spin" /> Loading reports...</div>
+            ) : reports.length === 0 ? (
+              <div className="reports-empty">
+                <FileText className="w-12 h-12" style={{ opacity: 0.3 }} />
+                <p>No reports yet</p>
+                <p className="reports-empty-sub">Generate a report from a collection to synthesize your research into a structured deliverable.</p>
+                <button className="btn-primary" onClick={() => setShowReportConfig(true)}>
+                  <Sparkles className="w-4 h-4" /> Generate Your First Report
+                </button>
+              </div>
+            ) : (
+              <div className="reports-list">
+                {reports.map(r => {
+                  const typeColors = { thesis: '#a855f7', development_plan: '#3b82f6', script: '#f97316', executive_brief: '#22c55e' }
+                  const typeLabels = { thesis: 'Thesis', development_plan: 'Dev Plan', script: 'Script', executive_brief: 'Exec Brief' }
+                  return (
+                    <button
+                      key={r.id}
+                      className={`report-list-card ${selectedReportId === r.id ? 'selected' : ''}`}
+                      onClick={() => setSelectedReportId(r.id)}
+                    >
+                      <div className="report-list-card-top">
+                        <span className="report-list-type" style={{ color: typeColors[r.report_type] || '#888' }}>
+                          {typeLabels[r.report_type] || r.report_type}
+                        </span>
+                        <span className={`report-list-status report-status-${r.status}`}>
+                          {r.status === 'generating' && <Loader2 className="w-3 h-3 animate-spin" />}
+                          {r.status}
+                        </span>
+                      </div>
+                      <div className="report-list-title">{r.title}</div>
+                      <div className="report-list-meta">
+                        {r.created_at && new Date(r.created_at).toLocaleDateString()}
+                        {r.credits_charged && ` · ${r.credits_charged} credits`}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            {selectedReportId && (
+              <ReportPanel
+                reportId={selectedReportId}
+                onClose={() => setSelectedReportId(null)}
+                onDelete={(id) => {
+                  setReports(prev => prev.filter(r => r.id !== id))
+                  setSelectedReportId(null)
+                }}
+              />
+            )}
+          </div>
+        )}
+
         {/* Content Detail Modal */}
         {selectedContent && (
           <ContentDetailModal
@@ -813,6 +923,12 @@ function HomePage() {
           collectionId={activeTab === 'collection' ? selectedCollectionId : null}
           collectionName={activeTab === 'collection' ? selectedCollection?.name : null}
           selectedContent={selectedContent}
+        />
+
+        {/* Report Config Modal */}
+        <ReportConfigModal
+          isOpen={showReportConfig}
+          onClose={() => { setShowReportConfig(false); fetchReports(); }}
         />
 
         {/* Onboarding Modal */}

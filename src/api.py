@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from app import VideoMemoryAI
 from video_processor import _extract_video_id
-from database import get_db, init_db, User, get_tier_limits, engine, SessionLocal, ChatSession, ChatMessage, GeneratedContent, ContentVector, Collection, CREDIT_COSTS, TIER_CREDITS, TOPUP_PACKS, Team, TeamMember, TeamInvitation, TeamContent, Notification
+from database import get_db, init_db, User, get_tier_limits, engine, SessionLocal, ChatSession, ChatMessage, GeneratedContent, ContentVector, Collection, CREDIT_COSTS, TIER_CREDITS, TOPUP_PACKS, Team, TeamMember, TeamInvitation, TeamContent, Notification, Report
 from auth import (
     UserCreate, UserLogin, UserResponse, Token,
     ForgotPasswordRequest, ResetPasswordRequest, GoogleAuthRequest,
@@ -73,10 +73,11 @@ def _enqueue_or_thread(func_path: str, **kwargs):
 
     # Fallback: import the worker module (this eagerly loads openai and all
     # transitive deps) then run the function in a daemon thread.
-    from worker import process_video_job, process_upload_job  # noqa: triggers openai import
+    from worker import process_video_job, process_upload_job, generate_report_job  # noqa: triggers openai import
     func_map = {
         "worker.process_video_job": process_video_job,
         "worker.process_upload_job": process_upload_job,
+        "worker.generate_report_job": generate_report_job,
     }
     fn = func_map[func_path]
     kwargs.pop("job_timeout", None)
@@ -3037,6 +3038,213 @@ async def generate_guide(
     except Exception as e:
         logger.error(f"Guide generation failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate guide: {str(e)}")
+
+
+# =============================================
+# Deep Learn Report Generation
+# =============================================
+
+class ReportGenerateRequest(BaseModel):
+    report_type: str  # thesis, development_plan, script, executive_brief
+    collection_id: Optional[str] = None
+    content_ids: Optional[List[str]] = None
+    title: Optional[str] = None
+    web_enrichment: bool = False
+    manual_urls: Optional[List[str]] = None
+    focus_area: Optional[str] = None
+
+
+@app.post("/api/reports/generate")
+async def generate_report(
+    request: ReportGenerateRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Start async report generation."""
+    from report_generator import REPORT_FEATURE_FLAGS
+
+    # Validate report type
+    valid_types = ["thesis", "development_plan", "script", "executive_brief"]
+    if request.report_type not in valid_types:
+        raise HTTPException(status_code=400, detail=f"Invalid report type. Must be one of: {valid_types}")
+
+    # Must have at least one source
+    if not request.collection_id and not request.content_ids:
+        raise HTTPException(status_code=400, detail="Provide collection_id or content_ids")
+
+    # Feature gate
+    feature_flag = REPORT_FEATURE_FLAGS[request.report_type]
+    access = BillingService.check_feature_access(db, current_user.id, feature_flag)
+    if not access["has_access"]:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "feature_locked",
+                "feature": feature_flag,
+                "required_tier": access["required_tier"],
+                "current_tier": access["current_tier"],
+                "message": f"{request.report_type.replace('_', ' ').title()} reports require {access['required_tier'].capitalize()}+ plan."
+            }
+        )
+
+    # Resolve content_ids to count sources for credit estimation
+    content_ids = request.content_ids or []
+    if request.collection_id and not content_ids:
+        vm = VectorMemory(db, current_user.id)
+        coll_contents = vm.get_collection_contents(request.collection_id, current_user.id)
+        content_ids = [c["id"] for c in coll_contents]
+        if not content_ids:
+            raise HTTPException(status_code=400, detail="Collection is empty — no sources to generate from")
+
+    num_sources = max(1, len(content_ids))
+    estimated_credits = CREDIT_COSTS["report_base"] + max(0, num_sources - 1) * CREDIT_COSTS["report_per_source"]
+    if request.web_enrichment:
+        estimated_credits += CREDIT_COSTS["report_web_enrichment"]
+
+    # Credit check (don't deduct — deduct on completion in worker)
+    credit_check = BillingService.check_credits(db, current_user.id, estimated_credits)
+    if not credit_check["has_credits"]:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "insufficient_credits",
+                "cost": estimated_credits,
+                "balance": credit_check["balance"],
+                "tier": credit_check["tier"],
+                "message": f"Report generation costs {estimated_credits} credits. You have {credit_check['balance']}."
+            }
+        )
+
+    # Auto-generate title
+    title = request.title
+    if not title:
+        type_label = request.report_type.replace("_", " ").title()
+        if request.collection_id:
+            coll = db.query(Collection).filter(Collection.id == request.collection_id).first()
+            coll_name = coll.name if coll else "Collection"
+            title = f"{type_label}: {coll_name}"
+        else:
+            title = f"{type_label} Report"
+
+    # Create report row
+    import uuid
+    report = Report(
+        id=str(uuid.uuid4()),
+        user_id=current_user.id,
+        collection_id=request.collection_id,
+        content_ids=content_ids,
+        report_type=request.report_type,
+        title=title,
+        config={
+            "web_enrichment": request.web_enrichment,
+            "manual_urls": request.manual_urls or [],
+            "focus_area": request.focus_area or "",
+        },
+        status="generating",
+    )
+    db.add(report)
+    db.commit()
+
+    # Enqueue background job
+    _enqueue_or_thread(
+        "worker.generate_report_job",
+        report_id=report.id,
+        user_id=current_user.id,
+        job_timeout="15m",
+    )
+
+    return {
+        "report_id": report.id,
+        "status": "generating",
+        "estimated_credits": estimated_credits,
+        "title": title,
+    }
+
+
+@app.get("/api/reports")
+async def list_reports(
+    collection_id: Optional[str] = None,
+    report_type: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """List user's reports, newest first."""
+    query = db.query(Report).filter(Report.user_id == current_user.id)
+    if collection_id:
+        query = query.filter(Report.collection_id == collection_id)
+    if report_type:
+        query = query.filter(Report.report_type == report_type)
+    if status:
+        query = query.filter(Report.status == status)
+    reports = query.order_by(Report.created_at.desc()).limit(50).all()
+
+    return {
+        "reports": [
+            {
+                "id": r.id,
+                "title": r.title,
+                "report_type": r.report_type,
+                "status": r.status,
+                "collection_id": r.collection_id,
+                "content_ids": r.content_ids,
+                "credits_charged": r.credits_charged,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "completed_at": r.completed_at.isoformat() if r.completed_at else None,
+                "error": r.error,
+            }
+            for r in reports
+        ]
+    }
+
+
+@app.get("/api/reports/{report_id}")
+async def get_report(
+    report_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get full report including result data."""
+    report = db.query(Report).filter(
+        Report.id == report_id,
+        Report.user_id == current_user.id
+    ).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    return {
+        "id": report.id,
+        "title": report.title,
+        "report_type": report.report_type,
+        "status": report.status,
+        "collection_id": report.collection_id,
+        "content_ids": report.content_ids,
+        "config": report.config,
+        "result": report.result,
+        "credits_charged": report.credits_charged,
+        "error": report.error,
+        "created_at": report.created_at.isoformat() if report.created_at else None,
+        "completed_at": report.completed_at.isoformat() if report.completed_at else None,
+    }
+
+
+@app.delete("/api/reports/{report_id}")
+async def delete_report(
+    report_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a user's report."""
+    report = db.query(Report).filter(
+        Report.id == report_id,
+        Report.user_id == current_user.id
+    ).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    db.delete(report)
+    db.commit()
+    return {"message": "Report deleted"}
 
 
 # =============================================

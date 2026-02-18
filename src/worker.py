@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 # import lock can deadlock when a lazy import happens inside a daemon thread.
 import openai  # noqa: F401
 
-from database import SessionLocal, Job as JobModel
+from database import SessionLocal, Job as JobModel, Report, ContentVector, Collection
 from job_service import JobService
 from billing import BillingService
 from video_processor import download_audio_with_metadata, get_video_info
@@ -598,3 +598,130 @@ def process_upload_job(
                 bg_db.close()
         except Exception:
             pass
+
+
+# ---------------------------------------------------------------------------
+# Job 3: generate a report from sources
+# ---------------------------------------------------------------------------
+
+def generate_report_job(report_id: str, user_id: int):
+    """RQ job: generate a structured report from source content."""
+    from datetime import datetime as _dt
+
+    db = SessionLocal()
+    try:
+        print(f"[Report {report_id}] Starting report generation")
+
+        # Load report row
+        report = db.query(Report).filter(Report.id == report_id).first()
+        if not report:
+            print(f"[Report {report_id}] Report not found in DB")
+            return
+
+        config = report.config or {}
+
+        # Determine user tier
+        sub = BillingService._ensure_subscription(db, user_id)
+        tier = sub.tier or "free"
+
+        # Gather source content
+        sources = []
+        content_ids = report.content_ids or []
+
+        # If collection-based, get all content in collection
+        if report.collection_id and not content_ids:
+            vm = VectorMemory(db, user_id)
+            coll_contents = vm.get_collection_contents(report.collection_id, user_id)
+            content_ids = [c["id"] for c in coll_contents]
+            report.content_ids = content_ids
+            db.commit()
+
+        # Load full content for each source
+        vm = VectorMemory(db, user_id)
+        for cid in content_ids:
+            content = vm.get_content(cid, user_id)
+            if content:
+                fc = content.get("full_content", content)
+                if isinstance(fc, str):
+                    import json as _json
+                    try:
+                        fc = _json.loads(fc)
+                    except Exception:
+                        fc = content
+                sources.append(fc)
+
+        if not sources:
+            report.status = "failed"
+            report.error = "No source content found"
+            report.completed_at = _dt.utcnow()
+            db.commit()
+            print(f"[Report {report_id}] Failed: no sources")
+            return
+
+        print(f"[Report {report_id}] Generating {report.report_type} from {len(sources)} sources (tier={tier})")
+
+        # Generate the report
+        from report_generator import ReportGenerator
+        generator = ReportGenerator(provider="openai", tier=tier)
+        result = generator.generate(report.report_type, sources, config)
+
+        # Calculate credit cost
+        from database import CREDIT_COSTS
+        num_sources = len(sources)
+        credit_cost = CREDIT_COSTS["report_base"] + max(0, num_sources - 1) * CREDIT_COSTS["report_per_source"]
+        if config.get("web_enrichment"):
+            credit_cost += CREDIT_COSTS["report_web_enrichment"]
+
+        # Deduct credits
+        try:
+            BillingService.deduct_credits(
+                db, user_id, credit_cost, "report",
+                content_id=report_id,
+                description=f"Report: {report.report_type} ({num_sources} sources)",
+            )
+        except ValueError:
+            report.status = "failed"
+            report.error = "Insufficient credits"
+            report.completed_at = _dt.utcnow()
+            db.commit()
+            print(f"[Report {report_id}] Failed: insufficient credits")
+            return
+
+        # Save result
+        report.result = result
+        report.status = "completed"
+        report.credits_charged = credit_cost
+        report.completed_at = _dt.utcnow()
+        db.commit()
+
+        # Send notification
+        try:
+            from notification_service import create_notification
+            create_notification(
+                db, user_id, "report_ready",
+                "Report ready",
+                f'Your {report.report_type.replace("_", " ").title()} report "{report.title}" is ready.',
+                link=f"/app?report={report_id}",
+            )
+        except Exception as ne:
+            print(f"[Report {report_id}] Notification failed: {ne}")
+
+        print(f"[Report {report_id}] Completed successfully! ({credit_cost} credits)")
+
+    except Exception as e:
+        error_msg = str(e)
+        error_trace = traceback.format_exc()
+        print(f"[Report {report_id}] ERROR: {error_msg}")
+        print(f"[Report {report_id}] Traceback:\n{error_trace}")
+
+        try:
+            report = db.query(Report).filter(Report.id == report_id).first()
+            if report:
+                report.status = "failed"
+                report.error = error_msg
+                report.completed_at = _dt.utcnow()
+                db.commit()
+        except Exception:
+            pass
+    finally:
+        db.close()

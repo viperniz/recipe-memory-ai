@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Library, FolderOpen, X, Menu, Clock, Sparkles, Users, ArrowUpRight, Share2, Tag, Settings2 } from 'lucide-react'
+import { Plus, Library, FolderOpen, X, Menu, Clock, Sparkles, Users, ArrowUpRight, Share2, Tag, Settings2, FileText } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import { billingApi } from '../../api/billing'
 import { Progress } from '../ui/progress'
 import BuyCreditsModal from '../modals/BuyCreditsModal'
 import TagManagerModal from '../modals/TagManagerModal'
+import ReportConfigModal from '../modals/ReportConfigModal'
 
 const TIER_DISPLAY_NAMES = {
   free: 'Free',
@@ -34,6 +35,7 @@ function Sidebar({
   const [showBuyCredits, setShowBuyCredits] = useState(false)
   const [showTagManager, setShowTagManager] = useState(false)
   const [activeTagId, setActiveTagId] = useState(null)
+  const [reportCollectionId, setReportCollectionId] = useState(null)
 
   useEffect(() => {
     if (!token) return
@@ -114,6 +116,13 @@ function Sidebar({
             <Library className="inline-block w-4 h-4 mr-2" />
             Knowledge Base
           </button>
+          <button
+            className={`nav-btn ${activeTab === 'reports' ? 'active' : ''}`}
+            onClick={() => handleTabChange('reports')}
+          >
+            <FileText className="inline-block w-4 h-4 mr-2" />
+            Reports
+          </button>
           {tier === 'team' && (
             <button
               className="nav-btn"
@@ -143,6 +152,17 @@ function Sidebar({
               >
                 <FolderOpen className="inline-block w-4 h-4 mr-2" />
                 {coll.name}
+              </button>
+              <button
+                className="collection-action-btn"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setReportCollectionId(coll.id)
+                  setIsMobileOpen(false)
+                }}
+                title="Generate report"
+              >
+                <FileText className="w-3 h-3" />
               </button>
               <button
                 className="collection-delete-btn"
@@ -265,6 +285,11 @@ function Sidebar({
       <TagManagerModal
         isOpen={showTagManager}
         onClose={() => setShowTagManager(false)}
+      />
+      <ReportConfigModal
+        isOpen={!!reportCollectionId}
+        onClose={() => setReportCollectionId(null)}
+        collectionId={reportCollectionId}
       />
     </>
   )

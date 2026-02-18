@@ -388,6 +388,24 @@ class GeneratedContent(Base):
 # =============================================
 # Team Model
 # =============================================
+class Report(Base):
+    __tablename__ = "reports"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    collection_id = Column(String, nullable=True)  # FK to collections
+    content_ids = Column(JSON, nullable=True)  # list of content IDs used as sources
+    report_type = Column(String(50), nullable=False)  # thesis, development_plan, script, executive_brief
+    title = Column(String(500), nullable=False)
+    config = Column(JSON, nullable=True)  # generation settings
+    result = Column(JSON, nullable=True)  # the full generated report
+    status = Column(String(50), default="generating", index=True)  # generating, completed, failed
+    error = Column(Text, nullable=True)
+    credits_charged = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    completed_at = Column(DateTime, nullable=True)
+
+
 class Team(Base):
     __tablename__ = "teams"
 
@@ -584,6 +602,9 @@ CREDIT_COSTS = {
     "guide": 3,
     "content_spin": 3,
     "export_premium": 1,     # pdf, obsidian, json, docx
+    "report_base": 5,        # base cost per report
+    "report_per_source": 1,  # additional per source beyond first
+    "report_web_enrichment": 3,  # additional if web enrichment enabled
 }
 
 TIER_CREDITS = {
@@ -639,6 +660,10 @@ TIER_LIMITS = {
         "ai_model": "gpt-4o-mini",
         "team_members": 1,
         "youtube_download": False,
+        "report_executive_brief": False,
+        "report_thesis": False,
+        "report_development_plan": False,
+        "report_script": False,
         "support_level": "community",
     },
     "starter": {
@@ -673,6 +698,10 @@ TIER_LIMITS = {
         "ai_model": "gpt-4o-mini",
         "team_members": 1,
         "youtube_download": True,
+        "report_executive_brief": True,
+        "report_thesis": False,
+        "report_development_plan": False,
+        "report_script": False,
         "support_level": "email",
     },
     "pro": {
@@ -709,6 +738,10 @@ TIER_LIMITS = {
         "ai_model": "gpt-4o",
         "team_members": 1,
         "youtube_download": True,
+        "report_executive_brief": True,
+        "report_thesis": True,
+        "report_development_plan": True,
+        "report_script": True,
         "support_level": "priority",
     },
     "team": {
@@ -742,6 +775,10 @@ TIER_LIMITS = {
         "ai_model": "gpt-4o",
         "team_members": 10,
         "youtube_download": True,
+        "report_executive_brief": True,
+        "report_thesis": True,
+        "report_development_plan": True,
+        "report_script": True,
         "support_level": "dedicated",
     }
 }
