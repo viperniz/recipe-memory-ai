@@ -187,6 +187,41 @@ function HomePage() {
     }
   }, [searchParams, token]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Navigation state
+  const [activeTab, setActiveTab] = useState('library')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  // Add video state
+  const [isAddingVideo, setIsAddingVideo] = useState(false)
+
+  // Add URL state
+  const [isAddingUrl, setIsAddingUrl] = useState(false)
+
+  // Content detail state
+  const [selectedContent, setSelectedContent] = useState(null)
+  const [isLoadingContent, setIsLoadingContent] = useState(false)
+
+  // Settings state (analyzeFrames defaults off — Pro+ users can enable via toggle)
+  const [settings, setSettings] = useState({
+    provider: 'openai',
+    analyzeFrames: false
+  })
+
+  // Export state
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportFormat, setExportFormat] = useState('markdown')
+  const [exportContentIds, setExportContentIds] = useState([])
+  const [isExporting, setIsExporting] = useState(false)
+  const [includeTranscript, setIncludeTranscript] = useState(true)
+
+  // Collections UI state
+  const [selectedCollectionId, setSelectedCollectionId] = useState(null)
+  const [showNewCollectionModal, setShowNewCollectionModal] = useState(false)
+  const [newCollectionName, setNewCollectionName] = useState('')
+  const [newCollectionDesc, setNewCollectionDesc] = useState('')
+  const [showAddToCollectionModal, setShowAddToCollectionModal] = useState(false)
+  const [addToCollectionContentId, setAddToCollectionContentId] = useState(null)
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -223,41 +258,6 @@ function HomePage() {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [selectedContent, showExportModal, showNewCollectionModal, showAddToCollectionModal, showOnboarding]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Navigation state
-  const [activeTab, setActiveTab] = useState('library')
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-
-  // Add video state
-  const [isAddingVideo, setIsAddingVideo] = useState(false)
-
-  // Add URL state
-  const [isAddingUrl, setIsAddingUrl] = useState(false)
-
-  // Content detail state
-  const [selectedContent, setSelectedContent] = useState(null)
-  const [isLoadingContent, setIsLoadingContent] = useState(false)
-
-  // Settings state (analyzeFrames defaults off — Pro+ users can enable via toggle)
-  const [settings, setSettings] = useState({
-    provider: 'openai',
-    analyzeFrames: false
-  })
-
-  // Export state
-  const [showExportModal, setShowExportModal] = useState(false)
-  const [exportFormat, setExportFormat] = useState('markdown')
-  const [exportContentIds, setExportContentIds] = useState([])
-  const [isExporting, setIsExporting] = useState(false)
-  const [includeTranscript, setIncludeTranscript] = useState(true)
-
-  // Collections UI state
-  const [selectedCollectionId, setSelectedCollectionId] = useState(null)
-  const [showNewCollectionModal, setShowNewCollectionModal] = useState(false)
-  const [newCollectionName, setNewCollectionName] = useState('')
-  const [newCollectionDesc, setNewCollectionDesc] = useState('')
-  const [showAddToCollectionModal, setShowAddToCollectionModal] = useState(false)
-  const [addToCollectionContentId, setAddToCollectionContentId] = useState(null)
 
   // Fetch collection contents when switching to collection tab
   useEffect(() => {
