@@ -29,7 +29,7 @@ import AddToCollectionModal from '../components/modals/AddToCollectionModal'
 import OnboardingModal from '../components/modals/OnboardingModal'
 import { teamApi } from '../api/team'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+import { API_BASE } from '../lib/apiBase'
 
 /**
  * Handle 403 errors: feature_locked, limit_reached, insufficient_credits.
