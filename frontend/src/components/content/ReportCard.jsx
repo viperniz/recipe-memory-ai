@@ -8,7 +8,7 @@ import {
 
 const REPORT_TYPE_CONFIG = {
   thesis: { label: 'Thesis', color: '#a855f7', icon: FileText },
-  development_plan: { label: 'Development Plan', color: '#3b82f6', icon: Code },
+  development_plan: { label: 'Development Plan', hcolor: '#3b82f6', icon: Code },
   script: { label: 'Script', color: '#f97316', icon: Film },
   executive_brief: { label: 'Executive Brief', color: '#22c55e', icon: Briefcase },
 }
@@ -355,19 +355,7 @@ function ReportCard({ report }) {
 
   return (
     <div className="report-card">
-      <div className="report-card-header">
-        <Badge
-          className="report-type-badge"
-          style={{ background: `${typeConfig.color}20`, color: typeConfig.color, borderColor: `${typeConfig.color}40` }}
-        >
-          {React.createElement(typeConfig.icon, { className: 'w-3 h-3 mr-1' })}
-          {typeConfig.label}
-        </Badge>
-        {report.credits_charged && (
-          <span className="report-credits-used">{report.credits_charged} credits</span>
-        )}
-      </div>
-
+      
       {renderContent()}
 
       {/* References */}
