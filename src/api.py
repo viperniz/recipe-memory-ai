@@ -126,10 +126,7 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# Add rate limiting middleware
-app.add_middleware(RateLimitMiddleware)
-
-# CORS middleware
+# CORS middleware must be added FIRST so it runs outermost (handles OPTIONS preflights before rate limiting)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.cors.allowed_origins,
@@ -138,6 +135,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add rate limiting middleware (runs after CORS)
+app.add_middleware(RateLimitMiddleware)
 
 
 # Security headers middleware
