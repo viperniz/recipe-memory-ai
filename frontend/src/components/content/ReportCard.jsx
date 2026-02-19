@@ -144,7 +144,7 @@ function ReportCard({ report }) {
               {result.phases.map((phase, i) => (
                 <div key={i} className="report-phase">
                   <div className="report-phase-header">
-                    <h4>Phase {i + 1}: {phase.name}</h4>
+                    <h4>{phase.name}</h4>
                     {phase.duration && <Badge variant="outline">{phase.duration}</Badge>}
                   </div>
                   {phase.goals?.length > 0 && (
