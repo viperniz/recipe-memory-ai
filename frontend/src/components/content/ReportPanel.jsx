@@ -93,7 +93,7 @@ function ReportPanel({ reportId, report: initialReport, onClose, onDelete }) {
   return (
     <div className="report-panel">
       <div className="report-panel-header">
-        <div className="report-panel-title-row">
+        <div className="report-panel-header-row">
           <Badge
             style={{ background: `${typeConfig.color}20`, color: typeConfig.color, borderColor: `${typeConfig.color}40` }}
           >
@@ -101,40 +101,21 @@ function ReportPanel({ reportId, report: initialReport, onClose, onDelete }) {
             {typeConfig.label}
           </Badge>
           <h2 className="report-panel-title">{report.title}</h2>
-        </div>
-        <div className="report-panel-meta">
-          {report.created_at && (
-            <span className="report-panel-date">
-              <Clock className="w-3 h-3" />
-              {new Date(report.created_at).toLocaleDateString()}
-            </span>
-          )}
-          {report.content_ids?.length > 0 && (
-            <span className="report-panel-sources">{report.content_ids.length} source{report.content_ids.length !== 1 ? 's' : ''}</span>
-          )}
-          {report.credits_charged && (
-            <span className="report-panel-credits">{report.credits_charged} credits</span>
-          )}
-        </div>
-        <div className="report-panel-actions">
-          {report.status === 'completed' && (
-            <>
-              <button className="btn-icon-sm" onClick={() => setShowExportModal(true)} title="Export report">
-                <Download className="w-4 h-4" />
-              </button>
-              <button className="btn-icon-sm" onClick={handleCopyMarkdown} title="Copy as Markdown">
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </>
-          )}
-          <button className="btn-icon-sm btn-danger-sm" onClick={handleDelete} title="Delete report">
-            <Trash2 className="w-4 h-4" />
-          </button>
-          {onClose && (
-            <button className="btn-icon-sm" onClick={onClose} title="Close">
-              <X className="w-4 h-4" />
-            </button>
-          )}
+          <div className="report-panel-header-meta">
+            {report.created_at && <span className="report-panel-date"><Clock className="w-3 h-3" />{new Date(report.created_at).toLocaleDateString()}</span>}
+            {report.content_ids?.length > 0 && <span className="report-panel-sources">{report.content_ids.length} source{report.content_ids.length !== 1 ? 's' : ''}</span>}
+            {report.credits_charged && <span className="report-panel-credits">{report.credits_charged} credits</span>}
+          </div>
+          <div className="report-panel-header-actions">
+            {report.status === 'completed' && (
+              <>
+                <button className="btn-icon-sm" onClick={() => setShowExportModal(true)} title="Export report"><Download className="w-4 h-4" /></button>
+                <button className="btn-icon-sm" onClick={handleCopyMarkdown} title="Copy as Markdown">{copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}</button>
+              </>
+            )}
+            <button className="btn-icon-sm btn-danger-sm" onClick={handleDelete} title="Delete report"><Trash2 className="w-4 h-4" /></button>
+            {onClose && <button className="btn-icon-sm" onClick={onClose} title="Close"><X className="w-4 h-4" /></button>}
+          </div>
         </div>
       </div>
 
