@@ -95,23 +95,6 @@ function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar }) {
       </div>
 
       <div className="app-topnav-right">
-        {/* Credit/plan pill */}
-        {subscription && (
-          <div className="app-topnav-plan-pill">
-            <span className="app-topnav-plan-credits">{creditBalance} credits</span>
-            <span className="app-topnav-plan-dot">&middot;</span>
-            <span className="app-topnav-plan-tier">{tierName}</span>
-            {showUpgrade && (
-              <button
-                className="app-topnav-upgrade-btn"
-                onClick={() => navigate('/pricing')}
-              >
-                Upgrade
-              </button>
-            )}
-          </div>
-        )}
-
         {/* Notification Bell */}
         <NotificationBell />
 
