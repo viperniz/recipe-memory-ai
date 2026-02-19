@@ -93,7 +93,7 @@ function ReportPanel({ reportId, report: initialReport, onClose, onDelete }) {
   return (
     <div className="report-panel">
       <div className="report-panel-header">
-        <div className="report-panel-header-row">
+        <div className="report-panel-title-row">
           <Badge
             style={{ background: `${typeConfig.color}20`, color: typeConfig.color, borderColor: `${typeConfig.color}40` }}
           >
@@ -101,12 +101,10 @@ function ReportPanel({ reportId, report: initialReport, onClose, onDelete }) {
             {typeConfig.label}
           </Badge>
           <h2 className="report-panel-title">{report.title}</h2>
-          <div className="report-panel-header-meta">
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
             {report.created_at && <span className="report-panel-date"><Clock className="w-3 h-3" />{new Date(report.created_at).toLocaleDateString()}</span>}
             {report.content_ids?.length > 0 && <span className="report-panel-sources">{report.content_ids.length} source{report.content_ids.length !== 1 ? 's' : ''}</span>}
             {report.credits_charged && <span className="report-panel-credits">{report.credits_charged} credits</span>}
-          </div>
-          <div className="report-panel-header-actions">
             {report.status === 'completed' && (
               <>
                 <button className="btn-icon-sm" onClick={() => setShowExportModal(true)} title="Export report"><Download className="w-4 h-4" /></button>
