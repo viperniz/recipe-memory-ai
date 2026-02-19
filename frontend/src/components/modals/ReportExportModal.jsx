@@ -163,6 +163,77 @@ function reportToMarkdown(report) {
       result.next_steps.forEach((s, i) => lines.push(`${i + 1}. ${s}`))
       lines.push('')
     }
+  } else if (type === 'prd') {
+    if (result.product_name) { lines.push(`**Product:** ${result.product_name}${result.version ? ` (v${result.version})` : ''}`, '') }
+    if (result.overview) { lines.push('## Overview', '', result.overview, '') }
+    if (result.problem_statement) { lines.push('## Problem Statement', '', result.problem_statement, '') }
+    if (result.goals?.length > 0) {
+      lines.push('## Goals', '')
+      result.goals.forEach(g => lines.push(`- ${g}`))
+      lines.push('')
+    }
+    if (result.target_users) { lines.push('## Target Users', '', result.target_users, '') }
+    if (result.user_stories?.length > 0) {
+      lines.push('## User Stories', '')
+      result.user_stories.forEach((s, i) => {
+        lines.push(`${i + 1}. **${s.persona}**, ${s.action}, ${s.benefit}`)
+      })
+      lines.push('')
+    }
+    if (result.requirements?.functional?.length > 0) {
+      lines.push('## Functional Requirements', '')
+      result.requirements.functional.forEach(req => {
+        lines.push(`### ${req.id}: ${req.title}`, '')
+        lines.push(`**Priority:** ${(req.priority || '').replace('_', ' ')}`, '')
+        if (req.description) lines.push(req.description, '')
+        if (req.acceptance_criteria?.length > 0) {
+          lines.push('**Acceptance Criteria:**')
+          req.acceptance_criteria.forEach(c => lines.push(`- [ ] ${c}`))
+          lines.push('')
+        }
+      })
+    }
+    if (result.requirements?.non_functional?.length > 0) {
+      lines.push('## Non-Functional Requirements', '')
+      result.requirements.non_functional.forEach(req => {
+        lines.push(`### ${req.id}: ${req.title}`, '')
+        if (req.category) lines.push(`**Category:** ${req.category}`, '')
+        if (req.description) lines.push(req.description, '')
+      })
+    }
+    if (result.technical_considerations) { lines.push('## Technical Considerations', '', result.technical_considerations, '') }
+    if (result.success_metrics?.length > 0) {
+      lines.push('## Success Metrics', '')
+      result.success_metrics.forEach(m => lines.push(`- ${m}`))
+      lines.push('')
+    }
+    if (result.out_of_scope?.length > 0) {
+      lines.push('## Out of Scope', '')
+      result.out_of_scope.forEach(item => lines.push(`- ${item}`))
+      lines.push('')
+    }
+    if (result.timeline) { lines.push('## Timeline', '', result.timeline, '') }
+  } else if (type === 'swot') {
+    if (result.subject) { lines.push(`**Subject:** ${result.subject}`, '') }
+    if (result.overview) { lines.push('## Overview', '', result.overview, '') }
+    const quadrants = ['strengths', 'weaknesses', 'opportunities', 'threats']
+    quadrants.forEach(q => {
+      if (result[q]?.length > 0) {
+        lines.push(`## ${q.charAt(0).toUpperCase() + q.slice(1)}`, '')
+        result[q].forEach(item => {
+          lines.push(`- **${item.point}**: ${item.detail}`)
+        })
+        lines.push('')
+      }
+    })
+    if (result.strategic_recommendations?.length > 0) {
+      lines.push('## Strategic Recommendations', '')
+      result.strategic_recommendations.forEach((rec, i) => {
+        lines.push(`### ${i + 1}. ${rec.strategy}${rec.quadrants ? ` [${rec.quadrants}]` : ''}`, '')
+        lines.push(rec.description, '')
+      })
+    }
+    if (result.conclusion) { lines.push('## Conclusion', '', result.conclusion, '') }
   }
 
   // References
@@ -226,6 +297,26 @@ function reportToCsv(report) {
     result.options?.forEach(opt => addRow('Options', opt.option, `Pros: ${(opt.pros || []).join('; ')} | Cons: ${(opt.cons || []).join('; ')}`, 'option'))
     if (result.recommendation) addRow('Recommendation', '', result.recommendation, 'text')
     result.next_steps?.forEach((s, i) => addRow('Next Steps', `Step ${i + 1}`, s, 'step'))
+  } else if (type === 'prd') {
+    if (result.overview) addRow('Overview', result.product_name || '', result.overview, 'text')
+    if (result.problem_statement) addRow('Problem Statement', '', result.problem_statement, 'text')
+    result.goals?.forEach(g => addRow('Goals', g, '', 'goal'))
+    if (result.target_users) addRow('Target Users', '', result.target_users, 'text')
+    result.user_stories?.forEach(s => addRow('User Stories', s.persona, `${s.action} — ${s.benefit}`, 'story'))
+    result.requirements?.functional?.forEach(req => addRow('Functional Requirements', `${req.id}: ${req.title}`, `Priority: ${(req.priority || '').replace('_', ' ')} | ${req.description} | Criteria: ${(req.acceptance_criteria || []).join('; ')}`, 'requirement'))
+    result.requirements?.non_functional?.forEach(req => addRow('Non-Functional Requirements', `${req.id}: ${req.title}`, `Category: ${req.category || ''} | ${req.description}`, 'requirement'))
+    if (result.technical_considerations) addRow('Technical Considerations', '', result.technical_considerations, 'text')
+    result.success_metrics?.forEach(m => addRow('Success Metrics', m, '', 'metric'))
+    result.out_of_scope?.forEach(item => addRow('Out of Scope', item, '', 'exclusion'))
+    if (result.timeline) addRow('Timeline', '', result.timeline, 'text')
+  } else if (type === 'swot') {
+    if (result.overview) addRow('Overview', result.subject || '', result.overview, 'text')
+    result.strengths?.forEach(s => addRow('Strengths', s.point, s.detail, 'strength'))
+    result.weaknesses?.forEach(w => addRow('Weaknesses', w.point, w.detail, 'weakness'))
+    result.opportunities?.forEach(o => addRow('Opportunities', o.point, o.detail, 'opportunity'))
+    result.threats?.forEach(t => addRow('Threats', t.point, t.detail, 'threat'))
+    result.strategic_recommendations?.forEach(r => addRow('Recommendations', `${r.strategy} [${r.quadrants || ''}]`, r.description, 'recommendation'))
+    if (result.conclusion) addRow('Conclusion', '', result.conclusion, 'text')
   }
 
   // References

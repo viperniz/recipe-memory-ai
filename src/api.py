@@ -3064,7 +3064,7 @@ async def generate_report(
     from report_generator import REPORT_FEATURE_FLAGS
 
     # Validate report type
-    valid_types = ["thesis", "development_plan", "script", "executive_brief"]
+    valid_types = ["thesis", "development_plan", "script", "executive_brief", "prd", "swot"]
     if request.report_type not in valid_types:
         raise HTTPException(status_code=400, detail=f"Invalid report type. Must be one of: {valid_types}")
 

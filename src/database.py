@@ -664,6 +664,8 @@ TIER_LIMITS = {
         "report_thesis": False,
         "report_development_plan": False,
         "report_script": False,
+        "report_prd": False,
+        "report_swot": False,
         "support_level": "community",
     },
     "starter": {
@@ -702,6 +704,8 @@ TIER_LIMITS = {
         "report_thesis": False,
         "report_development_plan": False,
         "report_script": False,
+        "report_prd": False,
+        "report_swot": True,
         "support_level": "email",
     },
     "pro": {
@@ -742,6 +746,8 @@ TIER_LIMITS = {
         "report_thesis": True,
         "report_development_plan": True,
         "report_script": True,
+        "report_prd": True,
+        "report_swot": True,
         "support_level": "priority",
     },
     "team": {
@@ -779,6 +785,8 @@ TIER_LIMITS = {
         "report_thesis": True,
         "report_development_plan": True,
         "report_script": True,
+        "report_prd": True,
+        "report_swot": True,
         "support_level": "dedicated",
     }
 }

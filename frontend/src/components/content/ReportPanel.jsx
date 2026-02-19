@@ -6,7 +6,8 @@ import { Badge } from '../ui/badge'
 import ReportCard from './ReportCard'
 import {
   X, Loader2, AlertTriangle, RefreshCw, Trash2, Clock,
-  FileText, Code, Film, Briefcase, Copy, Check, Download
+  FileText, Code, Film, Briefcase, Copy, Check, Download,
+  ClipboardList, Grid2X2
 } from 'lucide-react'
 import ReportExportModal from '../modals/ReportExportModal'
 import { reportToMarkdown } from '../modals/ReportExportModal'
@@ -16,6 +17,8 @@ const TYPE_CONFIG = {
   development_plan: { label: 'Development Plan', color: '#3b82f6', icon: Code },
   script: { label: 'Script', color: '#f97316', icon: Film },
   executive_brief: { label: 'Executive Brief', color: '#22c55e', icon: Briefcase },
+  prd: { label: 'PRD', color: '#06b6d4', icon: ClipboardList },
+  swot: { label: 'SWOT Analysis', color: '#eab308', icon: Grid2X2 },
 }
 
 function ReportPanel({ reportId, report: initialReport, onClose, onDelete }) {

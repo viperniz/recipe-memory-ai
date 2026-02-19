@@ -211,11 +211,138 @@ IMPORTANT:
 - Include specific, actionable next steps
 - Return ONLY the JSON object, no other text"""
 
+PRD_PROMPT = """You are a senior product manager. Generate a comprehensive Product Requirements Document (PRD) based on the provided source materials.
+
+SOURCE MATERIALS:
+{source_context}
+
+{web_context_section}
+
+FOCUS AREA: {focus_area}
+
+Generate a structured PRD as a JSON object:
+{{
+    "product_name": "Name of the product or feature",
+    "version": "1.0",
+    "overview": "High-level description of the product/feature",
+    "problem_statement": "What problem this solves and why it matters",
+    "goals": ["Goal 1", "Goal 2"],
+    "target_users": "Description of the target user persona(s)",
+    "user_stories": [
+        {{
+            "persona": "As a [user type]",
+            "action": "I want to [action]",
+            "benefit": "So that [benefit/reason]"
+        }}
+    ],
+    "requirements": {{
+        "functional": [
+            {{
+                "id": "FR-001",
+                "title": "Requirement title",
+                "description": "Detailed description",
+                "priority": "must_have|should_have|nice_to_have",
+                "acceptance_criteria": ["Criterion 1", "Criterion 2"]
+            }}
+        ],
+        "non_functional": [
+            {{
+                "id": "NFR-001",
+                "title": "Requirement title",
+                "description": "Detailed description",
+                "category": "performance|security|scalability|usability"
+            }}
+        ]
+    }},
+    "technical_considerations": "Architecture notes and technical constraints",
+    "success_metrics": ["KPI 1", "KPI 2"],
+    "out_of_scope": ["Excluded item 1"],
+    "timeline": "Estimated timeline for delivery",
+    "references": [
+        {{
+            "source_id": "ID of the source",
+            "title": "Title of the source",
+            "relevance": "How this source informed the PRD"
+        }}
+    ]
+}}
+
+IMPORTANT:
+- Include at least 5 functional requirements and at least 2 non-functional requirements
+- Include at least 3 user stories covering different personas or workflows
+- Each functional requirement must have testable acceptance criteria
+- Use sequential IDs (FR-001, FR-002, ... and NFR-001, NFR-002, ...)
+- Prioritize requirements realistically — not everything is must_have
+- Return ONLY the JSON object, no other text"""
+
+SWOT_PROMPT = """You are a strategic analyst. Generate a comprehensive SWOT analysis based on the provided source materials.
+
+SOURCE MATERIALS:
+{source_context}
+
+{web_context_section}
+
+FOCUS AREA: {focus_area}
+
+Generate a structured SWOT analysis as a JSON object:
+{{
+    "subject": "What is being analyzed",
+    "overview": "Brief context setting the stage for the analysis",
+    "strengths": [
+        {{
+            "point": "Strength title",
+            "detail": "Evidence and explanation from the sources"
+        }}
+    ],
+    "weaknesses": [
+        {{
+            "point": "Weakness title",
+            "detail": "Evidence and explanation from the sources"
+        }}
+    ],
+    "opportunities": [
+        {{
+            "point": "Opportunity title",
+            "detail": "Evidence and explanation from the sources"
+        }}
+    ],
+    "threats": [
+        {{
+            "point": "Threat title",
+            "detail": "Evidence and explanation from the sources"
+        }}
+    ],
+    "strategic_recommendations": [
+        {{
+            "strategy": "Strategy name",
+            "description": "Action steps and rationale",
+            "quadrants": "SO|ST|WO|WT"
+        }}
+    ],
+    "conclusion": "Overall strategic assessment and key takeaways",
+    "references": [
+        {{
+            "source_id": "ID of the source",
+            "title": "Title of the source",
+            "relevance": "How this source informed the analysis"
+        }}
+    ]
+}}
+
+IMPORTANT:
+- Include at least 3 items per quadrant (strengths, weaknesses, opportunities, threats)
+- Include at least 3 strategic recommendations
+- Label each recommendation with its quadrant combination (SO = leverage strengths for opportunities, ST = use strengths to counter threats, WO = address weaknesses through opportunities, WT = mitigate weaknesses against threats)
+- Ground every point in evidence from the sources — don't make generic statements
+- Return ONLY the JSON object, no other text"""
+
 REPORT_PROMPTS = {
     "thesis": THESIS_PROMPT,
     "development_plan": DEVELOPMENT_PLAN_PROMPT,
     "script": SCRIPT_PROMPT,
     "executive_brief": EXECUTIVE_BRIEF_PROMPT,
+    "prd": PRD_PROMPT,
+    "swot": SWOT_PROMPT,
 }
 
 # Feature flag name for each report type
@@ -224,6 +351,8 @@ REPORT_FEATURE_FLAGS = {
     "development_plan": "report_development_plan",
     "script": "report_script",
     "executive_brief": "report_executive_brief",
+    "prd": "report_prd",
+    "swot": "report_swot",
 }
 
 

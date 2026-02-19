@@ -3,7 +3,8 @@ import { Badge } from '../ui/badge'
 import {
   ChevronDown, ChevronRight, FileText, Code, Film, Briefcase,
   Target, BookOpen, AlertTriangle, CheckCircle, Clock, Users,
-  Lightbulb, Shield, Layers, List, ExternalLink
+  Lightbulb, Shield, Layers, List, ExternalLink, ClipboardList,
+  Grid2X2, TrendingUp, TrendingDown, Compass
 } from 'lucide-react'
 
 const REPORT_TYPE_CONFIG = {
@@ -11,6 +12,8 @@ const REPORT_TYPE_CONFIG = {
   development_plan: { label: 'Development Plan', hcolor: '#3b82f6', icon: Code },
   script: { label: 'Script', color: '#f97316', icon: Film },
   executive_brief: { label: 'Executive Brief', color: '#22c55e', icon: Briefcase },
+  prd: { label: 'PRD', color: '#06b6d4', icon: ClipboardList },
+  swot: { label: 'SWOT Analysis', color: '#eab308', icon: Grid2X2 },
 }
 
 function ReportCard({ report }) {
@@ -344,11 +347,212 @@ function ReportCard({ report }) {
     </>
   )
 
+  const renderPrd = () => (
+    <>
+      {/* Meta row */}
+      {(result.product_name || result.version) && (
+        <div className="report-meta-row">
+          {result.product_name && <Badge variant="outline" style={{ borderColor: '#06b6d440', color: '#06b6d4' }}><ClipboardList className="w-3 h-3 mr-1" />{result.product_name}</Badge>}
+          {result.version && <Badge variant="outline">v{result.version}</Badge>}
+        </div>
+      )}
+      {result.overview && (
+        <div className="report-block report-highlight">
+          <SectionHeader icon={BookOpen} title="Overview" sectionKey="overview" count={0} defaultOpen={true} />
+          {isExpanded('overview', true) && <div className="report-block-content"><p>{result.overview}</p></div>}
+        </div>
+      )}
+      {result.problem_statement && (
+        <div className="report-block">
+          <SectionHeader icon={AlertTriangle} title="Problem Statement" sectionKey="problem" count={0} defaultOpen={true} />
+          {isExpanded('problem', true) && <div className="report-block-content"><p>{result.problem_statement}</p></div>}
+        </div>
+      )}
+      {result.goals?.length > 0 && (
+        <div className="report-block">
+          <SectionHeader icon={Target} title="Goals" sectionKey="goals" count={result.goals.length} defaultOpen={true} />
+          {isExpanded('goals', true) && (
+            <div className="report-block-content">
+              <ul>{result.goals.map((g, i) => <li key={i}>{g}</li>)}</ul>
+            </div>
+          )}
+        </div>
+      )}
+      {result.target_users && (
+        <div className="report-block">
+          <SectionHeader icon={Users} title="Target Users" sectionKey="target_users" count={0} />
+          {isExpanded('target_users') && <div className="report-block-content"><p>{result.target_users}</p></div>}
+        </div>
+      )}
+      {result.user_stories?.length > 0 && (
+        <div className="report-block">
+          <SectionHeader icon={Users} title="User Stories" sectionKey="stories" count={result.user_stories.length} defaultOpen={true} />
+          {isExpanded('stories', true) && (
+            <div className="report-block-content">
+              {result.user_stories.map((story, i) => (
+                <div key={i} className="report-user-story">
+                  <span className="report-story-persona">{story.persona}</span>
+                  <span className="report-story-action">{story.action}</span>
+                  <span className="report-story-benefit">{story.benefit}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {result.requirements?.functional?.length > 0 && (
+        <div className="report-block">
+          <SectionHeader icon={CheckCircle} title="Functional Requirements" sectionKey="functional" count={result.requirements.functional.length} defaultOpen={true} />
+          {isExpanded('functional', true) && (
+            <div className="report-block-content">
+              {result.requirements.functional.map((req, i) => (
+                <div key={i} className="report-requirement">
+                  <div className="report-requirement-header">
+                    <span className="report-req-id">{req.id}</span>
+                    <h4>{req.title}</h4>
+                    <Badge className={`report-priority report-priority-${req.priority === 'must_have' ? 'high' : req.priority === 'should_have' ? 'medium' : 'low'}`}>
+                      {(req.priority || '').replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  <p>{req.description}</p>
+                  {req.acceptance_criteria?.length > 0 && (
+                    <div className="report-acceptance-criteria">
+                      <strong>Acceptance Criteria:</strong>
+                      <ul>{req.acceptance_criteria.map((c, j) => <li key={j}>{c}</li>)}</ul>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {result.requirements?.non_functional?.length > 0 && (
+        <div className="report-block">
+          <SectionHeader icon={Shield} title="Non-Functional Requirements" sectionKey="nonfunctional" count={result.requirements.non_functional.length} />
+          {isExpanded('nonfunctional') && (
+            <div className="report-block-content">
+              {result.requirements.non_functional.map((req, i) => (
+                <div key={i} className="report-requirement">
+                  <div className="report-requirement-header">
+                    <span className="report-req-id">{req.id}</span>
+                    <h4>{req.title}</h4>
+                    {req.category && <Badge variant="outline">{req.category}</Badge>}
+                  </div>
+                  <p>{req.description}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {result.technical_considerations && (
+        <div className="report-block">
+          <SectionHeader icon={Code} title="Technical Considerations" sectionKey="technical" count={0} />
+          {isExpanded('technical') && <div className="report-block-content"><p>{result.technical_considerations}</p></div>}
+        </div>
+      )}
+      {result.success_metrics?.length > 0 && (
+        <div className="report-block">
+          <SectionHeader icon={Target} title="Success Metrics" sectionKey="metrics" count={result.success_metrics.length} />
+          {isExpanded('metrics') && (
+            <div className="report-block-content">
+              <ul>{result.success_metrics.map((m, i) => <li key={i}>{m}</li>)}</ul>
+            </div>
+          )}
+        </div>
+      )}
+      {result.out_of_scope?.length > 0 && (
+        <div className="report-block">
+          <SectionHeader icon={Shield} title="Out of Scope" sectionKey="outofscope" count={result.out_of_scope.length} />
+          {isExpanded('outofscope') && (
+            <div className="report-block-content">
+              <ul>{result.out_of_scope.map((item, i) => <li key={i}>{item}</li>)}</ul>
+            </div>
+          )}
+        </div>
+      )}
+      {result.timeline && (
+        <div className="report-block">
+          <SectionHeader icon={Clock} title="Timeline" sectionKey="timeline" count={0} />
+          {isExpanded('timeline') && <div className="report-block-content"><p>{result.timeline}</p></div>}
+        </div>
+      )}
+    </>
+  )
+
+  const SWOT_QUADRANTS = [
+    { key: 'strengths', label: 'Strengths', icon: TrendingUp, className: 'report-swot-strengths' },
+    { key: 'weaknesses', label: 'Weaknesses', icon: TrendingDown, className: 'report-swot-weaknesses' },
+    { key: 'opportunities', label: 'Opportunities', icon: Compass, className: 'report-swot-opportunities' },
+    { key: 'threats', label: 'Threats', icon: AlertTriangle, className: 'report-swot-threats' },
+  ]
+
+  const renderSwot = () => (
+    <>
+      {result.overview && (
+        <div className="report-block report-highlight">
+          <SectionHeader icon={BookOpen} title={result.subject || 'SWOT Analysis'} sectionKey="overview" count={0} defaultOpen={true} />
+          {isExpanded('overview', true) && <div className="report-block-content"><p>{result.overview}</p></div>}
+        </div>
+      )}
+      <div className="report-swot-grid">
+        {SWOT_QUADRANTS.map(q => {
+          const items = result[q.key] || []
+          const QIcon = q.icon
+          return (
+            <div key={q.key} className={`report-swot-quadrant ${q.className}`}>
+              <div className="report-swot-quadrant-header">
+                <QIcon className="w-4 h-4" />
+                <span>{q.label}</span>
+                <span className="report-section-count">{items.length}</span>
+              </div>
+              <div className="report-swot-quadrant-body">
+                {items.map((item, i) => (
+                  <div key={i} className="report-swot-item">
+                    <strong>{item.point}</strong>
+                    <p>{item.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {result.strategic_recommendations?.length > 0 && (
+        <div className="report-block">
+          <SectionHeader icon={Lightbulb} title="Strategic Recommendations" sectionKey="recommendations" count={result.strategic_recommendations.length} defaultOpen={true} />
+          {isExpanded('recommendations', true) && (
+            <div className="report-block-content">
+              {result.strategic_recommendations.map((rec, i) => (
+                <div key={i} className="report-strategy">
+                  <div className="report-strategy-header">
+                    <h4>{rec.strategy}</h4>
+                    {rec.quadrants && <Badge variant="outline" className="report-quadrant-badge">{rec.quadrants}</Badge>}
+                  </div>
+                  <p>{rec.description}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {result.conclusion && (
+        <div className="report-block report-highlight">
+          <SectionHeader icon={CheckCircle} title="Conclusion" sectionKey="conclusion" count={0} defaultOpen={true} />
+          {isExpanded('conclusion', true) && <div className="report-block-content"><p>{result.conclusion}</p></div>}
+        </div>
+      )}
+    </>
+  )
+
   const renderers = {
     thesis: renderThesis,
     development_plan: renderDevelopmentPlan,
     script: renderScript,
     executive_brief: renderExecutiveBrief,
+    prd: renderPrd,
+    swot: renderSwot,
   }
 
   const renderContent = renderers[report.report_type] || renderThesis

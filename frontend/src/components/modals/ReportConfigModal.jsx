@@ -6,7 +6,8 @@ import { reportsApi } from '../../api/reports'
 import { toast } from '../../hooks/use-toast'
 import {
   X, FileText, Code, Film, Briefcase, Lock,
-  Globe, Plus, Trash2, Loader2, Coins, Sparkles
+  Globe, Plus, Trash2, Loader2, Coins, Sparkles,
+  ClipboardList, Grid2X2
 } from 'lucide-react'
 
 const REPORT_TYPES = [
@@ -41,6 +42,22 @@ const REPORT_TYPES = [
     icon: Film,
     color: '#f97316',
     minTier: 'pro',
+  },
+  {
+    id: 'prd',
+    label: 'PRD',
+    description: 'Product requirements with user stories, specs & acceptance criteria',
+    icon: ClipboardList,
+    color: '#06b6d4',
+    minTier: 'pro',
+  },
+  {
+    id: 'swot',
+    label: 'SWOT Analysis',
+    description: 'Strengths, weaknesses, opportunities & threats framework',
+    icon: Grid2X2,
+    color: '#eab308',
+    minTier: 'starter',
   },
 ]
 

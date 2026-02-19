@@ -820,8 +820,8 @@ function HomePage() {
             ) : (
               <div className="reports-list">
                 {reports.map(r => {
-                  const typeColors = { thesis: '#a855f7', development_plan: '#3b82f6', script: '#f97316', executive_brief: '#22c55e' }
-                  const typeLabels = { thesis: 'Thesis', development_plan: 'Dev Plan', script: 'Script', executive_brief: 'Exec Brief' }
+                  const typeColors = { thesis: '#a855f7', development_plan: '#3b82f6', script: '#f97316', executive_brief: '#22c55e', prd: '#06b6d4', swot: '#eab308' }
+                  const typeLabels = { thesis: 'Thesis', development_plan: 'Dev Plan', script: 'Script', executive_brief: 'Exec Brief', prd: 'PRD', swot: 'SWOT' }
                   return (
                     <button
                       key={r.id}
