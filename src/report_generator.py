@@ -225,6 +225,7 @@ Generate a structured PRD as a JSON object:
     "product_name": "Name of the product or feature",
     "version": "1.0",
     "overview": "High-level description of the product/feature",
+    "background_context": "Why now? Strategic fit, competitive landscape, and market context that motivates this product/feature",
     "problem_statement": "What problem this solves and why it matters",
     "goals": ["Goal 1", "Goal 2"],
     "target_users": "Description of the target user persona(s)",
@@ -242,7 +243,13 @@ Generate a structured PRD as a JSON object:
                 "title": "Requirement title",
                 "description": "Detailed description",
                 "priority": "must_have|should_have|nice_to_have",
-                "acceptance_criteria": ["Criterion 1", "Criterion 2"]
+                "acceptance_criteria": [
+                    {{
+                        "given": "Some precondition or context",
+                        "when": "An action is performed",
+                        "then": "Expected outcome"
+                    }}
+                ]
             }}
         ],
         "non_functional": [
@@ -250,12 +257,67 @@ Generate a structured PRD as a JSON object:
                 "id": "NFR-001",
                 "title": "Requirement title",
                 "description": "Detailed description",
-                "category": "performance|security|scalability|usability"
+                "category": "performance|security|reliability|usability|accessibility|maintainability|scalability|compatibility"
             }}
         ]
     }},
+    "assumptions": [
+        {{
+            "assumption": "Something assumed to be true",
+            "impact": "What happens if this assumption is wrong",
+            "validation": "How to verify this assumption"
+        }}
+    ],
+    "constraints": [
+        {{
+            "constraint": "A limiting factor",
+            "type": "technical|business|regulatory|resource",
+            "impact": "How this constrains the solution"
+        }}
+    ],
+    "dependencies": [
+        {{
+            "dependency": "External dependency name",
+            "type": "external_api|team|system|third_party",
+            "status": "ready|blocked|unknown",
+            "detail": "Additional context"
+        }}
+    ],
+    "risks": [
+        {{
+            "risk": "Risk description",
+            "category": "value|usability|feasibility|viability",
+            "probability": "high|medium|low",
+            "impact": "high|medium|low",
+            "mitigation": "Mitigation strategy"
+        }}
+    ],
+    "open_questions": [
+        {{
+            "question": "An unresolved question",
+            "priority": "high|medium|low",
+            "context": "Why this question matters and who might answer it"
+        }}
+    ],
+    "release_strategy": {{
+        "phases": [
+            {{
+                "name": "Phase name (e.g. Alpha, Beta, GA)",
+                "scope": "What is included in this phase",
+                "success_criteria": "How to know this phase succeeded"
+            }}
+        ],
+        "feature_flags": ["flag_name_1"],
+        "rollback_plan": "How to roll back if something goes wrong"
+    }},
+    "success_metrics": [
+        {{
+            "metric": "KPI name",
+            "target": "Measurable target value",
+            "measurement_method": "How and when to measure"
+        }}
+    ],
     "technical_considerations": "Architecture notes and technical constraints",
-    "success_metrics": ["KPI 1", "KPI 2"],
     "out_of_scope": ["Excluded item 1"],
     "timeline": "Estimated timeline for delivery",
     "references": [
@@ -270,9 +332,16 @@ Generate a structured PRD as a JSON object:
 IMPORTANT:
 - Include at least 5 functional requirements and at least 2 non-functional requirements
 - Include at least 3 user stories covering different personas or workflows
-- Each functional requirement must have testable acceptance criteria
+- Write acceptance criteria in Given/When/Then (Gherkin) format — each criterion must have all three fields
 - Use sequential IDs (FR-001, FR-002, ... and NFR-001, NFR-002, ...)
 - Prioritize requirements realistically — not everything is must_have
+- Include at least 3 assumptions with validation approaches
+- Include at least 2 constraints
+- Include at least 2 dependencies with their current status
+- Include at least 3 risks across different categories (value, usability, feasibility, viability) with mitigations
+- Include at least 2 open questions with priority levels
+- Include a release strategy with at least 2 phases
+- Success metrics must have measurable targets and measurement methods
 - Return ONLY the JSON object, no other text"""
 
 SWOT_PROMPT = """You are a strategic analyst. Generate a comprehensive SWOT analysis based on the provided source materials.

@@ -4,7 +4,7 @@ import {
   ChevronDown, ChevronRight, FileText, Code, Film, Briefcase,
   Target, BookOpen, AlertTriangle, CheckCircle, Clock, Users,
   Lightbulb, Shield, Layers, List, ExternalLink, ClipboardList,
-  Grid2X2, TrendingUp, TrendingDown, Compass
+  Grid2X2, TrendingUp, TrendingDown, Compass, HelpCircle, Link, Rocket
 } from 'lucide-react'
 
 const REPORT_TYPE_CONFIG = {
@@ -347,27 +347,81 @@ function ReportCard({ report }) {
     </>
   )
 
+  const renderAcceptanceCriteria = (criteria) => {
+    if (!criteria?.length) return null
+    // Backward compat: support both string[] and {given,when,then}[]
+    const isGherkin = typeof criteria[0] === 'object' && criteria[0].given
+    if (isGherkin) {
+      return (
+        <div className="report-acceptance-criteria">
+          <strong>Acceptance Criteria:</strong>
+          {criteria.map((c, j) => (
+            <div key={j} className="report-gherkin">
+              <div><span className="report-gherkin-keyword">Given</span> {c.given}</div>
+              <div><span className="report-gherkin-keyword">When</span> {c.when}</div>
+              <div><span className="report-gherkin-keyword">Then</span> {c.then}</div>
+            </div>
+          ))}
+        </div>
+      )
+    }
+    return (
+      <div className="report-acceptance-criteria">
+        <strong>Acceptance Criteria:</strong>
+        <ul>{criteria.map((c, j) => <li key={j}>{typeof c === 'string' ? c : JSON.stringify(c)}</li>)}</ul>
+      </div>
+    )
+  }
+
+  const renderSuccessMetrics = (metrics) => {
+    if (!metrics?.length) return null
+    const isStructured = typeof metrics[0] === 'object' && metrics[0].metric
+    if (isStructured) {
+      return metrics.map((m, i) => (
+        <div key={i} className="report-metric-card">
+          <h4>{m.metric}</h4>
+          <div className="report-metric-detail"><strong>Target:</strong> {m.target}</div>
+          <div className="report-metric-detail"><strong>Measurement:</strong> {m.measurement_method}</div>
+        </div>
+      ))
+    }
+    return <ul>{metrics.map((m, i) => <li key={i}>{typeof m === 'string' ? m : JSON.stringify(m)}</li>)}</ul>
+  }
+
+  const CONSTRAINT_COLORS = { technical: '#3b82f6', business: '#f97316', regulatory: '#ef4444', resource: '#a855f7' }
+  const DEP_STATUS_CLASS = { ready: 'report-dep-status-ready', blocked: 'report-dep-status-blocked', unknown: 'report-dep-status-unknown' }
+
   const renderPrd = () => (
     <>
-      {/* Meta row */}
+      {/* 1. Meta row */}
       {(result.product_name || result.version) && (
         <div className="report-meta-row">
           {result.product_name && <Badge variant="outline" style={{ borderColor: '#06b6d440', color: '#06b6d4' }}><ClipboardList className="w-3 h-3 mr-1" />{result.product_name}</Badge>}
           {result.version && <Badge variant="outline">v{result.version}</Badge>}
         </div>
       )}
+      {/* 2. Overview */}
       {result.overview && (
         <div className="report-block report-highlight">
           <SectionHeader icon={BookOpen} title="Overview" sectionKey="overview" count={0} defaultOpen={true} />
           {isExpanded('overview', true) && <div className="report-block-content"><p>{result.overview}</p></div>}
         </div>
       )}
+      {/* 3. Background & Context (new) */}
+      {result.background_context && (
+        <div className="report-block">
+          <SectionHeader icon={Layers} title="Background & Context" sectionKey="background" count={0} defaultOpen={true} />
+          {isExpanded('background', true) && <div className="report-block-content"><p>{result.background_context}</p></div>}
+        </div>
+      )}
+      {/* 4. Problem Statement */}
       {result.problem_statement && (
         <div className="report-block">
           <SectionHeader icon={AlertTriangle} title="Problem Statement" sectionKey="problem" count={0} defaultOpen={true} />
           {isExpanded('problem', true) && <div className="report-block-content"><p>{result.problem_statement}</p></div>}
         </div>
       )}
+      {/* 5. Goals */}
       {result.goals?.length > 0 && (
         <div className="report-block">
           <SectionHeader icon={Target} title="Goals" sectionKey="goals" count={result.goals.length} defaultOpen={true} />
@@ -378,12 +432,14 @@ function ReportCard({ report }) {
           )}
         </div>
       )}
+      {/* 6. Target Users (collapsed) */}
       {result.target_users && (
         <div className="report-block">
           <SectionHeader icon={Users} title="Target Users" sectionKey="target_users" count={0} />
           {isExpanded('target_users') && <div className="report-block-content"><p>{result.target_users}</p></div>}
         </div>
       )}
+      {/* 7. User Stories */}
       {result.user_stories?.length > 0 && (
         <div className="report-block">
           <SectionHeader icon={Users} title="User Stories" sectionKey="stories" count={result.user_stories.length} defaultOpen={true} />
@@ -400,6 +456,7 @@ function ReportCard({ report }) {
           )}
         </div>
       )}
+      {/* 8. Functional Requirements (updated acceptance criteria) */}
       {result.requirements?.functional?.length > 0 && (
         <div className="report-block">
           <SectionHeader icon={CheckCircle} title="Functional Requirements" sectionKey="functional" count={result.requirements.functional.length} defaultOpen={true} />
@@ -415,18 +472,14 @@ function ReportCard({ report }) {
                     </Badge>
                   </div>
                   <p>{req.description}</p>
-                  {req.acceptance_criteria?.length > 0 && (
-                    <div className="report-acceptance-criteria">
-                      <strong>Acceptance Criteria:</strong>
-                      <ul>{req.acceptance_criteria.map((c, j) => <li key={j}>{c}</li>)}</ul>
-                    </div>
-                  )}
+                  {renderAcceptanceCriteria(req.acceptance_criteria)}
                 </div>
               ))}
             </div>
           )}
         </div>
       )}
+      {/* 9. Non-Functional Requirements (collapsed) */}
       {result.requirements?.non_functional?.length > 0 && (
         <div className="report-block">
           <SectionHeader icon={Shield} title="Non-Functional Requirements" sectionKey="nonfunctional" count={result.requirements.non_functional.length} />
@@ -446,22 +499,156 @@ function ReportCard({ report }) {
           )}
         </div>
       )}
+      {/* 10. Assumptions (collapsed, new) */}
+      {result.assumptions?.length > 0 && (
+        <div className="report-block">
+          <SectionHeader icon={Lightbulb} title="Assumptions" sectionKey="assumptions" count={result.assumptions.length} />
+          {isExpanded('assumptions') && (
+            <div className="report-block-content">
+              {result.assumptions.map((a, i) => (
+                <div key={i} className="report-assumption">
+                  <p className="report-assumption-text">{a.assumption}</p>
+                  <div className="report-assumption-meta">
+                    <span><strong>Impact if wrong:</strong> {a.impact}</span>
+                    <span><strong>Validation:</strong> {a.validation}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {/* 11. Constraints (collapsed, new) */}
+      {result.constraints?.length > 0 && (
+        <div className="report-block">
+          <SectionHeader icon={Shield} title="Constraints" sectionKey="constraints" count={result.constraints.length} />
+          {isExpanded('constraints') && (
+            <div className="report-block-content">
+              {result.constraints.map((c, i) => (
+                <div key={i} className="report-constraint" style={{ borderLeftColor: CONSTRAINT_COLORS[c.type] || '#71717a' }}>
+                  <div className="report-constraint-header">
+                    <span className="report-constraint-text">{c.constraint}</span>
+                    {c.type && <Badge variant="outline" style={{ borderColor: (CONSTRAINT_COLORS[c.type] || '#71717a') + '40', color: CONSTRAINT_COLORS[c.type] || '#71717a' }}>{c.type}</Badge>}
+                  </div>
+                  <p>{c.impact}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {/* 12. Dependencies (collapsed, new) */}
+      {result.dependencies?.length > 0 && (
+        <div className="report-block">
+          <SectionHeader icon={Link} title="Dependencies" sectionKey="dependencies" count={result.dependencies.length} />
+          {isExpanded('dependencies') && (
+            <div className="report-block-content">
+              {result.dependencies.map((d, i) => (
+                <div key={i} className="report-dependency">
+                  <div className="report-dependency-header">
+                    <span className="report-dependency-name">{d.dependency}</span>
+                    {d.type && <Badge variant="outline">{d.type.replace('_', ' ')}</Badge>}
+                    {d.status && <Badge className={DEP_STATUS_CLASS[d.status] || 'report-dep-status-unknown'}>{d.status}</Badge>}
+                  </div>
+                  {d.detail && <p>{d.detail}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {/* 13. Risks (open, new) */}
+      {result.risks?.length > 0 && (
+        <div className="report-block">
+          <SectionHeader icon={AlertTriangle} title="Risks" sectionKey="prd_risks" count={result.risks.length} defaultOpen={true} />
+          {isExpanded('prd_risks', true) && (
+            <div className="report-block-content">
+              {result.risks.map((r, i) => (
+                <div key={i} className="report-risk">
+                  <div className="report-risk-header">
+                    <span className="report-risk-name">{r.risk}</span>
+                    {r.category && <Badge variant="outline">{r.category}</Badge>}
+                    <Badge variant="outline" className={`report-prob-${r.probability}`}>{r.probability}</Badge>
+                    <Badge variant="outline" className={`report-impact-${r.impact}`}>{r.impact} impact</Badge>
+                  </div>
+                  <p className="report-risk-mitigation"><strong>Mitigation:</strong> {r.mitigation}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {/* 14. Open Questions (open, new) */}
+      {result.open_questions?.length > 0 && (
+        <div className="report-block">
+          <SectionHeader icon={HelpCircle} title="Open Questions" sectionKey="open_questions" count={result.open_questions.length} defaultOpen={true} />
+          {isExpanded('open_questions', true) && (
+            <div className="report-block-content">
+              {result.open_questions.map((q, i) => (
+                <div key={i} className="report-open-question">
+                  <div className="report-open-question-header">
+                    <span className="report-open-question-text">{q.question}</span>
+                    {q.priority && <Badge className={`report-priority report-priority-${q.priority}`}>{q.priority}</Badge>}
+                  </div>
+                  {q.context && <p>{q.context}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {/* 15. Release Strategy (collapsed, new) */}
+      {result.release_strategy && (
+        <div className="report-block">
+          <SectionHeader icon={Rocket} title="Release Strategy" sectionKey="release_strategy" count={result.release_strategy.phases?.length || 0} />
+          {isExpanded('release_strategy') && (
+            <div className="report-block-content">
+              {result.release_strategy.phases?.map((phase, i) => (
+                <div key={i} className="report-release-phase">
+                  <h4>{phase.name}</h4>
+                  <p><strong>Scope:</strong> {phase.scope}</p>
+                  <p><strong>Success Criteria:</strong> {phase.success_criteria}</p>
+                </div>
+              ))}
+              {result.release_strategy.feature_flags?.length > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  <strong style={{ fontSize: 12 }}>Feature Flags:</strong>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                    {result.release_strategy.feature_flags.map((f, i) => (
+                      <span key={i} className="report-feature-flag">{f}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {result.release_strategy.rollback_plan && (
+                <div style={{ marginTop: 8 }}>
+                  <strong style={{ fontSize: 12 }}>Rollback Plan:</strong>
+                  <p>{result.release_strategy.rollback_plan}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      {/* 16. Success Metrics (collapsed, updated) */}
+      {result.success_metrics?.length > 0 && (
+        <div className="report-block">
+          <SectionHeader icon={Target} title="Success Metrics" sectionKey="metrics" count={result.success_metrics.length} />
+          {isExpanded('metrics') && (
+            <div className="report-block-content">
+              {renderSuccessMetrics(result.success_metrics)}
+            </div>
+          )}
+        </div>
+      )}
+      {/* 17. Technical Considerations (collapsed) */}
       {result.technical_considerations && (
         <div className="report-block">
           <SectionHeader icon={Code} title="Technical Considerations" sectionKey="technical" count={0} />
           {isExpanded('technical') && <div className="report-block-content"><p>{result.technical_considerations}</p></div>}
         </div>
       )}
-      {result.success_metrics?.length > 0 && (
-        <div className="report-block">
-          <SectionHeader icon={Target} title="Success Metrics" sectionKey="metrics" count={result.success_metrics.length} />
-          {isExpanded('metrics') && (
-            <div className="report-block-content">
-              <ul>{result.success_metrics.map((m, i) => <li key={i}>{m}</li>)}</ul>
-            </div>
-          )}
-        </div>
-      )}
+      {/* 18. Out of Scope (collapsed) */}
       {result.out_of_scope?.length > 0 && (
         <div className="report-block">
           <SectionHeader icon={Shield} title="Out of Scope" sectionKey="outofscope" count={result.out_of_scope.length} />
@@ -472,6 +659,7 @@ function ReportCard({ report }) {
           )}
         </div>
       )}
+      {/* 19. Timeline (collapsed) */}
       {result.timeline && (
         <div className="report-block">
           <SectionHeader icon={Clock} title="Timeline" sectionKey="timeline" count={0} />

@@ -12771,6 +12771,202 @@
   color: #22c55e;
 }
 
+/* PRD: Gherkin blocks */
+.report-gherkin {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  background: #0c0c0f;
+  border: 1px solid #27272a;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 6px 0;
+}
+
+.report-gherkin-keyword {
+  font-weight: 700;
+  color: #22d3ee;
+  margin-right: 4px;
+}
+
+/* PRD: Assumptions */
+.report-assumption {
+  padding: 12px;
+  background: #18181b;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.report-assumption-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #d4d4d8;
+  margin: 0 0 6px 0;
+}
+
+.report-assumption-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #a1a1aa;
+}
+
+/* PRD: Constraints */
+.report-constraint {
+  padding: 12px;
+  background: #18181b;
+  border-radius: 8px;
+  border-left: 3px solid #71717a;
+  margin-bottom: 8px;
+}
+
+.report-constraint-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.report-constraint-text {
+  font-weight: 500;
+  color: #d4d4d8;
+  font-size: 13px;
+}
+
+.report-constraint p {
+  font-size: 12px;
+  color: #a1a1aa;
+  margin: 0;
+}
+
+/* PRD: Dependencies */
+.report-dependency {
+  padding: 12px;
+  background: #18181b;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.report-dependency-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.report-dependency-name {
+  font-weight: 500;
+  color: #d4d4d8;
+  font-size: 13px;
+}
+
+.report-dependency p {
+  font-size: 12px;
+  color: #a1a1aa;
+  margin: 0;
+}
+
+.report-dep-status-ready {
+  background: #22c55e20 !important;
+  color: #22c55e !important;
+  border-color: #22c55e40 !important;
+}
+
+.report-dep-status-blocked {
+  background: #ef444420 !important;
+  color: #ef4444 !important;
+  border-color: #ef444440 !important;
+}
+
+.report-dep-status-unknown {
+  background: #eab30820 !important;
+  color: #eab308 !important;
+  border-color: #eab30840 !important;
+}
+
+/* PRD: Open Questions */
+.report-open-question {
+  padding: 12px;
+  background: #18181b;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.report-open-question-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.report-open-question-text {
+  font-weight: 500;
+  color: #d4d4d8;
+  font-size: 13px;
+}
+
+.report-open-question p {
+  font-size: 12px;
+  color: #a1a1aa;
+  margin: 0;
+}
+
+/* PRD: Release Strategy */
+.report-release-phase {
+  padding: 12px;
+  background: #18181b;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.report-release-phase h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #d4d4d8;
+  margin: 0 0 6px 0;
+}
+
+.report-release-phase p {
+  font-size: 12px;
+  color: #a1a1aa;
+  margin: 2px 0;
+}
+
+.report-feature-flag {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  background: #a855f715;
+  color: #a855f7;
+  border: 1px solid #a855f730;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* PRD: Metric cards */
+.report-metric-card {
+  padding: 12px;
+  background: #18181b;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.report-metric-card h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #d4d4d8;
+  margin: 0 0 6px 0;
+}
+
+.report-metric-detail {
+  font-size: 12px;
+  color: #a1a1aa;
+  margin: 2px 0;
+}
+
 /* SWOT specific */
 .report-swot-grid {
   display: grid;

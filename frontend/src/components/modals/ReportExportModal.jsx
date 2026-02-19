@@ -166,6 +166,7 @@ function reportToMarkdown(report) {
   } else if (type === 'prd') {
     if (result.product_name) { lines.push(`**Product:** ${result.product_name}${result.version ? ` (v${result.version})` : ''}`, '') }
     if (result.overview) { lines.push('## Overview', '', result.overview, '') }
+    if (result.background_context) { lines.push('## Background & Context', '', result.background_context, '') }
     if (result.problem_statement) { lines.push('## Problem Statement', '', result.problem_statement, '') }
     if (result.goals?.length > 0) {
       lines.push('## Goals', '')
@@ -187,8 +188,16 @@ function reportToMarkdown(report) {
         lines.push(`**Priority:** ${(req.priority || '').replace('_', ' ')}`, '')
         if (req.description) lines.push(req.description, '')
         if (req.acceptance_criteria?.length > 0) {
-          lines.push('**Acceptance Criteria:**')
-          req.acceptance_criteria.forEach(c => lines.push(`- [ ] ${c}`))
+          lines.push('**Acceptance Criteria:**', '')
+          req.acceptance_criteria.forEach(c => {
+            if (typeof c === 'object' && c.given) {
+              lines.push(`> **Given** ${c.given}  `)
+              lines.push(`> **When** ${c.when}  `)
+              lines.push(`> **Then** ${c.then}`, '')
+            } else {
+              lines.push(`- [ ] ${typeof c === 'string' ? c : JSON.stringify(c)}`)
+            }
+          })
           lines.push('')
         }
       })
@@ -201,12 +210,75 @@ function reportToMarkdown(report) {
         if (req.description) lines.push(req.description, '')
       })
     }
-    if (result.technical_considerations) { lines.push('## Technical Considerations', '', result.technical_considerations, '') }
-    if (result.success_metrics?.length > 0) {
-      lines.push('## Success Metrics', '')
-      result.success_metrics.forEach(m => lines.push(`- ${m}`))
+    if (result.assumptions?.length > 0) {
+      lines.push('## Assumptions', '')
+      lines.push('| Assumption | Impact | Validation |')
+      lines.push('|---|---|---|')
+      result.assumptions.forEach(a => {
+        lines.push(`| ${a.assumption || ''} | ${a.impact || ''} | ${a.validation || ''} |`)
+      })
       lines.push('')
     }
+    if (result.constraints?.length > 0) {
+      lines.push('## Constraints', '')
+      result.constraints.forEach(c => {
+        lines.push(`- **[${c.type || 'general'}]** ${c.constraint}${c.impact ? ` — ${c.impact}` : ''}`)
+      })
+      lines.push('')
+    }
+    if (result.dependencies?.length > 0) {
+      lines.push('## Dependencies', '')
+      result.dependencies.forEach(d => {
+        lines.push(`- **[${(d.type || '').replace('_', ' ')}]** ${d.status ? `[${d.status}]` : ''} ${d.dependency}${d.detail ? ` — ${d.detail}` : ''}`)
+      })
+      lines.push('')
+    }
+    if (result.risks?.length > 0) {
+      lines.push('## Risks', '')
+      result.risks.forEach(r => {
+        lines.push(`### ${r.risk}`, '')
+        lines.push(`**Category:** ${r.category || 'N/A'} | **Probability:** ${r.probability || 'N/A'} | **Impact:** ${r.impact || 'N/A'}`, '')
+        if (r.mitigation) lines.push(`**Mitigation:** ${r.mitigation}`, '')
+      })
+    }
+    if (result.open_questions?.length > 0) {
+      lines.push('## Open Questions', '')
+      result.open_questions.forEach((q, i) => {
+        lines.push(`${i + 1}. **[${q.priority || 'medium'}]** ${q.question}${q.context ? ` — ${q.context}` : ''}`)
+      })
+      lines.push('')
+    }
+    if (result.release_strategy) {
+      lines.push('## Release Strategy', '')
+      result.release_strategy.phases?.forEach((phase, i) => {
+        lines.push(`### Phase ${i + 1}: ${phase.name}`, '')
+        if (phase.scope) lines.push(`**Scope:** ${phase.scope}`, '')
+        if (phase.success_criteria) lines.push(`**Success Criteria:** ${phase.success_criteria}`, '')
+      })
+      if (result.release_strategy.feature_flags?.length > 0) {
+        lines.push('**Feature Flags:**', '')
+        result.release_strategy.feature_flags.forEach(f => lines.push(`- \`${f}\``))
+        lines.push('')
+      }
+      if (result.release_strategy.rollback_plan) {
+        lines.push(`**Rollback Plan:** ${result.release_strategy.rollback_plan}`, '')
+      }
+    }
+    if (result.success_metrics?.length > 0) {
+      lines.push('## Success Metrics', '')
+      const isStructured = typeof result.success_metrics[0] === 'object' && result.success_metrics[0].metric
+      if (isStructured) {
+        lines.push('| Metric | Target | How to Measure |')
+        lines.push('|---|---|---|')
+        result.success_metrics.forEach(m => {
+          lines.push(`| ${m.metric || ''} | ${m.target || ''} | ${m.measurement_method || ''} |`)
+        })
+      } else {
+        result.success_metrics.forEach(m => lines.push(`- ${typeof m === 'string' ? m : JSON.stringify(m)}`))
+      }
+      lines.push('')
+    }
+    if (result.technical_considerations) { lines.push('## Technical Considerations', '', result.technical_considerations, '') }
     if (result.out_of_scope?.length > 0) {
       lines.push('## Out of Scope', '')
       result.out_of_scope.forEach(item => lines.push(`- ${item}`))
@@ -299,14 +371,33 @@ function reportToCsv(report) {
     result.next_steps?.forEach((s, i) => addRow('Next Steps', `Step ${i + 1}`, s, 'step'))
   } else if (type === 'prd') {
     if (result.overview) addRow('Overview', result.product_name || '', result.overview, 'text')
+    if (result.background_context) addRow('Background & Context', '', result.background_context, 'text')
     if (result.problem_statement) addRow('Problem Statement', '', result.problem_statement, 'text')
     result.goals?.forEach(g => addRow('Goals', g, '', 'goal'))
     if (result.target_users) addRow('Target Users', '', result.target_users, 'text')
     result.user_stories?.forEach(s => addRow('User Stories', s.persona, `${s.action} — ${s.benefit}`, 'story'))
-    result.requirements?.functional?.forEach(req => addRow('Functional Requirements', `${req.id}: ${req.title}`, `Priority: ${(req.priority || '').replace('_', ' ')} | ${req.description} | Criteria: ${(req.acceptance_criteria || []).join('; ')}`, 'requirement'))
+    result.requirements?.functional?.forEach(req => {
+      const criteriaStr = (req.acceptance_criteria || []).map(c => {
+        if (typeof c === 'object' && c.given) return `Given ${c.given} When ${c.when} Then ${c.then}`
+        return typeof c === 'string' ? c : JSON.stringify(c)
+      }).join('; ')
+      addRow('Functional Requirements', `${req.id}: ${req.title}`, `Priority: ${(req.priority || '').replace('_', ' ')} | ${req.description} | Criteria: ${criteriaStr}`, 'requirement')
+    })
     result.requirements?.non_functional?.forEach(req => addRow('Non-Functional Requirements', `${req.id}: ${req.title}`, `Category: ${req.category || ''} | ${req.description}`, 'requirement'))
+    result.assumptions?.forEach(a => addRow('Assumptions', a.assumption, `Impact: ${a.impact || ''} | Validation: ${a.validation || ''}`, 'assumption'))
+    result.constraints?.forEach(c => addRow('Constraints', c.constraint, `Type: ${c.type || ''} | Impact: ${c.impact || ''}`, 'constraint'))
+    result.dependencies?.forEach(d => addRow('Dependencies', d.dependency, `Type: ${d.type || ''} | Status: ${d.status || ''} | ${d.detail || ''}`, 'dependency'))
+    result.risks?.forEach(r => addRow('Risks', r.risk, `Category: ${r.category || ''} | Probability: ${r.probability || ''} | Impact: ${r.impact || ''} | Mitigation: ${r.mitigation || ''}`, 'risk'))
+    result.open_questions?.forEach(q => addRow('Open Questions', q.question, `Priority: ${q.priority || ''} | ${q.context || ''}`, 'question'))
+    result.release_strategy?.phases?.forEach(p => addRow('Release Strategy', p.name, `Scope: ${p.scope || ''} | Success Criteria: ${p.success_criteria || ''}`, 'phase'))
     if (result.technical_considerations) addRow('Technical Considerations', '', result.technical_considerations, 'text')
-    result.success_metrics?.forEach(m => addRow('Success Metrics', m, '', 'metric'))
+    result.success_metrics?.forEach(m => {
+      if (typeof m === 'object' && m.metric) {
+        addRow('Success Metrics', m.metric, `Target: ${m.target || ''} | Method: ${m.measurement_method || ''}`, 'metric')
+      } else {
+        addRow('Success Metrics', typeof m === 'string' ? m : JSON.stringify(m), '', 'metric')
+      }
+    })
     result.out_of_scope?.forEach(item => addRow('Out of Scope', item, '', 'exclusion'))
     if (result.timeline) addRow('Timeline', '', result.timeline, 'text')
   } else if (type === 'swot') {
