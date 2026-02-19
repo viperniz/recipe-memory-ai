@@ -12852,6 +12852,39 @@
     padding: 12px;
   }
 
+.report-panel-header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.report-panel-header-row .report-panel-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  margin: 0;
+}
+
+.report-panel-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.report-panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
   .report-panel-title {
     font-size: 15px;
   }
