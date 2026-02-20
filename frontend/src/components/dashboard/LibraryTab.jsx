@@ -34,7 +34,6 @@ function LibraryTab({
   onCancelJob,
   onRetryJob,
   onDismissJob,
-  onReprocessWithoutVision,
   onNavigate
 }) {
   const [modeFilter, setModeFilter] = useState('all')
@@ -261,7 +260,6 @@ function LibraryTab({
                 onCancel={onCancelJob}
                 onRetry={onRetryJob}
                 onDismiss={onDismissJob}
-                onReprocessWithoutVision={onReprocessWithoutVision}
               />
             ))}
 
@@ -273,7 +271,6 @@ function LibraryTab({
                 onCancel={onCancelJob}
                 onRetry={onRetryJob}
                 onDismiss={onDismissJob}
-                onReprocessWithoutVision={onReprocessWithoutVision}
               />
             ))}
 

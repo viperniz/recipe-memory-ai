@@ -1,7 +1,7 @@
 # Core dependencies
 opencv-python-headless>=4.8.0
 openai>=1.0.0
-yt-dlp[default]>=2025.5.22
+yt-dlp[default]>=2024.1.0
 curl_cffi>=0.5.0
 
 # FastAPI Backend
@@ -49,11 +49,5 @@ beautifulsoup4>=4.12.0
 
 # Web search (DuckDuckGo search for report web enrichment)
 ddgs>=7.0.0
-
-# YouTube PO token provider (server-side bot detection bypass for yt-dlp)
-bgutil-ytdlp-pot-provider>=0.7.0
-
-# YouTube transcript fallback (when yt-dlp download fails)
-youtube-transcript-api>=1.0.0
 
 # Vector embeddings (via OpenAI API — no local model needed)

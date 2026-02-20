@@ -255,7 +255,6 @@ class Job(Base):
     title = Column(String(255), nullable=True)
     mode = Column(String(50), default="general")  # general, recipe, learn, creator, meeting
     error = Column(Text, nullable=True)
-    error_type = Column(String(50), nullable=True)  # "youtube_blocked" | null — frontend uses this
     result = Column(JSON, nullable=True)  # Store full result as JSON
     settings = Column(JSON, nullable=True)  # Store provider, whisper_model, etc.
     credits_deducted = Column(Integer, nullable=True)  # For refund on failure
@@ -560,8 +559,6 @@ def init_db():
         # Phase 2: soft-delete + low credit warning dedup
         ("users", "deleted_at", "DATETIME", None),
         ("subscriptions", "low_credit_warned_at", "DATETIME", None),
-        # YouTube blocked error type for frontend
-        ("jobs", "error_type", "VARCHAR(50)", None),
     ]
     with engine.connect() as conn:
         for table, column, col_type, default in migrations:

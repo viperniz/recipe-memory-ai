@@ -1,11 +1,15 @@
 import React, { useState, useRef } from 'react'
-import { Plus, Loader2, Video, Globe, Search, GraduationCap, Mic, Users, FileText, Upload, X, Youtube, ArrowRight, Eye, Lock } from 'lucide-react'
+import { Plus, Loader2, Video, Globe, Search, GraduationCap, Mic, Users, FileText, Upload, X, Youtube, Chrome, ArrowRight, ExternalLink, RefreshCw, LogIn, Eye, Lock } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { useNavigate } from 'react-router-dom'
 import { useCreditBalance } from '../billing/FeatureGate'
+import { useExtensionDetection, useCookieReadiness, requestExtensionCookies } from '../../hooks/useExtensionDetection'
 
 const ALLOWED_EXTENSIONS = ['.mp4', '.mkv', '.webm', '.avi', '.mov']
+
+// TODO: Replace with real Chrome Web Store URL after publishing the extension
+const CHROME_EXTENSION_URL = 'https://chromewebstore.google.com/detail/video-memory-ai'
 
 // Content modes with icons and descriptions
 const CONTENT_MODES = [
@@ -43,6 +47,8 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
   const fileInputRef = useRef(null)
     const navigate = useNavigate()
     const { tier, loading: tierLoading } = useCreditBalance()
+    const { detected: extensionDetected, loading: extensionLoading } = useExtensionDetection()
+    const { cookiesReady, cookiesLoading, recheckCookies } = useCookieReadiness(extensionDetected)
     const isPaid = tier !== 'free'
     const hasVisionAccess = tier === 'pro' || tier === 'team'
 
@@ -77,10 +83,15 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
 
         setIsAddingYoutube(true)
         try {
+                const { cookies, error } = await requestExtensionCookies()
+                if (error) {
+                          console.warn('Cookie request warning:', error)
+                }
                 await onAddYoutube(
                           youtubeUrl,
                           contentMode,
-                          language === 'auto' ? null : language
+                          language === 'auto' ? null : language,
+                          cookies
                         )
                 setYoutubeUrl('')
         } finally {
@@ -106,13 +117,15 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
 
   const isProcessing = isAddingVideo || isAddingUrl || isAddingYoutube
     const hasInput = inputMode === 'video'
-      ? (!!selectedFile || isValidYoutubeUrl(youtubeUrl))
+      ? (!!selectedFile || (extensionDetected && cookiesReady && isValidYoutubeUrl(youtubeUrl)))
           : webUrl.trim()
 
-  // YouTube section: show input for paid users, promo card for free
-  const showYoutubeLoading = tierLoading
+  // Determine YouTube section state (4 states now)
+  const showYoutubeLoading = tierLoading || extensionLoading
     const showPromoCard = !showYoutubeLoading && !isPaid
-    const showYoutubeInput = !showYoutubeLoading && isPaid
+    const showInstallCard = !showYoutubeLoading && isPaid && !extensionDetected
+    const showLoginCard = !showYoutubeLoading && isPaid && extensionDetected && !cookiesReady && !cookiesLoading
+    const showYoutubeInput = !showYoutubeLoading && isPaid && extensionDetected && cookiesReady
 
   return (
         <div className="page">
@@ -135,7 +148,7 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
                                 Article
                       </button>
               </div>
-
+        
               <div className="add-video-form">
                 {inputMode === 'video' ? (
                     <>
@@ -183,8 +196,8 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
                                                               )}
                                               </div>
                                 </div>
-
-                      {/* YouTube Section — upgrade promo for free, direct input for paid */}
+                    
+                      {/* YouTube Section — 4 states */}
                       {showPromoCard && (
                                     <div className="youtube-promo-card">
                                                     <div className="youtube-card-icon">
@@ -192,14 +205,74 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
                                                     </div>
                                                     <div className="youtube-card-body">
                                                                       <strong>Save YouTube Videos</strong>
-                                                                      <p>Upgrade your plan to save YouTube videos directly to your knowledge base.</p>
+                                                                      <p>Install our Chrome extension and upgrade your plan to save YouTube videos directly to your knowledge base.</p>
                                                     </div>
                                                     <Button variant="outline" size="sm" onClick={() => navigate('/pricing')}>
                                                                       Upgrade <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
                                                     </Button>
                                     </div>
                                 )}
-
+                    
+                      {showInstallCard && (
+                                    <div className="extension-install-card">
+                                                    <div className="youtube-card-icon chrome">
+                                                                      <Chrome className="w-5 h-5" />
+                                                    </div>
+                                                    <div className="youtube-card-body">
+                                                                      <strong>Install the Chrome Extension</strong>
+                                                                      <p>Add the Video Memory AI extension to save YouTube videos with one click.</p>
+                                                    </div>
+                                                    <Button variant="outline" size="sm" onClick={() => window.open(CHROME_EXTENSION_URL, '_blank')}>
+                                                                      Install <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
+                                                    </Button>
+                                    </div>
+                                )}
+                    
+                      {showLoginCard && (
+                                    <div className="extension-install-card">
+                                                    <div className="youtube-card-icon">
+                                                                      <LogIn className="w-5 h-5" />
+                                                    </div>
+                                                    <div className="youtube-card-body">
+                                                                      <strong>Log into YouTube</strong>
+                                                                      <p>Sign into YouTube in this browser so the extension can access your cookies for downloading videos.</p>
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                                      <Button
+                                                                                            variant="outline"
+                                                                                            size="sm"
+                                                                                            onClick={() => window.open('https://www.youtube.com', '_blank')}
+                                                                                          >
+                                                                                          Open YouTube <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
+                                                                      </Button>
+                                                                      <Button
+                                                                                            variant="ghost"
+                                                                                            size="sm"
+                                                                                            onClick={recheckCookies}
+                                                                                            disabled={cookiesLoading}
+                                                                                          >
+                                                                        {cookiesLoading ? (
+                                                                                                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                                                                                ) : (
+                                                                                                                  <RefreshCw className="w-3.5 h-3.5" />
+                                                                                                                )}
+                                                                      </Button>
+                                                    </div>
+                                    </div>
+                                )}
+                    
+                      {cookiesLoading && isPaid && extensionDetected && !cookiesReady && (
+                                    <div className="extension-install-card">
+                                                    <div className="youtube-card-icon">
+                                                                      <Loader2 className="w-5 h-5 animate-spin" />
+                                                    </div>
+                                                    <div className="youtube-card-body">
+                                                                      <strong>Checking YouTube access...</strong>
+                                                                      <p>Verifying cookie availability from the extension.</p>
+                                                    </div>
+                                    </div>
+                                )}
+                    
                       {showYoutubeInput && (
                                     <div className="youtube-url-section">
                                                     <label>Or paste a YouTube URL</label>
@@ -227,7 +300,7 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
                                                     </div>
                                     </div>
                                 )}
-
+                    
                       {/* Content Mode Selector — horizontal chips */}
                                 <div className="form-group">
                                               <label>Content type</label>
@@ -250,7 +323,7 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
                                                 })}
                                               </div>
                                 </div>
-
+                    
                       {/* Language Selector */}
                                 <div className="form-group">
                                               <label>Translate & output to</label>
@@ -396,7 +469,7 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
                                                                 className="font-mono"
                                                               />
                                 </div>
-
+                    
                       {/* Research Mode Toggle */}
                                 <div className="inline-settings">
                                               <label className="research-toggle">
@@ -413,7 +486,7 @@ function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddY
                                 </div>
                     </>
                   )}
-
+              
                       <Button
                                   onClick={handleSubmit}
                                   className="w-full"

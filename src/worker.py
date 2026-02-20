@@ -8,6 +8,7 @@ self-contained.
 
 import os
 import sys
+import tempfile
 import threading
 import traceback
 from pathlib import Path
@@ -23,55 +24,9 @@ import openai  # noqa: F401
 from database import SessionLocal, Job as JobModel, Report, ContentVector, Collection
 from job_service import JobService
 from billing import BillingService
-from video_processor import download_audio_with_metadata, download_youtube_with_retry, get_video_info
+from video_processor import download_audio_with_metadata, get_video_info
 from vector_memory import VectorMemory
 from config import get_config, init_config
-
-# ---------------------------------------------------------------------------
-# Startup diagnostics — log PO token server status + yt-dlp plugin status
-# ---------------------------------------------------------------------------
-def _log_pot_diagnostics():
-    """Log PO token server and plugin status at startup."""
-    import yt_dlp
-    print(f"[Worker] yt-dlp version: {yt_dlp.version.__version__}", flush=True)
-
-    pot_url = os.getenv("POT_SERVER_URL", "")
-    if pot_url:
-        if not pot_url.startswith("http"):
-            pot_url = f"http://{pot_url}"
-        print(f"[Worker] POT_SERVER_URL: {pot_url}", flush=True)
-        _check_pot_server(pot_url)
-    else:
-        print("[Worker] POT_SERVER_URL not set — will use default http://127.0.0.1:4416", flush=True)
-
-    # Check plugin via sys.modules (do NOT re-import — causes double registration)
-    import sys as _sys
-    plugin_loaded = any("getpot_bgutil" in m for m in _sys.modules)
-    print(f"[Worker] bgutil PO token plugin in sys.modules: {plugin_loaded}", flush=True)
-
-
-def _check_pot_server(pot_url: str = None) -> bool:
-    """Ping the PO token server. Returns True if reachable."""
-    if not pot_url:
-        pot_url = os.getenv("POT_SERVER_URL", "http://127.0.0.1:4416")
-        if not pot_url.startswith("http"):
-            pot_url = f"http://{pot_url}"
-    try:
-        import urllib.request
-        req = urllib.request.Request(f"{pot_url}/ping", method="GET")
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            body = resp.read().decode()[:100]
-            print(f"[Worker] PO token server OK: {resp.status} {body}", flush=True)
-            return True
-    except Exception as e:
-        print(f"[Worker] PO token server UNREACHABLE at {pot_url}: {e}", flush=True)
-        return False
-
-
-try:
-    _log_pot_diagnostics()
-except Exception as e:
-    print(f"[Worker] Diagnostics failed: {e}", flush=True)
 
 # ---------------------------------------------------------------------------
 # Concurrency limiter — prevents OOM when multiple users submit videos.
@@ -178,11 +133,10 @@ def process_video_job(
     url_or_path: str,
     analyze_frames: bool,
     mode: str,
-    cookies_str: str | None = None,  # Deprecated — ignored (kept for RQ compat)
+    cookies_str: str | None = None,
     language: str | None = None,
     collection_id: str | None = None,
     provider: str = "openai",
-    fallback_mode: bool = False,
 ):
     """RQ job: download + process a video URL."""
 
@@ -197,276 +151,136 @@ def process_video_job(
     bg_db = SessionLocal()
     try:
         print(f"[Job {job_id}] Starting processing for: {url_or_path[:50]}")
-        print(f"[Job {job_id}] YouTube: {is_youtube}, fallback_mode: {fallback_mode}")
+        print(f"[Job {job_id}] Cookies provided: {bool(cookies_str)}, YouTube: {is_youtube}")
 
-        # =============================================
-        # Fallback path: transcript-only (no yt-dlp download)
-        # Used when user clicks "Process Without Vision" after youtube_blocked
-        # =============================================
-        if is_youtube and fallback_mode:
-            from youtube_source import fetch_youtube_transcript, fetch_youtube_metadata, YouTubeTranscriptUnavailable
-            from video_processor import _extract_video_id
+        # Set up cookies temp file if provided
+        cookies_temp_path = None
+        if cookies_str and is_youtube:
+            cookies_temp = tempfile.NamedTemporaryFile(
+                mode="w", suffix=".txt", delete=False, prefix="vmem_cookies_"
+            )
+            cookies_temp.write(cookies_str)
+            cookies_temp.close()
+            cookies_temp_path = cookies_temp.name
 
-            video_id = _extract_video_id(url_or_path)
-            if not video_id:
-                JobService.complete_job(db=bg_db, job_id=job_id, error="Could not extract YouTube video ID.")
-                return
-
-            try:
-                JobService.update_job_progress(db=bg_db, job_id=job_id, progress=5, status="Fetching transcript...")
-                meta = fetch_youtube_metadata(video_id)
-                duration_min = meta.get("duration", 0) / 60
-
-                # Duration check
-                if duration_min > 0:
-                    dur_check = BillingService.check_video_duration(bg_db, user_id, duration_min)
-                    if not dur_check["allowed"]:
-                        JobService.complete_job(
-                            db=bg_db, job_id=job_id,
-                            error=f"Video is {int(duration_min)} min. Your plan allows up to {dur_check['max_duration']} min.",
-                        )
-                        return
-
-                # Deduct credits (no vision — only video_per_minute)
-                import math
-                actual_cost = BillingService.get_video_credit_cost(duration_min, False)
+        try:
+            # Download audio + metadata
+            youtube_stats = None
+            duration_min = 0
+            if url_or_path.startswith(("http://", "https://")):
                 try:
-                    BillingService.deduct_credits(
-                        bg_db, user_id, actual_cost, "video_processing",
-                        content_id=job_id,
-                        description=f"YouTube transcript-only ({int(duration_min)} min)",
+                    JobService.update_job_progress(
+                        db=bg_db, job_id=job_id, progress=2,
+                        status="Downloading audio & metadata...",
                     )
-                    job_row = bg_db.query(JobModel).filter(JobModel.id == job_id).first()
-                    if job_row:
-                        job_row.credits_deducted = actual_cost
-                        bg_db.commit()
-                except ValueError:
-                    balance = BillingService.get_credit_balance(bg_db, user_id)
-                    JobService.complete_job(
-                        db=bg_db, job_id=job_id,
-                        error=f"Insufficient credits: need {actual_cost}, have {balance}.",
-                    )
-                    return
-
-                JobService.update_job_progress(db=bg_db, job_id=job_id, progress=15, status="Fetching transcript...")
-                langs = [language] if language and language != "auto" else None
-                transcript_data = fetch_youtube_transcript(video_id, languages=langs)
-
-                youtube_stats = {
-                    "view_count": meta.get("view_count", 0),
-                    "like_count": meta.get("like_count", 0),
-                    "comment_count": meta.get("comment_count", 0),
-                    "subscriber_count": meta.get("channel_follower_count", 0),
-                    "upload_date": meta.get("upload_date", ""),
-                    "channel": meta.get("uploader", ""),
-                    "categories": meta.get("categories", []),
-                    "description": meta.get("description", "")[:500],
-                }
-
-                def progress_callback(percent, status):
-                    _pdb = SessionLocal()
-                    try:
-                        j = _pdb.query(JobModel).filter(JobModel.id == job_id).first()
-                        if j and j.status in ("failed", "completed", "cancelled"):
-                            return
-                        JobService.update_job_progress(db=_pdb, job_id=job_id, progress=percent, status=status or "processing")
-                    except Exception as _pe:
-                        print(f"[Job {job_id}] Progress update failed: {_pe}")
-                    finally:
-                        _pdb.close()
-
-                ai = _get_app(user_id, bg_db)
-                bg_db.close()
-                bg_db = None
-
-                result = ai.process_youtube_fallback(
-                    video_id=video_id,
-                    source_url=url_or_path,
-                    transcript_data=transcript_data,
-                    meta=meta,
-                    mode=mode,
-                    language=language,
-                    youtube_stats=youtube_stats,
-                    progress_callback=progress_callback,
-                    user_id=user_id,
-                    save_content=False,
-                )
-
-            except YouTubeTranscriptUnavailable as e:
-                JobService.complete_job(db=bg_db, job_id=job_id, error=str(e))
-                return
-            except Exception as e:
-                raise
-
-            # Save results (reuses same save logic as normal path below)
-            save_db = SessionLocal()
-            try:
-                j = JobService.get_job(save_db, job_id)
-                if j and j.status == "cancelled":
-                    return
-
-                vector_memory = VectorMemory(save_db, user_id)
-                result_dict = result.to_dict()
-                result_dict["file_size_bytes"] = 0  # No downloaded file
-
-                source_url = result_dict.get("source_url", "")
-                new_content_id = result_dict.get("id", "")
-                if source_url:
-                    existing_id = vector_memory.find_by_source_url(source_url, user_id)
-                    if existing_id and existing_id != new_content_id:
-                        result_dict["id"] = existing_id
-
-                vector_memory.add_content(result_dict, user_id)
-
-                if collection_id:
-                    content_id = result_dict.get("id")
-                    if content_id:
-                        vector_memory.add_to_collection(content_id, collection_id, user_id)
-
-                JobService.complete_job(db=save_db, job_id=job_id, result=result_dict)
-                print(f"[Job {job_id}] Transcript-only fallback completed!")
-                _send_completion_notifications(save_db, user_id, result_dict)
-            finally:
-                save_db.close()
-            return  # Done — skip normal path
-
-        # =============================================
-        # Normal path: yt-dlp download with PO tokens + retry
-        # =============================================
-
-        # Download audio + metadata
-        youtube_stats = None
-        duration_min = 0
-        if url_or_path.startswith(("http://", "https://")):
-            try:
-                JobService.update_job_progress(
-                    db=bg_db, job_id=job_id, progress=2,
-                    status="Downloading audio & metadata...",
-                )
-                if is_youtube:
-                    # Pre-check: is the PO token server reachable?
-                    if not _check_pot_server():
-                        print(f"[Job {job_id}] PO token server unreachable — skipping retries")
-                        JobService.complete_job(
-                            db=bg_db, job_id=job_id,
-                            error="YouTube download unavailable: PO token server is not reachable. Try 'Process Without Vision' for transcript-only.",
-                            error_type="youtube_blocked",
-                        )
-                        return
-
-                    # YouTube: use retry wrapper with PO tokens
-                    _audio_path, meta = download_youtube_with_retry(
-                        url_or_path, output_dir="data/videos",
-                    )
-                else:
                     _audio_path, meta = download_audio_with_metadata(
                         url_or_path, output_dir="data/videos",
+                        cookies_file=cookies_temp_path,
                     )
-                duration_sec = meta.get("duration", 0)
-                duration_min = duration_sec / 60
+                    duration_sec = meta.get("duration", 0)
+                    duration_min = duration_sec / 60
 
-                if meta.get("view_count") or meta.get("title"):
-                    youtube_stats = {
-                        "view_count": meta.get("view_count", 0),
-                        "like_count": meta.get("like_count", 0),
-                        "comment_count": meta.get("comment_count", 0),
-                        "subscriber_count": meta.get("channel_follower_count", 0),
-                        "upload_date": meta.get("upload_date", ""),
-                        "channel": meta.get("uploader", ""),
-                        "categories": meta.get("categories", []),
-                        "description": meta.get("description", "")[:500],
-                    }
-                    print(f"[Job {job_id}] YouTube stats: {youtube_stats.get('view_count', 0)} views")
+                    if meta.get("view_count") or meta.get("title"):
+                        youtube_stats = {
+                            "view_count": meta.get("view_count", 0),
+                            "like_count": meta.get("like_count", 0),
+                            "comment_count": meta.get("comment_count", 0),
+                            "subscriber_count": meta.get("channel_follower_count", 0),
+                            "upload_date": meta.get("upload_date", ""),
+                            "channel": meta.get("uploader", ""),
+                            "categories": meta.get("categories", []),
+                            "description": meta.get("description", "")[:500],
+                        }
+                        print(f"[Job {job_id}] YouTube stats: {youtube_stats.get('view_count', 0)} views")
 
-                print(f"[Job {job_id}] Audio downloaded: {_audio_path}, duration: {duration_min:.1f} min")
-            except Exception as dur_err:
-                err_str = str(dur_err)
-                # YouTube download failure after retries → special error type
-                if is_youtube and ("ERROR:" in err_str or "Unable to download" in err_str
-                                   or "Sign in" in err_str or "HTTP Error" in err_str):
+                    print(f"[Job {job_id}] Audio downloaded: {_audio_path}, duration: {duration_min:.1f} min")
+                except Exception as dur_err:
+                    # If download itself failed, don't bother trying again in process_video
+                    err_str = str(dur_err)
+                    if "ERROR:" in err_str or "Unable to download" in err_str:
+                        raise
+                    # Metadata parsing errors are non-fatal — proceed without stats
+                    print(f"[Job {job_id}] Metadata extraction failed (proceeding): {dur_err}")
+
+            # Feature gate: check video duration against tier limits
+            if duration_min > 0:
+                dur_check = BillingService.check_video_duration(bg_db, user_id, duration_min)
+                if not dur_check["allowed"]:
                     JobService.complete_job(
                         db=bg_db, job_id=job_id,
-                        error=f"YouTube download failed after 3 attempts: {err_str[:300]}",
-                        error_type="youtube_blocked",
+                        error=(
+                            f"Video is {int(duration_min)} min. Your plan allows up to "
+                            f"{dur_check['max_duration']} min. Upgrade to "
+                            f"{dur_check['required_tier'].capitalize()} for longer videos."
+                        ),
                     )
                     return
-                elif "ERROR:" in err_str or "Unable to download" in err_str:
-                    raise
-                # Metadata parsing errors are non-fatal — proceed without stats
-                print(f"[Job {job_id}] Metadata extraction failed (proceeding): {dur_err}")
 
-        # Feature gate: check video duration against tier limits
-        if duration_min > 0:
-            dur_check = BillingService.check_video_duration(bg_db, user_id, duration_min)
-            if not dur_check["allowed"]:
+            # Deduct credits based on actual duration
+            import math
+            actual_cost = BillingService.get_video_credit_cost(duration_min, analyze_frames)
+            try:
+                BillingService.deduct_credits(
+                    bg_db, user_id, actual_cost, "video_processing",
+                    content_id=job_id,
+                    description=f"Video processing ({int(duration_min)} min)",
+                )
+                job_row = bg_db.query(JobModel).filter(JobModel.id == job_id).first()
+                if job_row:
+                    job_row.credits_deducted = actual_cost
+                    bg_db.commit()
+                print(f"[Job {job_id}] Deducted {actual_cost} credits")
+            except ValueError:
+                balance = BillingService.get_credit_balance(bg_db, user_id)
                 JobService.complete_job(
                     db=bg_db, job_id=job_id,
-                    error=(
-                        f"Video is {int(duration_min)} min. Your plan allows up to "
-                        f"{dur_check['max_duration']} min. Upgrade to "
-                        f"{dur_check['required_tier'].capitalize()} for longer videos."
-                    ),
+                    error=f"Insufficient credits: need {actual_cost}, have {balance}. Upgrade for more credits.",
                 )
                 return
 
-        # Deduct credits based on actual duration
-        import math
-        actual_cost = BillingService.get_video_credit_cost(duration_min, analyze_frames)
-        try:
-            BillingService.deduct_credits(
-                bg_db, user_id, actual_cost, "video_processing",
-                content_id=job_id,
-                description=f"Video processing ({int(duration_min)} min)",
+            def progress_callback(percent, status):
+                _pdb = SessionLocal()
+                try:
+                    # Don't overwrite terminal states (failed/completed/cancelled)
+                    j = _pdb.query(JobModel).filter(JobModel.id == job_id).first()
+                    if j and j.status in ("failed", "completed", "cancelled"):
+                        return
+                    JobService.update_job_progress(
+                        db=_pdb, job_id=job_id, progress=percent,
+                        status=status or "processing",
+                    )
+                except Exception as _pe:
+                    print(f"[Job {job_id}] Progress update failed: {_pe}")
+                finally:
+                    _pdb.close()
+                print(f"[Job {job_id}] Progress: {percent}% - {status}")
+
+            ai = _get_app(user_id, bg_db)
+
+            # Close bg_db BEFORE the long process_video() call.
+            # It's no longer needed — progress callbacks use their own sessions,
+            # and save operations will use a fresh save_db.
+            bg_db.close()
+            bg_db = None  # Prevent accidental reuse
+
+            result = ai.process_video(
+                url_or_path,
+                analyze_frames=analyze_frames,
+                progress_callback=progress_callback,
+                detect_speakers=detect_speakers,
+                user_id=user_id,
+                mode=mode,
+                youtube_stats=youtube_stats,
+                language=language,
+                save_content=False,
+                cookies_file=cookies_temp_path,
             )
-            job_row = bg_db.query(JobModel).filter(JobModel.id == job_id).first()
-            if job_row:
-                job_row.credits_deducted = actual_cost
-                bg_db.commit()
-            print(f"[Job {job_id}] Deducted {actual_cost} credits")
-        except ValueError:
-            balance = BillingService.get_credit_balance(bg_db, user_id)
-            JobService.complete_job(
-                db=bg_db, job_id=job_id,
-                error=f"Insufficient credits: need {actual_cost}, have {balance}. Upgrade for more credits.",
-            )
-            return
-
-        def progress_callback(percent, status):
-            _pdb = SessionLocal()
-            try:
-                # Don't overwrite terminal states (failed/completed/cancelled)
-                j = _pdb.query(JobModel).filter(JobModel.id == job_id).first()
-                if j and j.status in ("failed", "completed", "cancelled"):
-                    return
-                JobService.update_job_progress(
-                    db=_pdb, job_id=job_id, progress=percent,
-                    status=status or "processing",
-                )
-            except Exception as _pe:
-                print(f"[Job {job_id}] Progress update failed: {_pe}")
-            finally:
-                _pdb.close()
-            print(f"[Job {job_id}] Progress: {percent}% - {status}")
-
-        ai = _get_app(user_id, bg_db)
-
-        # Close bg_db BEFORE the long process_video() call.
-        # It's no longer needed — progress callbacks use their own sessions,
-        # and save operations will use a fresh save_db.
-        bg_db.close()
-        bg_db = None  # Prevent accidental reuse
-
-        result = ai.process_video(
-            url_or_path,
-            analyze_frames=analyze_frames,
-            progress_callback=progress_callback,
-            detect_speakers=detect_speakers,
-            user_id=user_id,
-            mode=mode,
-            youtube_stats=youtube_stats,
-            language=language,
-            save_content=False,
-        )
+        finally:
+            if cookies_temp_path:
+                try:
+                    os.unlink(cookies_temp_path)
+                except OSError:
+                    pass
 
         # Fresh DB session for save operations (bg_db already closed above)
         save_db = SessionLocal()

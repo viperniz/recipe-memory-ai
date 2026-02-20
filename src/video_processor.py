@@ -7,7 +7,6 @@ import cv2
 import os
 import sys
 import base64
-import time
 from pathlib import Path
 from typing import List, Tuple
 import subprocess
@@ -74,43 +73,7 @@ def _extract_video_id(url: str) -> str | None:
     return None
 
 
-def _get_pot_extractor_args() -> dict:
-    """Build yt-dlp extractor_args for PO token server if configured."""
-    pot_server = os.getenv("POT_SERVER_URL", "http://127.0.0.1:4416")
-    # Render's fromService/hostport gives bare "host:port" — prepend http://
-    if pot_server and not pot_server.startswith("http"):
-        pot_server = f"http://{pot_server}"
-    args = {
-        'youtubepot-bgutilhttp': {
-            'base_url': [pot_server],
-        },
-    }
-    # Enable PO token debug logging when POT_SERVER_URL is explicitly set
-    if os.getenv("POT_SERVER_URL"):
-        args['youtube'] = {'pot_trace': ['true']}
-    return args
-
-
-def _get_yt_dlp_base_opts(output_dir: str) -> dict:
-    """Common yt-dlp options shared by Python API calls."""
-    output_template = os.path.join(output_dir, "%(id)s.%(ext)s")
-    ffmpeg = get_ffmpeg_path()
-    # Enable verbose logging when POT_SERVER_URL is set (so pot_trace output is visible)
-    has_pot = bool(os.getenv("POT_SERVER_URL"))
-    opts = {
-        'outtmpl': output_template,
-        'noplaylist': True,
-        'extractor_args': _get_pot_extractor_args(),
-        'quiet': not has_pot,
-        'no_warnings': not has_pot,
-        'verbose': has_pot,
-    }
-    if ffmpeg and ffmpeg != "ffmpeg":
-        opts['ffmpeg_location'] = str(Path(ffmpeg).parent)
-    return opts
-
-
-def download_video(url: str, output_dir: str = "data/videos") -> str:
+def download_video(url: str, output_dir: str = "data/videos", cookies_file: str = None) -> str:
     """Download video from YouTube or other platforms using yt-dlp"""
     os.makedirs(output_dir, exist_ok=True)
 
@@ -127,36 +90,9 @@ def download_video(url: str, output_dir: str = "data/videos") -> str:
                 print(f"  Video already downloaded: {cached}")
                 return cached
 
-    # YouTube: use Python API so the bgutil PO token plugin is discovered
-    is_youtube = any(d in url for d in ["youtube.com", "youtu.be"])
-    if is_youtube:
-        import yt_dlp
-        opts = _get_yt_dlp_base_opts(output_dir)
-        opts['format'] = 'best[height<=720]'
-        downloaded_path = None
-
-        def _hook(d):
-            nonlocal downloaded_path
-            if d['status'] == 'finished':
-                downloaded_path = d.get('filename')
-
-        opts['progress_hooks'] = [_hook]
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            ydl.download([url])
-
-        if downloaded_path and Path(downloaded_path).exists():
-            return downloaded_path
-
-        # Fallback: find by video ID
-        if video_id:
-            for ext in ['*.mp4', '*.webm', '*.mkv']:
-                files = [f for f in Path(output_dir).glob(ext) if video_id in f.stem]
-                if files:
-                    return str(max(files, key=os.path.getmtime))
-        raise Exception("Could not find downloaded video")
-
-    # Non-YouTube: use subprocess (no PO token needed)
     ytdlp = get_ytdlp_path()
+
+    # Download (--print filename gives us the path in a single call)
     download_cmd = [
         ytdlp,
         "-f", "best[height<=720]",
@@ -164,6 +100,11 @@ def download_video(url: str, output_dir: str = "data/videos") -> str:
         "--no-playlist", "--js-runtimes", "node", "--remote-components", "ejs:github",
         "--print", "after_move:filepath",
     ]
+
+    # Use cookies file for authenticated downloads (e.g. YouTube with bot detection)
+    if cookies_file:
+        download_cmd.extend(["--cookies", cookies_file])
+
     download_cmd.append(url)
 
     result = subprocess.run(download_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -207,7 +148,7 @@ def download_video(url: str, output_dir: str = "data/videos") -> str:
     raise Exception("Could not find downloaded video")
 
 
-def download_audio(url: str, output_dir: str = "data/videos") -> str:
+def download_audio(url: str, output_dir: str = "data/videos", cookies_file: str = None) -> str:
     """Download audio-only from YouTube or other platforms using yt-dlp.
 
     Downloads ~5MB audio instead of ~300MB video. The resulting m4a file
@@ -227,45 +168,8 @@ def download_audio(url: str, output_dir: str = "data/videos") -> str:
                 print(f"  Audio already downloaded: {cached}")
                 return cached
 
-    # YouTube: use Python API so the bgutil PO token plugin is discovered
-    is_youtube = any(d in url for d in ["youtube.com", "youtu.be"])
-    if is_youtube:
-        import yt_dlp
-        opts = _get_yt_dlp_base_opts(output_dir)
-        opts['format'] = 'bestaudio[ext=m4a]/bestaudio'
-        opts['postprocessors'] = [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'm4a',
-        }]
-        downloaded_path = None
-
-        def _hook(d):
-            nonlocal downloaded_path
-            if d['status'] == 'finished':
-                downloaded_path = d.get('filename')
-
-        opts['progress_hooks'] = [_hook]
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            ydl.download([url])
-
-        # The postprocessor changes the extension; find the final .m4a
-        if downloaded_path:
-            m4a_path = Path(downloaded_path).with_suffix('.m4a')
-            if m4a_path.exists():
-                return str(m4a_path)
-            if Path(downloaded_path).exists():
-                return downloaded_path
-
-        # Fallback: find by video ID
-        if video_id:
-            for ext in ['*.m4a', '*.opus', '*.webm']:
-                files = [f for f in Path(output_dir).glob(ext) if video_id in f.stem]
-                if files:
-                    return str(max(files, key=os.path.getmtime))
-        raise Exception("Could not find downloaded audio")
-
-    # Non-YouTube: use subprocess (no PO token needed)
     ytdlp = get_ytdlp_path()
+
     download_cmd = [
         ytdlp,
         "-f", "bestaudio[ext=m4a]/bestaudio",
@@ -275,6 +179,10 @@ def download_audio(url: str, output_dir: str = "data/videos") -> str:
         "--no-playlist", "--js-runtimes", "node", "--remote-components", "ejs:github",
         "--print", "after_move:filepath",
     ]
+
+    if cookies_file:
+        download_cmd.extend(["--cookies", cookies_file])
+
     download_cmd.append(url)
 
     result = subprocess.run(download_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -298,7 +206,7 @@ def download_audio(url: str, output_dir: str = "data/videos") -> str:
 
 
 def download_audio_with_metadata(
-    url: str, output_dir: str = "data/videos"
+    url: str, output_dir: str = "data/videos", cookies_file: str = None
 ) -> tuple:
     """Download audio and extract metadata in a single yt-dlp invocation.
 
@@ -320,80 +228,26 @@ def download_audio_with_metadata(
                 cached_audio = str(max(files, key=os.path.getmtime))
                 break
 
-    is_youtube = any(d in url for d in ["youtube.com", "youtu.be"])
-
-    # YouTube: use Python API so the bgutil PO token plugin is discovered
-    if is_youtube:
-        import yt_dlp
-
-        if cached_audio:
-            # Audio cached — just fetch metadata with --skip-download
-            opts = _get_yt_dlp_base_opts(output_dir)
-            opts['skip_download'] = True
-            with yt_dlp.YoutubeDL(opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-            metadata = _extract_metadata_from_info(info)
-            print(f"  Audio already downloaded: {cached_audio}")
-            return cached_audio, metadata
-
-        # Download audio + extract metadata in one call
-        opts = _get_yt_dlp_base_opts(output_dir)
-        opts['format'] = 'bestaudio[ext=m4a]/bestaudio'
-        opts['postprocessors'] = [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'm4a',
-        }]
-        downloaded_path = None
-
-        def _hook(d):
-            nonlocal downloaded_path
-            if d['status'] == 'finished':
-                downloaded_path = d.get('filename')
-
-        opts['progress_hooks'] = [_hook]
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-
-        metadata = _extract_metadata_from_info(info)
-
-        # Find the audio file (postprocessor changes extension to .m4a)
-        audio_path = None
-        if downloaded_path:
-            m4a_path = Path(downloaded_path).with_suffix('.m4a')
-            if m4a_path.exists():
-                audio_path = str(m4a_path)
-            elif Path(downloaded_path).exists():
-                audio_path = downloaded_path
-
-        if not audio_path and video_id:
-            for ext in ['*.m4a', '*.opus', '*.webm']:
-                files = [f for f in Path(output_dir).glob(ext) if video_id in f.stem]
-                if files:
-                    audio_path = str(max(files, key=os.path.getmtime))
-                    break
-
-        if not audio_path:
-            raise Exception("Could not find downloaded audio")
-
-        return audio_path, metadata
-
-    # Non-YouTube: use subprocess (no PO token needed)
     ytdlp = get_ytdlp_path()
 
-    # Metadata fields to extract via --print
+    # Metadata fields to extract via --print (one per line)
     meta_fields = [
         "duration", "title", "view_count", "like_count",
         "comment_count", "channel_follower_count", "upload_date",
         "uploader", "categories", "description", "id",
     ]
+    # Build --print flags: each field printed on its own line after download
     print_template = "|||".join(f"%({f})s" for f in meta_fields)
 
     if cached_audio:
+        # Audio cached — just fetch metadata with --no-download
         probe_cmd = [
             ytdlp, "--no-download",
             "--print", print_template,
             "--no-playlist", "--js-runtimes", "node", "--remote-components", "ejs:github",
         ]
+        if cookies_file:
+            probe_cmd.extend(["--cookies", cookies_file])
         probe_cmd.append(url)
 
         result = subprocess.run(
@@ -404,6 +258,7 @@ def download_audio_with_metadata(
         print(f"  Audio already downloaded: {cached_audio}")
         return cached_audio, metadata
 
+    # Download audio + print metadata in one call
     download_cmd = [
         ytdlp,
         "-f", "bestaudio[ext=m4a]/bestaudio",
@@ -414,6 +269,10 @@ def download_audio_with_metadata(
         "--print", "after_move:filepath",
         "--print", print_template,
     ]
+
+    if cookies_file:
+        download_cmd.extend(["--cookies", cookies_file])
+
     download_cmd.append(url)
 
     result = subprocess.run(download_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -423,9 +282,13 @@ def download_audio_with_metadata(
 
     lines = result.stdout.strip().split('\n') if result.stdout.strip() else []
 
+    # Last line is the filepath (from after_move:filepath), second-to-last is metadata
     audio_path = None
     metadata = {}
 
+    # Find the filepath line and metadata line from --print output
+    # --print after_move:filepath outputs after download, --print outputs before
+    # So metadata line comes first, filepath line comes last
     for line in reversed(lines):
         line = line.strip()
         if not line:
@@ -436,12 +299,14 @@ def download_audio_with_metadata(
             metadata = _parse_metadata_output(line, meta_fields)
             break
 
-    if not audio_path and video_id:
-        for ext in ['*.m4a', '*.opus', '*.webm']:
-            files = [f for f in Path(output_dir).glob(ext) if video_id in str(f)]
-            if files:
-                audio_path = str(max(files, key=os.path.getmtime))
-                break
+    if not audio_path:
+        # Fallback: find most recent audio file
+        if video_id:
+            for ext in ['*.m4a', '*.opus', '*.webm']:
+                files = [f for f in Path(output_dir).glob(ext) if video_id in str(f)]
+                if files:
+                    audio_path = str(max(files, key=os.path.getmtime))
+                    break
 
     if not audio_path:
         raise Exception("Could not find downloaded audio")
@@ -479,63 +344,6 @@ def _parse_metadata_output(output: str, fields: list) -> dict:
             break
 
     return metadata
-
-
-def _extract_metadata_from_info(info: dict) -> dict:
-    """Extract metadata from yt-dlp's Python API info_dict.
-
-    Produces the same format as _parse_metadata_output() so the rest of
-    the pipeline works identically regardless of which path was used.
-    """
-    if not info:
-        return {}
-
-    def _int(key):
-        val = info.get(key)
-        try:
-            return int(float(val)) if val is not None else 0
-        except (ValueError, TypeError):
-            return 0
-
-    categories = info.get("categories") or []
-    if isinstance(categories, str):
-        categories = [c.strip().strip("'\"") for c in categories.strip("[]").split(",") if c.strip()]
-
-    description = info.get("description") or ""
-
-    return {
-        "duration": _int("duration"),
-        "title": info.get("title") or "",
-        "view_count": _int("view_count"),
-        "like_count": _int("like_count"),
-        "comment_count": _int("comment_count"),
-        "channel_follower_count": _int("channel_follower_count"),
-        "upload_date": info.get("upload_date") or "",
-        "uploader": info.get("uploader") or "",
-        "categories": categories,
-        "description": description[:500],
-        "id": info.get("id") or "",
-    }
-
-
-def download_youtube_with_retry(url: str, output_dir: str = "data/videos", max_retries: int = 3) -> tuple:
-    """Try yt-dlp download up to max_retries times with exponential backoff.
-
-    Returns:
-        (audio_path, metadata_dict) — same as download_audio_with_metadata()
-
-    Raises:
-        Exception: If all attempts fail (last exception is re-raised)
-    """
-    for attempt in range(1, max_retries + 1):
-        try:
-            return download_audio_with_metadata(url, output_dir)
-        except Exception as e:
-            if attempt == max_retries:
-                raise  # Let caller handle final failure
-            wait = 2 ** attempt  # 2s, 4s
-            print(f"[yt-dlp] Attempt {attempt}/{max_retries} failed: {e}. Retrying in {wait}s...")
-            time.sleep(wait)
 
 
 def extract_audio(video_path: str, output_path: str = None) -> str:

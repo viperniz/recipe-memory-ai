@@ -405,6 +405,7 @@ class VideoMemoryAI:
         mode: str = "general",
         youtube_stats: dict = None,
         language: str = None,
+        cookies_file: str = None
     ) -> ContentExtract:
         """
         Process a video and extract structured information
@@ -457,13 +458,13 @@ class VideoMemoryAI:
                 if analyze_frames:
                     # Need both audio (for transcription) and video (for frames)
                     # Download sequentially to limit peak memory (avoid 2 concurrent yt-dlp subprocesses)
-                    audio_path = download_audio(source, videos_dir)
+                    audio_path = download_audio(source, videos_dir, cookies_file=cookies_file)
                     print(f"  Audio: {audio_path}")
-                    video_path = download_video(source, videos_dir)
+                    video_path = download_video(source, videos_dir, cookies_file=cookies_file)
                     print(f"  Video: {video_path}")
                 else:
                     # No frame analysis — only need audio (~5MB instead of ~300MB)
-                    audio_path = download_audio(source, videos_dir)
+                    audio_path = download_audio(source, videos_dir, cookies_file=cookies_file)
                     video_path = audio_path  # Used for get_video_info fallback
                     print(f"  Audio only: {audio_path}")
             finally:
@@ -741,98 +742,6 @@ class VideoMemoryAI:
         )
 
         if save_content:
-            self.memory.add_content(content.to_dict(), user_id=user_id)
-
-        return content
-
-    def process_youtube_fallback(
-        self,
-        video_id: str,
-        source_url: str,
-        transcript_data: dict,
-        meta: dict,
-        mode: str = "general",
-        language: str = None,
-        youtube_stats: dict = None,
-        progress_callback: callable = None,
-        user_id: int = None,
-        save_content: bool = False,
-    ) -> ContentExtract:
-        """Process a YouTube video using only transcript (no yt-dlp download).
-
-        Used as a fallback when yt-dlp download fails (youtube_blocked).
-        Fetches transcript via youtube-transcript-api, metadata via InnerTube.
-        No vision/frame analysis — transcript-only pipeline.
-
-        Args:
-            video_id: YouTube video ID
-            source_url: Full YouTube URL
-            transcript_data: Dict from fetch_youtube_transcript() with text/segments/language
-            meta: Dict from fetch_youtube_metadata() with duration/title/etc.
-            mode: Content mode (general, learn, creator, etc.)
-            language: Target language for translation (None = auto-detect)
-            youtube_stats: YouTube stats dict for enrichment
-            progress_callback: Optional progress callback
-            user_id: User ID for multi-tenant isolation
-            save_content: Whether to save to memory
-
-        Returns:
-            ContentExtract object
-        """
-        def update_progress(pct, status):
-            if progress_callback:
-                progress_callback(pct, status)
-
-        update_progress(30, "Processing transcript...")
-
-        transcript = transcript_data["text"]
-        segments = transcript_data["segments"]
-        detected_lang = transcript_data.get("language", "en")
-
-        # Format transcript with timestamps
-        formatted_transcript = self._format_transcript(segments)
-        detected_lang_name = self.LANGUAGE_NAMES.get(detected_lang, detected_lang)
-
-        # Translate if needed
-        translated = False
-        if language and language != "auto" and language != detected_lang:
-            update_progress(50, f"Translating from {detected_lang_name}...")
-            transcript, formatted_transcript = self._translate_transcript(
-                transcript, formatted_transcript, language
-            )
-            translated = True
-
-        # Extract content with LLM (no frame descriptions)
-        update_progress(60, "Extracting information...")
-        duration_sec = meta.get("duration", 0)
-        content = self.analyzer.extract_content(
-            transcript=transcript,
-            frame_descriptions=[],
-            source_url=source_url,
-            duration_seconds=duration_sec,
-            formatted_transcript=formatted_transcript,
-            mode=mode,
-            youtube_stats=youtube_stats,
-            language=language,
-        )
-
-        # Build transcript-only timeline
-        if segments:
-            content.timeline = self._build_timeline(segments, [])
-
-        # Store metadata
-        content.metadata = content.metadata or {}
-        content.metadata["youtube_thumbnail"] = f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg"
-        content.metadata["detected_language"] = detected_lang
-        content.metadata["detected_language_name"] = detected_lang_name
-        content.metadata["fallback_mode"] = True  # Flag that this used transcript-only
-        if translated:
-            content.metadata["translated_to"] = language
-            content.metadata["translated_to_name"] = self.LANGUAGE_NAMES.get(language, language)
-
-        update_progress(90, "Saving...")
-
-        if save_content and self.memory:
             self.memory.add_content(content.to_dict(), user_id=user_id)
 
         return content

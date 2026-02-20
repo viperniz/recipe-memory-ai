@@ -458,38 +458,7 @@ function HomePage() {
     }
   }
 
-  const handleReprocessWithoutVision = async (job) => {
-    try {
-      const response = await api.post('/videos/add', {
-        url_or_path: job.video_url,
-        analyze_frames: false,
-        fallback_mode: true,
-        provider: settings.provider,
-        mode: job.mode || 'general',
-      })
-      const newJob = response.data.job
-      if (newJob) {
-        addJob(newJob)
-        toast({
-          variant: 'info',
-          title: 'Reprocessing without Vision',
-          description: 'Using transcript-only fallback. No Vision credits charged.',
-          duration: 4000
-        })
-      }
-    } catch (err) {
-      console.error('Reprocess failed:', err)
-      if (!handle403Error(err, navigate, toast)) {
-        toast({
-          variant: 'destructive',
-          title: 'Reprocess failed',
-          description: err.response?.data?.detail || err.message
-        })
-      }
-    }
-  }
-
-  const handleAddYoutube = async (url, contentMode = 'general', language = null) => {
+  const handleAddYoutube = async (url, contentMode = 'general', language = null, cookies = null) => {
     if (!url.trim()) return
     setIsAddingVideo(true)
     try {
@@ -499,6 +468,7 @@ function HomePage() {
         provider: settings.provider,
         mode: contentMode,
         language,
+        cookies
       })
       const newJob = response.data.job
       if (newJob) {
@@ -808,7 +778,6 @@ function HomePage() {
             onCancelJob={handleCancelJob}
             onRetryJob={handleRetryJob}
             onDismissJob={handleDismissJob}
-            onReprocessWithoutVision={handleReprocessWithoutVision}
             onNavigate={setActiveTab}
           />
         )}
