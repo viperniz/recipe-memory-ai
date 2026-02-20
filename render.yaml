@@ -24,3 +24,19 @@ services:
         value: "false"
       - key: PYTHON_VERSION
         value: "3.12.3"
+      - key: POT_SERVER_URL
+        fromService:
+          name: videomemory-pot
+          type: pserv
+          property: hostport  # e.g. "videomemory-pot-xxxx:4416"
+
+  # PO Token server — generates YouTube bot-detection bypass tokens for yt-dlp
+  - type: pserv
+    name: videomemory-pot
+    runtime: docker
+    dockerfilePath: ./Dockerfile.pot
+    plan: starter  # 512MB — lightweight token generation
+    disk:
+      name: pot-data
+      mountPath: /tmp/pot-data
+      sizeGB: 1

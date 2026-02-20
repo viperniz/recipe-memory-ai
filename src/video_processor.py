@@ -76,7 +76,10 @@ def _extract_video_id(url: str) -> str | None:
 
 def _get_pot_extractor_args() -> dict:
     """Build yt-dlp extractor_args for PO token server if configured."""
-    pot_server = os.getenv("POT_SERVER_URL", "http://127.0.0.1:8080")
+    pot_server = os.getenv("POT_SERVER_URL", "http://127.0.0.1:4416")
+    # Render's fromService/hostport gives bare "host:port" — prepend http://
+    if pot_server and not pot_server.startswith("http"):
+        pot_server = f"http://{pot_server}"
     return {
         'youtubepot-bgutilhttp': {
             'base_url': [pot_server],
