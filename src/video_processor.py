@@ -80,23 +80,30 @@ def _get_pot_extractor_args() -> dict:
     # Render's fromService/hostport gives bare "host:port" — prepend http://
     if pot_server and not pot_server.startswith("http"):
         pot_server = f"http://{pot_server}"
-    return {
+    args = {
         'youtubepot-bgutilhttp': {
             'base_url': [pot_server],
         },
     }
+    # Enable PO token debug logging when POT_SERVER_URL is explicitly set
+    if os.getenv("POT_SERVER_URL"):
+        args['youtube'] = {'pot_trace': ['true']}
+    return args
 
 
 def _get_yt_dlp_base_opts(output_dir: str) -> dict:
     """Common yt-dlp options shared by Python API calls."""
     output_template = os.path.join(output_dir, "%(id)s.%(ext)s")
     ffmpeg = get_ffmpeg_path()
+    # Enable verbose logging when POT_SERVER_URL is set (so pot_trace output is visible)
+    has_pot = bool(os.getenv("POT_SERVER_URL"))
     opts = {
         'outtmpl': output_template,
         'noplaylist': True,
         'extractor_args': _get_pot_extractor_args(),
-        'quiet': True,
-        'no_warnings': True,
+        'quiet': not has_pot,
+        'no_warnings': not has_pot,
+        'verbose': has_pot,
     }
     if ffmpeg and ffmpeg != "ffmpeg":
         opts['ffmpeg_location'] = str(Path(ffmpeg).parent)

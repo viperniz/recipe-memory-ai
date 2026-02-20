@@ -28,6 +28,41 @@ from vector_memory import VectorMemory
 from config import get_config, init_config
 
 # ---------------------------------------------------------------------------
+# Startup diagnostics — log PO token server status + yt-dlp plugin status
+# ---------------------------------------------------------------------------
+def _log_pot_diagnostics():
+    """Log PO token server and plugin status at startup."""
+    import yt_dlp
+    print(f"[Worker] yt-dlp version: {yt_dlp.version.__version__}")
+
+    pot_url = os.getenv("POT_SERVER_URL", "")
+    if pot_url:
+        if not pot_url.startswith("http"):
+            pot_url = f"http://{pot_url}"
+        print(f"[Worker] POT_SERVER_URL: {pot_url}")
+        try:
+            import urllib.request
+            req = urllib.request.Request(f"{pot_url}/ping", method="GET")
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                print(f"[Worker] PO token server reachable: {resp.status} {resp.read().decode()[:100]}")
+        except Exception as e:
+            print(f"[Worker] PO token server NOT reachable: {e}")
+    else:
+        print("[Worker] POT_SERVER_URL not set — PO tokens disabled")
+
+    # Check if plugin is loaded
+    try:
+        import yt_dlp_plugins.extractor.getpot_bgutil_http  # noqa: F401
+        print("[Worker] bgutil PO token plugin: LOADED")
+    except ImportError:
+        print("[Worker] bgutil PO token plugin: NOT FOUND")
+
+try:
+    _log_pot_diagnostics()
+except Exception as e:
+    print(f"[Worker] Diagnostics failed: {e}")
+
+# ---------------------------------------------------------------------------
 # Concurrency limiter — prevents OOM when multiple users submit videos.
 # Excess jobs wait in "Queued" status until a slot opens.
 # ---------------------------------------------------------------------------
