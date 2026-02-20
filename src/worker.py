@@ -33,34 +33,45 @@ from config import get_config, init_config
 def _log_pot_diagnostics():
     """Log PO token server and plugin status at startup."""
     import yt_dlp
-    print(f"[Worker] yt-dlp version: {yt_dlp.version.__version__}")
+    print(f"[Worker] yt-dlp version: {yt_dlp.version.__version__}", flush=True)
 
     pot_url = os.getenv("POT_SERVER_URL", "")
     if pot_url:
         if not pot_url.startswith("http"):
             pot_url = f"http://{pot_url}"
-        print(f"[Worker] POT_SERVER_URL: {pot_url}")
-        try:
-            import urllib.request
-            req = urllib.request.Request(f"{pot_url}/ping", method="GET")
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                print(f"[Worker] PO token server reachable: {resp.status} {resp.read().decode()[:100]}")
-        except Exception as e:
-            print(f"[Worker] PO token server NOT reachable: {e}")
+        print(f"[Worker] POT_SERVER_URL: {pot_url}", flush=True)
+        _check_pot_server(pot_url)
     else:
-        print("[Worker] POT_SERVER_URL not set — PO tokens disabled")
+        print("[Worker] POT_SERVER_URL not set — will use default http://127.0.0.1:4416", flush=True)
 
-    # Check if plugin is loaded
+    # Check plugin via sys.modules (do NOT re-import — causes double registration)
+    import sys as _sys
+    plugin_loaded = any("getpot_bgutil" in m for m in _sys.modules)
+    print(f"[Worker] bgutil PO token plugin in sys.modules: {plugin_loaded}", flush=True)
+
+
+def _check_pot_server(pot_url: str = None) -> bool:
+    """Ping the PO token server. Returns True if reachable."""
+    if not pot_url:
+        pot_url = os.getenv("POT_SERVER_URL", "http://127.0.0.1:4416")
+        if not pot_url.startswith("http"):
+            pot_url = f"http://{pot_url}"
     try:
-        import yt_dlp_plugins.extractor.getpot_bgutil_http  # noqa: F401
-        print("[Worker] bgutil PO token plugin: LOADED")
-    except ImportError:
-        print("[Worker] bgutil PO token plugin: NOT FOUND")
+        import urllib.request
+        req = urllib.request.Request(f"{pot_url}/ping", method="GET")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            body = resp.read().decode()[:100]
+            print(f"[Worker] PO token server OK: {resp.status} {body}", flush=True)
+            return True
+    except Exception as e:
+        print(f"[Worker] PO token server UNREACHABLE at {pot_url}: {e}", flush=True)
+        return False
+
 
 try:
     _log_pot_diagnostics()
 except Exception as e:
-    print(f"[Worker] Diagnostics failed: {e}")
+    print(f"[Worker] Diagnostics failed: {e}", flush=True)
 
 # ---------------------------------------------------------------------------
 # Concurrency limiter — prevents OOM when multiple users submit videos.
@@ -333,6 +344,16 @@ def process_video_job(
                     status="Downloading audio & metadata...",
                 )
                 if is_youtube:
+                    # Pre-check: is the PO token server reachable?
+                    if not _check_pot_server():
+                        print(f"[Job {job_id}] PO token server unreachable — skipping retries")
+                        JobService.complete_job(
+                            db=bg_db, job_id=job_id,
+                            error="YouTube download unavailable: PO token server is not reachable. Try 'Process Without Vision' for transcript-only.",
+                            error_type="youtube_blocked",
+                        )
+                        return
+
                     # YouTube: use retry wrapper with PO tokens
                     _audio_path, meta = download_youtube_with_retry(
                         url_or_path, output_dir="data/videos",
