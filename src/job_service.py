@@ -13,7 +13,7 @@ from redis_client import cache_delete
 # Excludes result (~100KB-1MB), settings (~1-10KB), and error (only needed on fail).
 _LIST_COLUMNS = [
     Job.id, Job.status, Job.progress, Job.title,
-    Job.video_url, Job.mode, Job.error,
+    Job.video_url, Job.mode, Job.error, Job.error_type,
     Job.started_at, Job.completed_at
 ]
 
@@ -102,12 +102,15 @@ class JobService:
         db: Session,
         job_id: str,
         result: Dict = None,
-        error: Optional[str] = None
+        error: Optional[str] = None,
+        error_type: Optional[str] = None
     ) -> Optional[Job]:
         """Mark job as completed or failed"""
         now = datetime.utcnow()
         if error:
             values = {"status": "failed", "error": error, "completed_at": now, "updated_at": now}
+            if error_type:
+                values["error_type"] = error_type
         else:
             values = {"status": "completed", "result": result, "progress": 100.0, "completed_at": now, "updated_at": now}
 

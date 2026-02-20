@@ -7,6 +7,7 @@ import cv2
 import os
 import sys
 import base64
+import time
 from pathlib import Path
 from typing import List, Tuple
 import subprocess
@@ -73,7 +74,17 @@ def _extract_video_id(url: str) -> str | None:
     return None
 
 
-def download_video(url: str, output_dir: str = "data/videos", cookies_file: str = None) -> str:
+def _get_pot_extractor_args() -> dict:
+    """Build yt-dlp extractor_args for PO token server if configured."""
+    pot_server = os.getenv("POT_SERVER_URL", "http://127.0.0.1:8080")
+    return {
+        'youtubepot-bgutilhttp': {
+            'base_url': [pot_server],
+        },
+    }
+
+
+def download_video(url: str, output_dir: str = "data/videos") -> str:
     """Download video from YouTube or other platforms using yt-dlp"""
     os.makedirs(output_dir, exist_ok=True)
 
@@ -101,9 +112,14 @@ def download_video(url: str, output_dir: str = "data/videos", cookies_file: str 
         "--print", "after_move:filepath",
     ]
 
-    # Use cookies file for authenticated downloads (e.g. YouTube with bot detection)
-    if cookies_file:
-        download_cmd.extend(["--cookies", cookies_file])
+    # PO token server args for YouTube bot detection bypass
+    is_youtube = any(d in url for d in ["youtube.com", "youtu.be"])
+    if is_youtube:
+        pot_args = _get_pot_extractor_args()
+        for key, vals in pot_args.items():
+            for subkey, subvals in vals.items():
+                for val in subvals:
+                    download_cmd.extend(["--extractor-args", f"{key}:{subkey}={val}"])
 
     download_cmd.append(url)
 
@@ -148,7 +164,7 @@ def download_video(url: str, output_dir: str = "data/videos", cookies_file: str 
     raise Exception("Could not find downloaded video")
 
 
-def download_audio(url: str, output_dir: str = "data/videos", cookies_file: str = None) -> str:
+def download_audio(url: str, output_dir: str = "data/videos") -> str:
     """Download audio-only from YouTube or other platforms using yt-dlp.
 
     Downloads ~5MB audio instead of ~300MB video. The resulting m4a file
@@ -180,8 +196,14 @@ def download_audio(url: str, output_dir: str = "data/videos", cookies_file: str 
         "--print", "after_move:filepath",
     ]
 
-    if cookies_file:
-        download_cmd.extend(["--cookies", cookies_file])
+    # PO token server args for YouTube bot detection bypass
+    is_youtube = any(d in url for d in ["youtube.com", "youtu.be"])
+    if is_youtube:
+        pot_args = _get_pot_extractor_args()
+        for key, vals in pot_args.items():
+            for subkey, subvals in vals.items():
+                for val in subvals:
+                    download_cmd.extend(["--extractor-args", f"{key}:{subkey}={val}"])
 
     download_cmd.append(url)
 
@@ -206,7 +228,7 @@ def download_audio(url: str, output_dir: str = "data/videos", cookies_file: str 
 
 
 def download_audio_with_metadata(
-    url: str, output_dir: str = "data/videos", cookies_file: str = None
+    url: str, output_dir: str = "data/videos"
 ) -> tuple:
     """Download audio and extract metadata in a single yt-dlp invocation.
 
@@ -229,6 +251,7 @@ def download_audio_with_metadata(
                 break
 
     ytdlp = get_ytdlp_path()
+    is_youtube = any(d in url for d in ["youtube.com", "youtu.be"])
 
     # Metadata fields to extract via --print (one per line)
     meta_fields = [
@@ -239,15 +262,22 @@ def download_audio_with_metadata(
     # Build --print flags: each field printed on its own line after download
     print_template = "|||".join(f"%({f})s" for f in meta_fields)
 
+    # PO token extractor-args for YouTube
+    pot_ext_args = []
+    if is_youtube:
+        pot_args = _get_pot_extractor_args()
+        for key, vals in pot_args.items():
+            for subkey, subvals in vals.items():
+                for val in subvals:
+                    pot_ext_args.extend(["--extractor-args", f"{key}:{subkey}={val}"])
+
     if cached_audio:
         # Audio cached — just fetch metadata with --no-download
         probe_cmd = [
             ytdlp, "--no-download",
             "--print", print_template,
             "--no-playlist", "--js-runtimes", "node", "--remote-components", "ejs:github",
-        ]
-        if cookies_file:
-            probe_cmd.extend(["--cookies", cookies_file])
+        ] + pot_ext_args
         probe_cmd.append(url)
 
         result = subprocess.run(
@@ -268,10 +298,7 @@ def download_audio_with_metadata(
         "--no-playlist", "--js-runtimes", "node", "--remote-components", "ejs:github",
         "--print", "after_move:filepath",
         "--print", print_template,
-    ]
-
-    if cookies_file:
-        download_cmd.extend(["--cookies", cookies_file])
+    ] + pot_ext_args
 
     download_cmd.append(url)
 
@@ -344,6 +371,26 @@ def _parse_metadata_output(output: str, fields: list) -> dict:
             break
 
     return metadata
+
+
+def download_youtube_with_retry(url: str, output_dir: str = "data/videos", max_retries: int = 3) -> tuple:
+    """Try yt-dlp download up to max_retries times with exponential backoff.
+
+    Returns:
+        (audio_path, metadata_dict) — same as download_audio_with_metadata()
+
+    Raises:
+        Exception: If all attempts fail (last exception is re-raised)
+    """
+    for attempt in range(1, max_retries + 1):
+        try:
+            return download_audio_with_metadata(url, output_dir)
+        except Exception as e:
+            if attempt == max_retries:
+                raise  # Let caller handle final failure
+            wait = 2 ** attempt  # 2s, 4s
+            print(f"[yt-dlp] Attempt {attempt}/{max_retries} failed: {e}. Retrying in {wait}s...")
+            time.sleep(wait)
 
 
 def extract_audio(video_path: str, output_path: str = None) -> str:

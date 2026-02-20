@@ -85,18 +85,6 @@ def _enqueue_or_thread(func_path: str, **kwargs):
     thread.start()
 
 
-def _validate_cookies_string(s: str) -> bool:
-    """Validate Netscape-format cookie string (tab-separated, 7 fields per line)."""
-    if not s or len(s) > 500_000:
-        return False
-    for line in s.strip().split('\n'):
-        if line.startswith('#') or not line.strip():
-            continue
-        if len(line.split('\t')) != 7:
-            return False
-    return True
-
-
 def _get_chat_model(db: Session, user_id: int) -> str:
     """Get the AI model for a user based on their subscription tier"""
     sub = BillingService._ensure_subscription(db, user_id)
@@ -198,7 +186,8 @@ class VideoAddRequest(BaseModel):
     mode: str = "general"  # general, recipe, learn, creator, meeting
     language: Optional[str] = None  # None = auto-detect, or ISO code like "en", "es", "fr"
     collection_id: Optional[str] = None  # Auto-add to collection after processing
-    cookies: Optional[str] = None  # Netscape-format cookies for YouTube (transient, never stored)
+    cookies: Optional[str] = None  # Deprecated — ignored (PO token server replaces cookies)
+    fallback_mode: bool = False  # When True, use transcript-only path (no yt-dlp download)
 
 
 class SettingsUpdate(BaseModel):
@@ -1135,10 +1124,9 @@ async def add_video(
                 }
             )
 
-    # Validate cookies format if provided
-    if request.cookies:
-        if not _validate_cookies_string(request.cookies):
-            raise HTTPException(status_code=400, detail="Invalid cookie format. Expected Netscape tab-separated format.")
+    # Fallback mode disables frame analysis (transcript-only path)
+    if request.fallback_mode:
+        request.analyze_frames = False
 
     # Credit pre-check: minimum 1 credit (1 min video)
     estimated_cost = CREDIT_COSTS["video_per_minute"]  # Minimum 1 credit
@@ -1176,10 +1164,9 @@ async def add_video(
 
     # Enqueue processing in background (RQ worker or thread fallback)
     user_id = current_user.id
-    cookies_str = request.cookies  # Captured here, never stored in job settings
     is_youtube = any(d in request.url_or_path for d in ['youtube.com', 'youtu.be'])
     if is_youtube:
-        print(f"[API] YouTube video submitted. Cookies provided: {bool(cookies_str)}, length: {len(cookies_str) if cookies_str else 0}")
+        print(f"[API] YouTube video submitted. fallback_mode: {request.fallback_mode}")
 
     _enqueue_or_thread(
         "worker.process_video_job",
@@ -1188,14 +1175,13 @@ async def add_video(
         url_or_path=request.url_or_path,
         analyze_frames=request.analyze_frames,
         mode=mode,
-        cookies_str=cookies_str,
         language=request.language,
         collection_id=request.collection_id,
         provider=request.provider or "openai",
+        fallback_mode=request.fallback_mode,
         job_timeout="30m",
     )
 
-    has_cookies = bool(cookies_str) if is_youtube else None
     return {
         "job": {
             "id": job.id,
@@ -1206,7 +1192,6 @@ async def add_video(
             "mode": job.mode,
             "started_at": job.started_at.isoformat() if job.started_at else None,
             "error": None,
-            "cookies_provided": has_cookies
         }
     }
 
@@ -1363,7 +1348,8 @@ async def get_jobs(
                 "mode": row.mode,
                 "started_at": row.started_at.isoformat() if row.started_at else None,
                 "completed_at": row.completed_at.isoformat() if row.completed_at else None,
-                "error": row.error
+                "error": row.error,
+                "error_type": row.error_type,
             }
             for row in rows
         ]
@@ -1389,6 +1375,7 @@ async def get_job(
         "title": job.title,
         "result": job.result,
         "error": job.error,
+        "error_type": job.error_type,
         "started_at": job.started_at.isoformat() if job.started_at else None,
         "completed_at": job.completed_at.isoformat() if job.completed_at else None
     }

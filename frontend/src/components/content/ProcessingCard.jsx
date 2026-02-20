@@ -1,13 +1,14 @@
 import React from 'react'
-import { Loader2, Video, AlertCircle, CheckCircle, X, RotateCcw, Trash2 } from 'lucide-react'
+import { Loader2, Video, AlertCircle, AlertTriangle, CheckCircle, X, RotateCcw, Trash2, Bug, FileText } from 'lucide-react'
 import { Progress } from '../ui/progress'
 import { Button } from '../ui/button'
 
-function ProcessingCard({ job, onClick, onCancel, onRetry, onDismiss }) {
+function ProcessingCard({ job, onClick, onCancel, onRetry, onDismiss, onReprocessWithoutVision }) {
   const isFailed = job.status === 'failed'
   const isCompleted = job.status === 'completed'
   const isCancelled = job.status === 'cancelled'
   const isInProgress = !isFailed && !isCompleted && !isCancelled
+  const isYoutubeBlocked = isFailed && job.error_type === 'youtube_blocked'
 
   // Extract title from URL or use provided title
   const getTitle = () => {
@@ -24,6 +25,7 @@ function ProcessingCard({ job, onClick, onCancel, onRetry, onDismiss }) {
   }
 
   const getStatusText = () => {
+    if (isYoutubeBlocked) return 'YouTube temporarily blocked this download.'
     if (isFailed) return job.error || 'Processing failed'
     if (isCompleted) return 'Ready'
     if (isCancelled) return 'Cancelled'
@@ -42,6 +44,7 @@ function ProcessingCard({ job, onClick, onCancel, onRetry, onDismiss }) {
 
   // CSS class for styling
   const getStatusClass = () => {
+    if (isYoutubeBlocked) return 'failed youtube-blocked'
     if (isFailed) return 'failed'
     if (isCompleted) return 'completed'
     if (job.status === 'queued') return 'queued'
@@ -76,7 +79,13 @@ function ProcessingCard({ job, onClick, onCancel, onRetry, onDismiss }) {
           </div>
         )}
 
-        {isFailed && (
+        {isYoutubeBlocked && (
+          <div className="processing-card-overlay failed">
+            <AlertTriangle className="w-6 h-6 text-amber-400" />
+          </div>
+        )}
+
+        {isFailed && !isYoutubeBlocked && (
           <div className="processing-card-overlay failed">
             <AlertCircle className="w-6 h-6 text-red-400" />
           </div>
@@ -99,9 +108,39 @@ function ProcessingCard({ job, onClick, onCancel, onRetry, onDismiss }) {
           <Progress value={job.progress || 0} className="h-1 mt-2" />
         )}
 
-        {/* Actions - only for failed (Retry / Dismiss) */}
+        {/* Actions */}
         <div className="processing-card-actions" onClick={(e) => e.stopPropagation()}>
-          {isFailed && onRetry && (
+          {/* YouTube blocked: special actions */}
+          {isYoutubeBlocked && (
+            <>
+              {onReprocessWithoutVision && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="processing-card-btn retry"
+                  onClick={(e) => { e.stopPropagation(); onReprocessWithoutVision(job) }}
+                >
+                  <FileText className="w-3.5 h-3.5 mr-1" />
+                  Process Without Vision
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="processing-card-btn"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  window.open('https://github.com/anthropics/claude-code/issues', '_blank')
+                }}
+              >
+                <Bug className="w-3.5 h-3.5 mr-1" />
+                Report
+              </Button>
+            </>
+          )}
+
+          {/* Normal failed: Retry / Dismiss */}
+          {isFailed && !isYoutubeBlocked && onRetry && (
             <Button
               variant="outline"
               size="sm"
