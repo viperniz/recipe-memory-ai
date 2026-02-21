@@ -119,7 +119,7 @@ class AuthService:
             if user_id_str is None or exp_ts is None:
                 return None
 
-            exp = datetime.fromtimestamp(exp_ts)
+            exp = datetime.utcfromtimestamp(exp_ts)
             # Reject if token expired more than grace_seconds ago
             if datetime.utcnow() > exp + timedelta(seconds=grace_seconds):
                 return None
