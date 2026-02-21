@@ -8,7 +8,7 @@ import CreatorCard from './CreatorCard'
 import MeetingCard from './MeetingCard'
 import DeepDiveCard from './DeepDiveCard'
 import TimestampLink from './TimestampLink'
-import VideoChatPanel from './VideoChatPanel'
+
 import FlashcardPanel from './FlashcardPanel'
 import MindMapPanel from './MindMapPanel'
 import axios from 'axios'
@@ -149,11 +149,12 @@ function NotesPanel({ contentId }) {
 function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [isGeneratingGuide, setIsGeneratingGuide] = useState(false)
   const [generatedGuide, setGeneratedGuide] = useState(null)
-  const [activeTab, setActiveTab] = useState('content') // content, guide, chat, flashcards, mindmap
+  const [activeTab, setActiveTab] = useState('content') // content, guide, flashcards, mindmap, notes
   const [copiedStep, setCopiedStep] = useState(null)
   const [isDownloadingGuide, setIsDownloadingGuide] = useState(false)
   const [timelineView, setTimelineView] = useState('timeline') // 'timeline' | 'visual-grid' | 'transcript'
   const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false)
   const [subscription, setSubscription] = useState(null)
   const [showReportModal, setShowReportModal] = useState(false)
   const [contentTags, setContentTags] = useState([])
@@ -187,6 +188,11 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       loadTags()
     } catch {}
   }
+
+  // Slide-in animation on mount
+  useEffect(() => {
+    requestAnimationFrame(() => setPanelOpen(true))
+  }, [])
 
   // Fetch subscription for feature access checks
   useEffect(() => {
@@ -635,8 +641,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-content-large" onClick={(e) => e.stopPropagation()}>
+    <div className="detail-panel-overlay" onClick={onClose}>
+      <div className={`detail-panel ${panelOpen ? 'detail-panel-open' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-header-title">
             {ModeIcon && <ModeIcon className="w-5 h-5 mr-2 text-purple-400" />}
@@ -741,13 +747,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             {!subscription?.guide_generation && <Lock className="w-3 h-3 text-zinc-500" />}
           </button>
           <button
-            className={`content-tab ${activeTab === 'chat' ? 'active' : ''}`}
-            onClick={() => setActiveTab('chat')}
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            Ask
-          </button>
-          <button
             className={`content-tab ${activeTab === 'flashcards' ? 'active' : ''}`}
             onClick={() => setActiveTab('flashcards')}
           >
@@ -802,17 +801,15 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             </div>
           ) : activeTab === 'notes' ? (
             <NotesPanel contentId={content.id} />
-          ) : activeTab === 'chat' ? (
-            <VideoChatPanel contentId={content.id} sourceUrl={content.source_url} />
           ) : activeTab === 'flashcards' ? (
             <FlashcardPanel contentId={content.id} />
           ) : activeTab === 'mindmap' ? (
             <MindMapPanel contentId={content.id} sourceUrl={content.source_url} />
           ) : (
             <>
-              <div className="ai-disclaimer" onClick={() => setActiveTab('chat')}>
+              <div className="ai-disclaimer">
                 <MessageSquare className="w-3.5 h-3.5" />
-                <span>AI-generated analysis — may contain errors. <strong>Chat with the transcript</strong> for precise answers.</span>
+                <span>AI-generated analysis — may contain errors. Use the <strong>chat bubble</strong> for precise answers.</span>
               </div>
               {modeContent ? (
                 // Mode-specific display (creator, recipe, learn, meeting)

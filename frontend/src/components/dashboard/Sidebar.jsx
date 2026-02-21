@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Library, FolderOpen, X, Menu, Clock, Sparkles, Users, ArrowUpRight, Share2, Tag, Settings2, FileText } from 'lucide-react'
+import { Plus, Library, FolderOpen, X, Menu, Clock, Sparkles, Users, ArrowUpRight, Share2, Tag, Settings2, FileText, ChevronDown } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import { billingApi } from '../../api/billing'
@@ -36,6 +36,8 @@ function Sidebar({
   const [showTagManager, setShowTagManager] = useState(false)
   const [activeTagId, setActiveTagId] = useState(null)
   const [reportCollectionId, setReportCollectionId] = useState(null)
+  const [showAllCollections, setShowAllCollections] = useState(false)
+  const [showAllTags, setShowAllTags] = useState(false)
 
   useEffect(() => {
     if (!token) return
@@ -144,38 +146,49 @@ function Sidebar({
             <Plus className="inline-block w-3 h-3 mr-1" />
             New Collection
           </button>
-          {collections.map(coll => (
-            <div key={coll.id} className="collection-nav-item">
-              <button
-                className={`nav-btn ${activeTab === 'collection' && selectedCollectionId === coll.id ? 'active' : ''}`}
-                onClick={() => handleCollectionSelect(coll.id)}
-              >
-                <FolderOpen className="inline-block w-4 h-4 mr-2" />
-                {coll.name}
-              </button>
-              <button
-                className="collection-action-btn"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setReportCollectionId(coll.id)
-                  setIsMobileOpen(false)
-                }}
-                title="Generate report"
-              >
-                <FileText className="w-3 h-3" />
-              </button>
-              <button
-                className="collection-delete-btn"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onDeleteCollection(coll.id)
-                }}
-                title="Delete collection"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
+          <div className={`sidebar-collections-list ${showAllCollections ? 'expanded' : ''}`}>
+            {(showAllCollections ? collections : collections.slice(0, 5)).map(coll => (
+              <div key={coll.id} className="collection-nav-item">
+                <button
+                  className={`nav-btn ${activeTab === 'collection' && selectedCollectionId === coll.id ? 'active' : ''}`}
+                  onClick={() => handleCollectionSelect(coll.id)}
+                >
+                  <FolderOpen className="inline-block w-4 h-4 mr-2" />
+                  {coll.name}
+                </button>
+                <button
+                  className="collection-action-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setReportCollectionId(coll.id)
+                    setIsMobileOpen(false)
+                  }}
+                  title="Generate report"
+                >
+                  <FileText className="w-3 h-3" />
+                </button>
+                <button
+                  className="collection-delete-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDeleteCollection(coll.id)
+                  }}
+                  title="Delete collection"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+          {collections.length > 5 && (
+            <button
+              className="sidebar-show-more"
+              onClick={() => setShowAllCollections(!showAllCollections)}
+            >
+              {showAllCollections ? 'Show less' : `Show all (${collections.length})`}
+              <ChevronDown className={`w-3 h-3 ${showAllCollections ? 'rotate-180' : ''}`} style={{ transition: 'transform 0.2s' }} />
+            </button>
+          )}
           {collections.length === 0 && (
             <div className="queue-empty">No collections yet</div>
           )}
@@ -195,7 +208,7 @@ function Sidebar({
               </button>
             </div>
             <div className="sidebar-tags-wrap">
-              {tags.map(tag => (
+              {(showAllTags ? tags : tags.slice(0, 8)).map(tag => (
                 <button
                   key={tag.id}
                   className={`sidebar-tag-pill ${activeTagId === tag.id ? 'active' : ''}`}
@@ -206,6 +219,15 @@ function Sidebar({
                 </button>
               ))}
             </div>
+            {tags.length > 8 && (
+              <button
+                className="sidebar-show-more"
+                onClick={() => setShowAllTags(!showAllTags)}
+              >
+                {showAllTags ? 'Show less' : `Show all (${tags.length})`}
+                <ChevronDown className={`w-3 h-3 ${showAllTags ? 'rotate-180' : ''}`} style={{ transition: 'transform 0.2s' }} />
+              </button>
+            )}
           </div>
         )}
 

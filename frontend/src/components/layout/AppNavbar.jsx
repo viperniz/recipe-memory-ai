@@ -2,8 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { billingApi } from '../../api/billing'
-import { Progress } from '../ui/progress'
-import { Sparkles, LogOut, CreditCard, ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen, BarChart3, ArrowUpRight, User as UserIcon } from 'lucide-react'
+import { Sparkles, LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen, User as UserIcon } from 'lucide-react'
 import NotificationBell from './NotificationBell'
 
 const TIER_DISPLAY_NAMES = {
@@ -13,11 +12,10 @@ const TIER_DISPLAY_NAMES = {
   team: 'Department',
 }
 
-function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar }) {
+function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar, onShowProfile }) {
   const navigate = useNavigate()
   const { token } = useAuth()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [usageExpanded, setUsageExpanded] = useState(false)
   const [subscription, setSubscription] = useState(null)
   const dropdownRef = useRef(null)
 
@@ -38,14 +36,12 @@ function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar }) {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false)
-        setUsageExpanded(false)
       }
     }
 
     const handleEscape = (event) => {
       if (event.key === 'Escape') {
         setIsDropdownOpen(false)
-        setUsageExpanded(false)
       }
     }
 
@@ -63,17 +59,6 @@ function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar }) {
 
   const tier = subscription?.tier || 'free'
   const tierName = TIER_DISPLAY_NAMES[tier] || 'Free'
-  const creditBalance = subscription?.credit_balance ?? 0
-  const creditsMonthly = subscription?.credits_monthly ?? 50
-  const monthlyBalance = subscription?.monthly_balance ?? creditBalance
-  const creditPercentage = creditsMonthly > 0 ? Math.min((monthlyBalance / creditsMonthly) * 100, 100) : 0
-  const storageUsedMb = subscription?.storage_used_mb ?? 0
-  const storageLimitMb = subscription?.storage_mb ?? 100
-  const storagePercent = storageLimitMb > 0 ? Math.min((storageUsedMb / storageLimitMb) * 100, 100) : 0
-
-  const formatStorage = (mb) => mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`
-
-  const showUpgrade = tier === 'free' || tier === 'starter'
 
   return (
     <header>
@@ -129,46 +114,11 @@ function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar }) {
 
               <button
                 className="app-topnav-dropdown-item"
-                onClick={() => { setIsDropdownOpen(false); navigate('/profile'); }}
+                onClick={() => { setIsDropdownOpen(false); onShowProfile?.(); }}
               >
                 <UserIcon className="w-4 h-4" />
                 Profile
               </button>
-              <button
-                className="app-topnav-dropdown-item"
-                onClick={() => { setIsDropdownOpen(false); navigate('/pricing'); }}
-              >
-                <CreditCard className="w-4 h-4" />
-                Plans & Billing
-              </button>
-
-              {/* Usage toggle */}
-              <button
-                className="app-topnav-dropdown-item"
-                onClick={() => setUsageExpanded(!usageExpanded)}
-              >
-                <BarChart3 className="w-4 h-4" />
-                Usage
-                {usageExpanded
-                  ? <ChevronUp className="w-3.5 h-3.5" style={{ marginLeft: 'auto' }} />
-                  : <ChevronDown className="w-3.5 h-3.5" style={{ marginLeft: 'auto' }} />
-                }
-              </button>
-
-              {usageExpanded && subscription && (
-                <div className="app-topnav-dropdown-usage">
-                  <div className="app-topnav-usage-row">
-                    <span>Allowance</span>
-                    <span>{monthlyBalance} / {creditsMonthly}</span>
-                  </div>
-                  <Progress value={creditPercentage} className="h-1.5" />
-                  <div className="app-topnav-usage-row" style={{ marginTop: 10 }}>
-                    <span>Storage</span>
-                    <span>{formatStorage(storageUsedMb)} / {formatStorage(storageLimitMb)}</span>
-                  </div>
-                  <Progress value={storagePercent} className="h-1.5" />
-                </div>
-              )}
 
               <div className="app-topnav-dropdown-divider" />
               <button

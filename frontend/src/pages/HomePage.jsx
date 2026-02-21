@@ -18,6 +18,7 @@ import AIChatWidget from '../components/chat/AIChatWidget'
 
 // Layout
 import AppNavbar from '../components/layout/AppNavbar'
+import ProfilePanel from '../components/layout/ProfilePanel'
 
 // Content components
 import ContentDetailModal from '../components/content/ContentDetailModal'
@@ -206,6 +207,9 @@ function HomePage() {
   const [selectedContent, setSelectedContent] = useState(null)
   const [isLoadingContent, setIsLoadingContent] = useState(false)
 
+  // Profile panel state
+  const [showProfile, setShowProfile] = useState(false)
+
   // Settings state (analyzeFrames defaults off — Pro+ users can enable via toggle)
   const [settings, setSettings] = useState({
     provider: 'openai',
@@ -244,6 +248,7 @@ function HomePage() {
 
       // Escape — close any open modal
       if (e.key === 'Escape') {
+        if (showProfile) { setShowProfile(false); return }
         if (selectedContent) { setSelectedContent(null); return }
         if (selectedReportId) { setSelectedReportId(null); return }
         if (showExportModal) { setShowExportModal(false); return }
@@ -272,7 +277,7 @@ function HomePage() {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [selectedContent, selectedReportId, showExportModal, showNewCollectionModal, showAddToCollectionModal, showOnboarding]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedContent, selectedReportId, showExportModal, showNewCollectionModal, showAddToCollectionModal, showOnboarding, showProfile]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch collection contents when switching to collection tab
   useEffect(() => {
@@ -732,7 +737,7 @@ function HomePage() {
 
   return (
     <div className="app-layout">
-      <AppNavbar user={user} onLogout={handleLogout} sidebarCollapsed={sidebarCollapsed} onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} />
+      <AppNavbar user={user} onLogout={handleLogout} sidebarCollapsed={sidebarCollapsed} onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} onShowProfile={() => setShowProfile(true)} />
 
       <div className="app-body">
         <Sidebar
@@ -943,6 +948,9 @@ function HomePage() {
             onTryVideo={handleOnboardingTryVideo}
           />
         )}
+
+        {/* Profile Panel */}
+        <ProfilePanel isOpen={showProfile} onClose={() => setShowProfile(false)} />
         </main>
       </div>
     </div>
