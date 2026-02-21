@@ -8,7 +8,7 @@
   let currentJobId = null;
   let pollTimer = null;
   let isLoggedIn = false;
-  let webappBase = 'http://localhost:3000';
+  let webappBase = 'https://recipe-memory-ai.vercel.app';
   let injectionObserver = null;
 
   // --- Inline SVG icon (crisp at all zoom levels) ---

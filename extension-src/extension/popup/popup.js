@@ -8,7 +8,7 @@ const views = {
   settings: $('#view-settings')
 };
 
-let webappBase = 'http://localhost:3000';
+let webappBase = 'https://recipe-memory-ai.vercel.app';
 let currentJobId = null;
 let pollTimer = null;
 
@@ -301,7 +301,7 @@ function bindEvents() {
   // Sign in
   $('#btn-sign-in').addEventListener('click', async () => {
     const wb = await sendMessage({ type: 'GET_WEBAPP_BASE' });
-    const base = wb.webappBase || 'http://localhost:3000';
+    const base = wb.webappBase || 'https://recipe-memory-ai.vercel.app';
     chrome.tabs.create({ url: `${base}/login?source=extension` });
     window.close();
   });

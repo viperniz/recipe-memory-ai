@@ -1,7 +1,7 @@
 // Video Memory AI — Chrome Extension Service Worker
 
-const DEFAULT_API_BASE = 'http://localhost:8000';
-const DEFAULT_WEBAPP_BASE = 'http://localhost:3000';
+const DEFAULT_API_BASE = 'https://recipe-memory-api.onrender.com';
+const DEFAULT_WEBAPP_BASE = 'https://recipe-memory-ai.vercel.app';
 
 // --- Storage helpers ---
 

@@ -5,8 +5,10 @@
   "version": "1.1.0",
   "permissions": ["storage", "activeTab", "cookies"],
   "host_permissions": [
+    "https://*.youtube.com/*",
     "https://www.youtube.com/*",
-    "http://localhost:8000/*"
+    "http://localhost:8000/*",
+    "https://recipe-memory-api.onrender.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -21,7 +23,8 @@
     {
       "matches": [
         "http://localhost:3000/extension-callback*",
-        "https://videomemory.ai/extension-callback*"
+        "https://videomemory.ai/extension-callback*",
+        "https://recipe-memory-ai.vercel.app/extension-callback*"
       ],
       "js": ["auth-content.js"],
       "run_at": "document_idle"
@@ -29,7 +32,8 @@
     {
       "matches": [
         "http://localhost:3000/*",
-        "https://videomemory.ai/*"
+        "https://videomemory.ai/*",
+        "https://recipe-memory-ai.vercel.app/*"
       ],
       "js": ["webapp-bridge.js"],
       "run_at": "document_idle"

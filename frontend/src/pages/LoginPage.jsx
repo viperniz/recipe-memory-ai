@@ -51,8 +51,8 @@ function LoginPage() {
             setServerError(err.message || 'Google login failed')
           }
         },
-        cancel_on_tap_outside: false,
-        itp_support: true
+        ux_mode: 'popup',
+        cancel_on_tap_outside: false
       })
 
       window.google.accounts.id.renderButton(googleBtnRef.current, {
