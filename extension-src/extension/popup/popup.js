@@ -1,5 +1,4 @@
 // Video Memory AI — Popup script
-
 const $ = (sel) => document.querySelector(sel);
 
 const views = {
@@ -38,7 +37,12 @@ function extractVideoId(url) {
 }
 
 function getTierBadgeClass(tier) {
-  const map = { free: 'tier-badge-free', starter: 'tier-badge-starter', pro: 'tier-badge-pro', team: 'tier-badge-team' };
+  const map = {
+    free: 'tier-badge-free',
+    starter: 'tier-badge-starter',
+    pro: 'tier-badge-pro',
+    team: 'tier-badge-team'
+  };
   return map[tier] || 'tier-badge-free';
 }
 
@@ -53,13 +57,11 @@ function hideAllResultSections() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   const auth = await sendMessage({ type: 'GET_AUTH_STATUS' });
-
   if (!auth.isLoggedIn) {
     showView('login');
   } else {
     await showMainView(auth.user);
   }
-
   bindEvents();
 });
 
@@ -68,10 +70,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function showMainView(user) {
   showView('main');
 
+  // Reset all result sections to hidden on every load
+  hideAllResultSections();
+
   // User info
+  let tier = 'free';
   if (user) {
     $('#user-email').textContent = user.email || '';
-    const tier = (user.tier || 'free').toLowerCase();
+    tier = (user.tier || 'free').toLowerCase();
     const badge = $('#user-tier');
     badge.textContent = tier;
     badge.className = `tier-badge ${getTierBadgeClass(tier)}`;
@@ -82,20 +88,19 @@ async function showMainView(user) {
   const credits = await sendMessage({ type: 'GET_CREDITS' });
   hideCreditsSkeleton();
 
+  let creditsRemaining = 0;
   if (credits && !credits.error) {
     const used = credits.credits_used || 0;
     const total = credits.credits_total || 50;
-    const remaining = Math.max(0, total - used);
-    const pct = total > 0 ? Math.round((remaining / total) * 100) : 0;
-
+    creditsRemaining = Math.max(0, total - used);
+    const pct = total > 0 ? Math.round((creditsRemaining / total) * 100) : 0;
     const bar = $('#credits-bar');
     bar.style.width = `${pct}%`;
     bar.className = 'credits-bar-fill';
     if (pct <= 10) bar.classList.add('credits-low');
     else if (pct <= 30) bar.classList.add('credits-medium');
-
     $('#credits-pct').textContent = pct > 15 ? `${pct}%` : '';
-    $('#credits-label').textContent = `${remaining} / ${total} credits remaining`;
+    $('#credits-label').textContent = `${creditsRemaining} / ${total} credits remaining`;
   }
 
   // Get webapp base
@@ -111,11 +116,24 @@ async function showMainView(user) {
       const preview = $('#video-preview');
       preview.hidden = false;
       $('#video-thumb').src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+
       // Extract title from tab title
-      const title = tab.title?.endsWith(' - YouTube') ? tab.title.slice(0, -10) : (tab.title || '');
+      const title = tab.title?.endsWith(' - YouTube')
+        ? tab.title.slice(0, -10)
+        : (tab.title || '');
       $('#video-title').textContent = title;
 
-      $('#save-section').hidden = false;
+      // Check plan and credits before showing Save button
+      if (tier === 'free') {
+        // Free plan cannot save YouTube videos
+        showError('Plan upgrade required', 'YouTube saves require a Starter plan or higher', 'feature_locked');
+      } else if (creditsRemaining <= 0) {
+        // No credits left
+        showError('Out of credits', "You don't have enough credits for this video", 'insufficient_credits');
+      } else {
+        // Plan and credits OK — show the Save button
+        $('#save-section').hidden = false;
+      }
     }
   }
 
@@ -133,7 +151,6 @@ async function showMainView(user) {
       li.addEventListener('click', () => {
         chrome.tabs.create({ url: `${webappBase}/app` });
       });
-
       if (save.thumbnail) {
         const img = document.createElement('img');
         img.className = 'recent-thumb';
@@ -142,20 +159,16 @@ async function showMainView(user) {
         img.onerror = () => { img.style.display = 'none'; };
         li.appendChild(img);
       }
-
       const info = document.createElement('div');
       info.className = 'recent-info';
-
       const titleEl = document.createElement('span');
       titleEl.className = 'recent-title';
       titleEl.textContent = save.title || 'Untitled video';
       info.appendChild(titleEl);
-
       const urlEl = document.createElement('span');
       urlEl.className = 'recent-url';
       urlEl.textContent = save.videoId ? `youtube.com/watch?v=${save.videoId}` : save.url;
       info.appendChild(urlEl);
-
       li.appendChild(info);
       list.appendChild(li);
     }
@@ -196,7 +209,6 @@ function startProgressPolling(jobId) {
   $('#progress-pct').textContent = '0%';
   $('#progress-status').textContent = 'Starting...';
   $('#progress-title').textContent = 'Processing video...';
-
   pollTimer = setTimeout(pollProgress, 2000);
 }
 
@@ -313,8 +325,11 @@ function bindEvents() {
 
     const videoId = extractVideoId(tab.url);
     if (!videoId) return;
+
     const cleanUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const title = tab.title?.endsWith(' - YouTube') ? tab.title.slice(0, -10) : (tab.title || '');
+    const title = tab.title?.endsWith(' - YouTube')
+      ? tab.title.slice(0, -10)
+      : (tab.title || '');
 
     // Disable button
     $('#btn-save').disabled = true;
