@@ -376,8 +376,6 @@ function bindEvents() {
   // Settings
   $('#btn-settings').addEventListener('click', async () => {
     const settings = await sendMessage({ type: 'GET_SETTINGS' });
-    $('#input-api-base').value = settings.apiBase || '';
-    $('#input-webapp-base').value = settings.webappBase || '';
     $('#input-analyze-frames').checked = settings.defaultAnalyzeFrames || false;
     showView('settings');
   });
@@ -386,8 +384,6 @@ function bindEvents() {
   $('#btn-save-settings').addEventListener('click', async () => {
     await sendMessage({
       type: 'SAVE_SETTINGS',
-      apiBase: $('#input-api-base').value.replace(/\/$/, ''),
-      webappBase: $('#input-webapp-base').value.replace(/\/$/, ''),
       defaultAnalyzeFrames: $('#input-analyze-frames').checked
     });
     const auth = await sendMessage({ type: 'GET_AUTH_STATUS' });
