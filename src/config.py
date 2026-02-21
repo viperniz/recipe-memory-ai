@@ -26,7 +26,7 @@ class AuthConfig:
         "JWT_SECRET_KEY", "CHANGE_ME_IN_PRODUCTION"
     ))
     algorithm: str = "HS256"
-    access_token_expire_hours: int = 24
+    access_token_expire_hours: int = 720  # 30 days
 
     def validate(self) -> List[str]:
         """Validate auth configuration, return list of warnings/errors"""

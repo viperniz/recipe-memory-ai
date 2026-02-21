@@ -323,6 +323,45 @@ async def logout(
     return {"message": "Logged out successfully"}
 
 
+@app.post("/api/auth/refresh", response_model=Token)
+async def refresh_token(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Refresh an access token (valid or expired within 24h grace period).
+    Blacklists old token and issues a new 30-day token with fresh tier."""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing token")
+
+    old_token = auth_header[7:]
+
+    # Check if already blacklisted
+    if AuthService.is_token_blacklisted(db, old_token):
+        raise HTTPException(status_code=401, detail="Token has been revoked")
+
+    # Try normal decode first, then allow expired (up to 24h grace)
+    token_data = AuthService.decode_token(old_token)
+    if token_data is None:
+        token_data = AuthService.decode_token_allow_expired(old_token, grace_seconds=86400)
+    if token_data is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    # Verify user is active
+    user = AuthService.get_user_by_id(db, token_data.user_id)
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+
+    # Blacklist old token
+    if token_data.exp:
+        AuthService.blacklist_token(db, old_token, token_data.exp)
+
+    # Re-fetch current tier (catches trial expiry, plan changes)
+    tier = AuthService.get_user_tier(db, user.id)
+
+    return AuthService.create_user_token(user, tier)
+
+
 @app.post("/api/auth/forgot-password")
 async def forgot_password(
     request: ForgotPasswordRequest,

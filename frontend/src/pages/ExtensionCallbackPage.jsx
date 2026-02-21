@@ -21,7 +21,8 @@ function ExtensionCallbackPage() {
                                     window.postMessage({
                                                           type: 'VMEM_EXTENSION_AUTH',
                                                           token,
-                                                          user: { id: user.id, email: user.email, name: user.name }
+                                                          user: { id: user.id, email: user.email, name: user.name },
+                                                          expiresIn: 2592000
                                     }, '*')
                                     setSent(true)
 

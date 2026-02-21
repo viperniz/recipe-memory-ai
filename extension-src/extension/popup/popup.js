@@ -303,6 +303,17 @@ function showError(title, message, errorType) {
       e.preventDefault();
       chrome.tabs.create({ url: `${webappBase}/pricing` });
     };
+  } else if (errorType === 'youtube_login_required') {
+    $('#error-title').textContent = 'Sign in to YouTube first';
+    $('#error-message').textContent = 'You need to be signed in to YouTube to save videos';
+    $('#btn-retry').hidden = true;
+    $('#btn-upgrade').hidden = false;
+    $('#btn-upgrade').textContent = 'Sign in to YouTube';
+    $('#btn-upgrade').href = 'https://accounts.google.com/ServiceLogin?service=youtube';
+    $('#btn-upgrade').onclick = (e) => {
+      e.preventDefault();
+      chrome.tabs.create({ url: 'https://accounts.google.com/ServiceLogin?service=youtube' });
+    };
   } else if (errorType === 'network_error') {
     $('#error-title').textContent = 'Connection error';
     $('#error-message').textContent = "Can't reach Video Memory AI servers";

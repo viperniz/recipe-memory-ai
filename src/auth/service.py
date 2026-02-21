@@ -20,7 +20,7 @@ from .models import UserCreate, UserResponse, Token, TokenData
 # =============================================
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-this-in-production-use-a-secure-random-key")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30  # 30 days
 
 
 class AuthService:
@@ -68,12 +68,13 @@ class AuthService:
         """Create a JWT access token"""
         to_encode = data.copy()
 
+        now = datetime.utcnow()
         if expires_delta:
-            expire = datetime.utcnow() + expires_delta
+            expire = now + expires_delta
         else:
-            expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
-        to_encode.update({"exp": expire})
+        to_encode.update({"exp": expire, "iat": now})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
@@ -104,6 +105,28 @@ class AuthService:
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Unexpected error decoding token: {e}")
+            return None
+
+    @staticmethod
+    def decode_token_allow_expired(token: str, grace_seconds: int = 86400) -> Optional[TokenData]:
+        """Decode a JWT token, allowing tokens expired up to grace_seconds ago"""
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_exp": False})
+            user_id_str: str = payload.get("sub")
+            email: str = payload.get("email")
+            exp_ts = payload.get("exp")
+
+            if user_id_str is None or exp_ts is None:
+                return None
+
+            exp = datetime.fromtimestamp(exp_ts)
+            # Reject if token expired more than grace_seconds ago
+            if datetime.utcnow() > exp + timedelta(seconds=grace_seconds):
+                return None
+
+            user_id: int = int(user_id_str)
+            return TokenData(user_id=user_id, email=email, exp=exp)
+        except (JWTError, Exception):
             return None
 
     @staticmethod

@@ -18,6 +18,57 @@ async function getToken() {
   return token || null;
 }
 
+// --- Token refresh ---
+
+let refreshPromise = null; // Deduplicates concurrent refresh calls
+
+async function refreshToken() {
+  const token = await getToken();
+  if (!token) return null;
+
+  const apiBase = await getApiBase();
+  try {
+    const response = await fetch(`${apiBase}/api/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (data.access_token) {
+      const expiresAt = Date.now() + (data.expires_in || 2592000) * 1000;
+      await setStorage({
+        token: data.access_token,
+        user: data.user || null,
+        tokenExpiresAt: expiresAt
+      });
+      return data;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function ensureValidToken() {
+  const { token, tokenExpiresAt } = await getStorage(['token', 'tokenExpiresAt']);
+  if (!token) return;
+
+  // Refresh if token expires within 3 days
+  const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+  if (tokenExpiresAt && tokenExpiresAt - Date.now() < THREE_DAYS_MS) {
+    // Deduplicate concurrent refresh calls
+    if (!refreshPromise) {
+      refreshPromise = refreshToken().finally(() => { refreshPromise = null; });
+    }
+    await refreshPromise;
+  }
+}
+
 async function getApiBase() {
   const { apiBase } = await getStorage('apiBase');
   return apiBase || DEFAULT_API_BASE;
@@ -30,7 +81,10 @@ async function getWebappBase() {
 
 // --- API helpers ---
 
-async function apiFetch(path, options = {}) {
+async function apiFetch(path, options = {}, _retried = false) {
+  // Proactively refresh token if close to expiry
+  await ensureValidToken();
+
   const token = await getToken();
   const apiBase = await getApiBase();
 
@@ -53,8 +107,19 @@ async function apiFetch(path, options = {}) {
     return { error: 'Cannot reach Video Memory AI servers', error_type: 'network_error', status: 0 };
   }
 
+  if (response.status === 401 && !_retried) {
+    // Try one refresh before giving up
+    const refreshed = await refreshToken();
+    if (refreshed) {
+      return apiFetch(path, options, true);
+    }
+    await setStorage({ token: null, user: null, tokenExpiresAt: null });
+    notifyAllTabs({ type: 'VMEM_AUTH_CHANGED', isLoggedIn: false });
+    return { error: 'unauthorized', error_type: 'unauthorized', status: 401 };
+  }
+
   if (response.status === 401) {
-    await setStorage({ token: null, user: null });
+    await setStorage({ token: null, user: null, tokenExpiresAt: null });
     notifyAllTabs({ type: 'VMEM_AUTH_CHANGED', isLoggedIn: false });
     return { error: 'unauthorized', error_type: 'unauthorized', status: 401 };
   }
@@ -175,16 +240,20 @@ async function handleMessage(message, sender) {
     }
 
     case 'SET_TOKEN': {
+      const expiresAt = message.expiresIn
+        ? Date.now() + message.expiresIn * 1000
+        : Date.now() + 30 * 24 * 60 * 60 * 1000; // default 30 days
       await setStorage({
         token: message.token,
-        user: message.user || null
+        user: message.user || null,
+        tokenExpiresAt: expiresAt
       });
       notifyAllTabs({ type: 'VMEM_AUTH_CHANGED', isLoggedIn: true, user: message.user });
       return { success: true };
     }
 
     case 'LOGOUT': {
-      await setStorage({ token: null, user: null });
+      await setStorage({ token: null, user: null, tokenExpiresAt: null });
       notifyAllTabs({ type: 'VMEM_AUTH_CHANGED', isLoggedIn: false });
       return { success: true };
     }
@@ -208,10 +277,22 @@ async function handleMessage(message, sender) {
         };
       }
 
-      // 2. Extract YouTube cookies from browser
+      // 2. Check YouTube login — require auth cookies
+      const ytCookies = await chrome.cookies.getAll({ domain: '.youtube.com' });
+      const authCookieNames = ['SID', 'HSID', 'LOGIN_INFO'];
+      const hasYouTubeAuth = ytCookies.some(c => authCookieNames.includes(c.name));
+      if (!hasYouTubeAuth) {
+        return {
+          error: 'Sign in to YouTube to save videos',
+          error_type: 'youtube_login_required',
+          status: 403
+        };
+      }
+
+      // 3. Extract YouTube cookies from browser
       const cookiesStr = await formatYouTubeCookies();
 
-      // 3. Send to backend with cookies
+      // 4. Send to backend with cookies
       const result = await apiFetch('/api/videos/add', {
         method: 'POST',
         body: JSON.stringify({

@@ -37,8 +37,11 @@
     ERROR: 'error',
     NO_CREDITS: 'no_credits',
     TIER_LOCKED: 'tier_locked',
-    ALREADY_SAVED: 'already_saved'
+    ALREADY_SAVED: 'already_saved',
+    YOUTUBE_LOGIN: 'youtube_login'
   };
+
+  const YOUTUBE_LOGIN_URL = 'https://accounts.google.com/ServiceLogin?service=youtube';
 
   // --- Helpers ---
 
@@ -184,6 +187,16 @@
         `;
         btn.onclick = () => window.open(`${webappBase}/app`, '_blank');
         break;
+
+      case STATE.YOUTUBE_LOGIN:
+        btn.classList.add('vmem-btn-youtube');
+        btn.title = 'Sign in to YouTube to save videos';
+        btn.innerHTML = `
+          <svg class="vmem-lock-svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+          <span class="vmem-label">Sign in to YouTube</span>
+        `;
+        btn.onclick = () => window.open(YOUTUBE_LOGIN_URL, '_blank');
+        break;
     }
   }
 
@@ -279,7 +292,9 @@
     });
 
     if (result.error) {
-      if (result.error_type === 'feature_locked') {
+      if (result.error_type === 'youtube_login_required') {
+        updateButton(STATE.YOUTUBE_LOGIN);
+      } else if (result.error_type === 'feature_locked') {
         updateButton(STATE.TIER_LOCKED);
       } else if (result.error_type === 'insufficient_credits') {
         updateButton(STATE.NO_CREDITS);
@@ -386,6 +401,13 @@
     const check = await sendMessage({ type: 'CHECK_SAVED', url });
     if (check.saved) {
       updateButton(STATE.ALREADY_SAVED);
+      return;
+    }
+
+    // Proactive tier check — show upgrade prompt before user clicks Save
+    const credits = await sendMessage({ type: 'GET_CREDITS' });
+    if (credits && !credits.error && credits.tier === 'free') {
+      updateButton(STATE.TIER_LOCKED);
       return;
     }
 

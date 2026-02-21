@@ -160,6 +160,18 @@
   box-shadow: 0 4px 14px rgba(217, 119, 6, 0.45);
 }
 
+/* --- State: YouTube login required (YouTube red) --- */
+
+.vmem-btn-youtube {
+  background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(255, 0, 0, 0.3);
+}
+
+.vmem-btn-youtube:hover {
+  box-shadow: 0 4px 14px rgba(255, 0, 0, 0.45);
+}
+
 /* --- Spinner --- */
 
 .vmem-spinner {

@@ -24,7 +24,8 @@
       chrome.runtime.sendMessage({
         type: 'SET_TOKEN',
         token: event.data.token,
-        user: event.data.user
+        user: event.data.user,
+        expiresIn: event.data.expiresIn || 2592000
       });
       return;
     }
