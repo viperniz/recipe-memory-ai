@@ -1,0 +1,203 @@
+/* Video Memory AI — YouTube content script styles */
+
+/* --- Base button --- */
+
+.vmem-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  height: 36px;
+  border: none;
+  border-radius: 18px;
+  font-family: 'Roboto', 'Arial', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1;
+  vertical-align: middle;
+  margin-left: 8px;
+  transition: transform 0.15s ease, filter 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.vmem-btn:hover:not(:disabled) {
+  transform: scale(1.03);
+  filter: brightness(1.1);
+}
+
+.vmem-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.vmem-btn:disabled {
+  cursor: default;
+}
+
+/* --- SVG icons inside button --- */
+
+.vmem-icon-svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.vmem-check-svg,
+.vmem-error-svg,
+.vmem-warning-svg,
+.vmem-lock-svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* --- Label truncation --- */
+
+.vmem-label {
+  pointer-events: none;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- State: Idle (purple gradient) --- */
+
+.vmem-btn-idle {
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 50%, #6D28D9 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+.vmem-btn-idle:hover {
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.45);
+}
+
+/* --- State: Not logged in (muted) --- */
+
+.vmem-btn-muted {
+  background: rgba(255, 255, 255, 0.1);
+  color: #aaa;
+}
+
+.vmem-btn-muted:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ccc;
+}
+
+/* --- State: Saving / Processing (animated gradient shimmer) --- */
+
+.vmem-btn-saving,
+.vmem-btn-processing {
+  background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 25%, #A78BFA 50%, #8B5CF6 75%, #7C3AED 100%);
+  background-size: 300% 100%;
+  animation: vmem-shimmer 2s ease-in-out infinite;
+  color: #fff;
+}
+
+@keyframes vmem-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* --- State: Done (green with animated check) --- */
+
+.vmem-btn-done {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+}
+
+.vmem-btn-done:hover {
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.45);
+}
+
+.vmem-btn-done .vmem-check-svg {
+  animation: vmem-check-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes vmem-check-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.3); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* --- State: Error (red with shake) --- */
+
+.vmem-btn-error {
+  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+.vmem-btn-error:hover {
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.45);
+}
+
+.vmem-shake {
+  animation: vmem-shake 0.5s ease-in-out;
+}
+
+@keyframes vmem-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+/* --- State: Warning (amber gradient) --- */
+
+.vmem-btn-warning {
+  background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.3);
+}
+
+.vmem-btn-warning:hover {
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.45);
+}
+
+/* --- Spinner --- */
+
+.vmem-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: vmem-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes vmem-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- Floating fallback --- */
+
+.vmem-btn-floating {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  padding: 0 18px;
+  height: 44px;
+  border-radius: 22px;
+  animation: vmem-slide-in 0.3s ease-out;
+}
+
+@keyframes vmem-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

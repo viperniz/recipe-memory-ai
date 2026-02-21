@@ -10,6 +10,8 @@ __pycache__/
 
 # Build output
 frontend/dist/
+extension-src/dist/
+*.zip
 
 # Data directories (user content / large files)
 data/

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=350" />
+  <link rel="stylesheet" href="popup.css" />
+  <title>Video Memory AI</title>
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <div class="header">
+      <img src="../icons/icon48.png" alt="" class="header-icon" />
+      <span class="header-title">Video Memory AI</span>
+    </div>
+
+    <!-- View: Not logged in -->
+    <div id="view-login" class="view" hidden>
+      <div class="login-prompt">
+        <svg class="login-illustration" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="22" fill="url(#lg)" opacity="0.15"/>
+          <path d="M19 15L33 24L19 33V15Z" fill="#7C3AED" opacity="0.8"/>
+          <defs><linearGradient id="lg" x1="2" y1="2" x2="46" y2="46"><stop stop-color="#8B5CF6"/><stop offset="1" stop-color="#6D28D9"/></linearGradient></defs>
+        </svg>
+        <p>Sign in to save YouTube videos to your library.</p>
+        <button id="btn-sign-in" class="btn btn-primary btn-full">Sign In</button>
+      </div>
+    </div>
+
+    <!-- View: Logged in -->
+    <div id="view-main" class="view" hidden>
+      <div class="user-row">
+        <span id="user-email" class="user-email"></span>
+        <span id="user-tier" class="tier-badge"></span>
+      </div>
+
+      <div class="credits-section">
+        <div class="credits-bar-track">
+          <div id="credits-bar" class="credits-bar-fill"></div>
+          <span id="credits-pct" class="credits-pct-label"></span>
+        </div>
+        <span id="credits-label" class="credits-label"></span>
+      </div>
+
+      <!-- Video preview (shown on YouTube tabs) -->
+      <div id="video-preview" class="video-preview" hidden>
+        <img id="video-thumb" class="video-thumb" alt="" />
+        <div class="video-info">
+          <span id="video-title" class="video-title-text"></span>
+        </div>
+      </div>
+
+      <!-- Save section -->
+      <div id="save-section" hidden>
+        <button id="btn-save" class="btn btn-primary btn-full btn-save">
+          <svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-.75 4.75a.75.75 0 011.5 0v3.5h3.5a.75.75 0 010 1.5h-3.5v3.5a.75.75 0 01-1.5 0v-3.5h-3.5a.75.75 0 010-1.5h3.5v-3.5z"/></svg>
+          Save This Video
+        </button>
+      </div>
+
+      <!-- Progress card (replaces save button during processing) -->
+      <div id="progress-section" class="progress-card" hidden>
+        <div class="progress-header">
+          <span class="progress-title" id="progress-title">Processing video...</span>
+          <span class="progress-pct" id="progress-pct">0%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+        <span class="progress-status" id="progress-status">Starting...</span>
+      </div>
+
+      <!-- Success card -->
+      <div id="success-section" class="result-card result-success" hidden>
+        <svg class="result-icon" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div class="result-text">
+          <strong>Saved successfully!</strong>
+          <a id="link-view-saved" href="#" class="result-link">View in Library</a>
+        </div>
+      </div>
+
+      <!-- Error card -->
+      <div id="error-section" class="result-card result-error" hidden>
+        <svg class="result-icon" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <div class="result-text">
+          <strong id="error-title">Save failed</strong>
+          <span id="error-message" class="error-msg"></span>
+          <button id="btn-retry" class="btn btn-small btn-secondary">Retry</button>
+          <a id="btn-upgrade" href="#" class="btn btn-small btn-primary" hidden>Upgrade</a>
+          <a id="btn-buy-credits" href="#" class="btn btn-small btn-primary" hidden>Get Credits</a>
+        </div>
+      </div>
+
+      <!-- Recent saves -->
+      <div id="recent-section" hidden>
+        <h3 class="section-title">Recent Saves</h3>
+        <ul id="recent-list" class="recent-list"></ul>
+      </div>
+
+      <div class="footer-links">
+        <a id="link-library" href="#" class="footer-link">Open Library</a>
+        <button id="btn-settings" class="footer-link btn-link">Settings</button>
+      </div>
+    </div>
+
+    <!-- View: Settings -->
+    <div id="view-settings" class="view" hidden>
+      <h3 class="section-title">Settings</h3>
+
+      <div class="form-group">
+        <label for="input-api-base">API URL</label>
+        <input id="input-api-base" type="url" class="input" />
+      </div>
+
+      <div class="form-group">
+        <label for="input-webapp-base">Webapp URL</label>
+        <input id="input-webapp-base" type="url" class="input" />
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input id="input-analyze-frames" type="checkbox" />
+          Analyze video frames (uses more credits)
+        </label>
+      </div>
+
+      <div class="settings-actions">
+        <button id="btn-save-settings" class="btn btn-primary">Save</button>
+        <button id="btn-back" class="btn btn-secondary">Back</button>
+      </div>
+
+      <hr class="divider" />
+
+      <button id="btn-sign-out" class="btn btn-danger btn-full">Sign Out</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
