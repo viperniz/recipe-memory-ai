@@ -46,6 +46,16 @@ function getTierBadgeClass(tier) {
   return map[tier] || 'tier-badge-free';
 }
 
+function getTierDisplayName(tier) {
+  const map = {
+    free: 'Free',
+    starter: 'Researcher',
+    pro: 'Scholar',
+    team: 'Department'
+  };
+  return map[tier] || tier;
+}
+
 function hideAllResultSections() {
   $('#save-section').hidden = true;
   $('#progress-section').hidden = true;
@@ -102,7 +112,7 @@ async function showMainView(user) {
 
   // Update tier badge with the real tier from billing API
   const badge = $('#user-tier');
-  badge.textContent = tier;
+  badge.textContent = getTierDisplayName(tier);
   badge.className = `tier-badge ${getTierBadgeClass(tier)}`;
 
   // Get webapp base
@@ -128,7 +138,7 @@ async function showMainView(user) {
       // Check plan and credits before showing Save button
       if (tier === 'free') {
         // Free plan cannot save YouTube videos
-        showError('Plan upgrade required', 'YouTube saves require a Starter plan or higher', 'feature_locked');
+        showError('Plan upgrade required', 'YouTube saves require a Researcher plan or higher', 'feature_locked');
       } else if (creditsRemaining <= 0) {
         // No credits left
         showError('Out of credits', "You don't have enough credits for this video", 'insufficient_credits');
@@ -285,7 +295,7 @@ function showError(title, message, errorType) {
 
   if (errorType === 'feature_locked') {
     $('#error-title').textContent = 'Plan upgrade required';
-    $('#error-message').textContent = 'YouTube saves require a Starter plan or higher';
+    $('#error-message').textContent = 'YouTube saves require a Researcher plan or higher';
     $('#btn-retry').hidden = true;
     $('#btn-upgrade').hidden = false;
     $('#btn-upgrade').href = `${webappBase}/pricing`;

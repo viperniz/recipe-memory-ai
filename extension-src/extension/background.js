@@ -271,7 +271,7 @@ async function handleMessage(message, sender) {
       }
       if (credits.tier === 'free') {
         return {
-          error: 'YouTube saves require a Starter plan or higher',
+          error: 'YouTube saves require a Researcher plan or higher',
           error_type: 'feature_locked',
           status: 403
         };
