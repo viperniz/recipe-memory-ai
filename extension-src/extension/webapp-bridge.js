@@ -19,6 +19,16 @@
       return;
     }
 
+    // Auth relay: ExtensionCallbackPage sends token after Google/email login
+    if (type === 'VMEM_EXTENSION_AUTH') {
+      chrome.runtime.sendMessage({
+        type: 'SET_TOKEN',
+        token: event.data.token,
+        user: event.data.user
+      });
+      return;
+    }
+
     if (type === 'VMEM_REQUEST_COOKIES') {
       try {
         const response = await chrome.runtime.sendMessage({ type: 'GET_YOUTUBE_COOKIES' });

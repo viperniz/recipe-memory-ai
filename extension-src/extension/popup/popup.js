@@ -74,22 +74,19 @@ async function showMainView(user) {
   hideAllResultSections();
 
   // User info
-  let tier = 'free';
   if (user) {
     $('#user-email').textContent = user.email || '';
-    tier = (user.tier || 'free').toLowerCase();
-    const badge = $('#user-tier');
-    badge.textContent = tier;
-    badge.className = `tier-badge ${getTierBadgeClass(tier)}`;
   }
 
-  // Credits (with loading skeleton)
+  // Credits (with loading skeleton) — also gets the authoritative tier
   showCreditsSkeleton();
   const credits = await sendMessage({ type: 'GET_CREDITS' });
   hideCreditsSkeleton();
 
+  let tier = 'free';
   let creditsRemaining = 0;
   if (credits && !credits.error) {
+    tier = (credits.tier || user?.tier || 'free').toLowerCase();
     const used = credits.credits_used || 0;
     const total = credits.credits_total || 50;
     creditsRemaining = Math.max(0, total - used);
@@ -102,6 +99,11 @@ async function showMainView(user) {
     $('#credits-pct').textContent = pct > 15 ? `${pct}%` : '';
     $('#credits-label').textContent = `${creditsRemaining} / ${total} credits remaining`;
   }
+
+  // Update tier badge with the real tier from billing API
+  const badge = $('#user-tier');
+  badge.textContent = tier;
+  badge.className = `tier-badge ${getTierBadgeClass(tier)}`;
 
   // Get webapp base
   const wb = await sendMessage({ type: 'GET_WEBAPP_BASE' });
