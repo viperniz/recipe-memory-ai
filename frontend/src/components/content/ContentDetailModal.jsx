@@ -154,7 +154,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [isDownloadingGuide, setIsDownloadingGuide] = useState(false)
   const [timelineView, setTimelineView] = useState('timeline') // 'timeline' | 'visual-grid' | 'transcript'
   const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false)
-  const [panelOpen, setPanelOpen] = useState(false)
   const [subscription, setSubscription] = useState(null)
   const [showReportModal, setShowReportModal] = useState(false)
   const [contentTags, setContentTags] = useState([])
@@ -188,11 +187,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       loadTags()
     } catch {}
   }
-
-  // Slide-in animation on mount
-  useEffect(() => {
-    requestAnimationFrame(() => setPanelOpen(true))
-  }, [])
 
   // Fetch subscription for feature access checks
   useEffect(() => {
@@ -641,8 +635,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   }
 
   return (
-    <div className="detail-panel-overlay" onClick={onClose}>
-      <div className={`detail-panel ${panelOpen ? 'detail-panel-open' : ''}`} onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content modal-content-large" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-header-title">
             {ModeIcon && <ModeIcon className="w-5 h-5 mr-2 text-purple-400" />}

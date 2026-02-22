@@ -19,7 +19,6 @@ const TIER_DISPLAY_NAMES = {
 function ProfilePanel({ isOpen, onClose }) {
   const { user, token, logout, updateProfile } = useAuth()
   const navigate = useNavigate()
-  const [panelOpen, setPanelOpen] = useState(false)
   const [subscription, setSubscription] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isManaging, setIsManaging] = useState(false)
@@ -40,10 +39,10 @@ function ProfilePanel({ isOpen, onClose }) {
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    if (isOpen) {
-      requestAnimationFrame(() => setPanelOpen(true))
-    } else {
-      setPanelOpen(false)
+    // reset form state when panel closes
+    if (!isOpen) {
+      setShowDeleteConfirm(false)
+      setDeleteConfirmText('')
     }
   }, [isOpen])
 
@@ -138,9 +137,9 @@ function ProfilePanel({ isOpen, onClose }) {
   const hasPassword = user?.has_password !== false
 
   return (
-    <div className="detail-panel-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={onClose}>
       <div
-        className={`detail-panel profile-panel ${panelOpen ? 'detail-panel-open' : ''}`}
+        className="modal-content profile-panel"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
