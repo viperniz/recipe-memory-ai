@@ -5,7 +5,7 @@ import { billingApi } from '../../api/billing'
 import { toast } from '../../hooks/use-toast'
 import { Button } from '../ui/button'
 import { Progress } from '../ui/progress'
-import { X, Loader2, CreditCard, ArrowUpRight, Coins, ShoppingCart, ExternalLink } from 'lucide-react'
+import { X, Loader2, ArrowUpRight, Coins, ShoppingCart, ExternalLink } from 'lucide-react'
 
 const TIER_DISPLAY_NAMES = {
   free: 'Free',
@@ -18,21 +18,16 @@ function BillingModal({ isOpen, onClose }) {
   const { token } = useAuth()
   const navigate = useNavigate()
   const [subscription, setSubscription] = useState(null)
-  const [packs, setPacks] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isManaging, setIsManaging] = useState(false)
-  const [buyingPack, setBuyingPack] = useState(null)
 
   useEffect(() => {
     if (!isOpen || !token) return
     setIsLoading(true)
-    Promise.all([
-      billingApi.getSubscription(token).catch(() => null),
-      billingApi.getTopupPacks(token).catch(() => null),
-    ]).then(([sub, packsData]) => {
-      setSubscription(sub)
-      setPacks(packsData)
-    }).finally(() => setIsLoading(false))
+    billingApi.getSubscription(token)
+      .then(setSubscription)
+      .catch(() => {})
+      .finally(() => setIsLoading(false))
   }, [isOpen, token])
 
   if (!isOpen) return null
@@ -45,17 +40,6 @@ function BillingModal({ isOpen, onClose }) {
     } catch (err) {
       toast({ variant: 'destructive', title: 'Failed to open billing portal', description: err.message })
       setIsManaging(false)
-    }
-  }
-
-  const handleBuyPack = async (packId) => {
-    setBuyingPack(packId)
-    try {
-      const { checkout_url } = await billingApi.purchaseTopup(token, packId)
-      window.location.href = checkout_url
-    } catch (err) {
-      toast({ variant: 'destructive', title: 'Failed to start checkout', description: err.response?.data?.detail || err.message })
-      setBuyingPack(null)
     }
   }
 
@@ -135,37 +119,6 @@ function BillingModal({ isOpen, onClose }) {
                   <Progress value={storagePercent} className="h-2" />
                 </div>
               </div>
-
-              {/* Add Credits */}
-              {packs?.topup_allowed && packs.packs?.length > 0 && (
-                <div className="billing-section">
-                  <h4 className="billing-section-label">Add Credits</h4>
-                  <p className="billing-section-desc">Top-ups never expire and are used after your monthly allowance runs out.</p>
-                  <div className="buy-credits-grid">
-                    {packs.packs.map(pack => (
-                      <button
-                        key={pack.id}
-                        className={`buy-credits-pack ${!pack.available ? 'disabled' : ''}`}
-                        onClick={() => pack.available && handleBuyPack(pack.id)}
-                        disabled={!pack.available || buyingPack === pack.id}
-                      >
-                        {buyingPack === pack.id ? (
-                          <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#a78bfa' }} />
-                        ) : (
-                          <>
-                            <span className="buy-credits-pack-amount">{pack.credits}</span>
-                            <span className="buy-credits-pack-label">credits</span>
-                            <span className="buy-credits-pack-price">${pack.price}</span>
-                            {!pack.available && (
-                              <span className="buy-credits-pack-locked">Pro+ only</span>
-                            )}
-                          </>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Stripe Portal */}
               {tier !== 'free' && (
