@@ -6775,7 +6775,7 @@
 .ai-chat-fab {
   position: fixed;
   bottom: 24px;
-  left: 24px;
+  right: 24px;
   width: 56px;
   height: 56px;
   border-radius: 16px;
@@ -6806,7 +6806,7 @@
 .ai-chat-panel {
   position: fixed;
   bottom: 24px;
-  left: 24px;
+  right: 24px;
   width: 400px;
   height: 600px;
   max-height: calc(100vh - 48px);
@@ -7309,14 +7309,14 @@
 @media (max-width: 480px) {
   .ai-chat-panel {
     width: calc(100vw - 32px);
-    left: 16px;
+    right: 16px;
     bottom: 16px;
     height: calc(100vh - 100px);
   }
 
   .ai-chat-fab {
     bottom: 16px;
-    left: 16px;
+    right: 16px;
   }
 }
 
