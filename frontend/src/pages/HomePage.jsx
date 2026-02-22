@@ -26,6 +26,7 @@ import ReportPanel from '../components/content/ReportPanel'
 
 // Modal components
 import ExportModal from '../components/modals/ExportModal'
+import BillingModal from '../components/modals/BillingModal'
 import NewCollectionModal from '../components/modals/NewCollectionModal'
 import AddToCollectionModal from '../components/modals/AddToCollectionModal'
 import OnboardingModal from '../components/modals/OnboardingModal'
@@ -210,6 +211,9 @@ function HomePage() {
   // Profile panel state
   const [showProfile, setShowProfile] = useState(false)
 
+  // Billing modal state
+  const [showBilling, setShowBilling] = useState(false)
+
   // Settings state (analyzeFrames defaults off — Pro+ users can enable via toggle)
   const [settings, setSettings] = useState({
     provider: 'openai',
@@ -248,6 +252,7 @@ function HomePage() {
 
       // Escape — close any open modal
       if (e.key === 'Escape') {
+        if (showBilling) { setShowBilling(false); return }
         if (showProfile) { setShowProfile(false); return }
         if (selectedContent) { setSelectedContent(null); return }
         if (selectedReportId) { setSelectedReportId(null); return }
@@ -277,7 +282,7 @@ function HomePage() {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [selectedContent, selectedReportId, showExportModal, showNewCollectionModal, showAddToCollectionModal, showOnboarding, showProfile]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedContent, selectedReportId, showExportModal, showNewCollectionModal, showAddToCollectionModal, showOnboarding, showProfile, showBilling]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch collection contents when switching to collection tab
   useEffect(() => {
@@ -737,7 +742,7 @@ function HomePage() {
 
   return (
     <div className="app-layout">
-      <AppNavbar user={user} onLogout={handleLogout} sidebarCollapsed={sidebarCollapsed} onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} onShowProfile={() => setShowProfile(true)} />
+      <AppNavbar user={user} onLogout={handleLogout} sidebarCollapsed={sidebarCollapsed} onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} onShowProfile={() => setShowProfile(true)} onShowBilling={() => setShowBilling(true)} />
 
       <div className="app-body">
         <Sidebar
@@ -951,6 +956,9 @@ function HomePage() {
 
         {/* Profile Panel */}
         <ProfilePanel isOpen={showProfile} onClose={() => setShowProfile(false)} />
+
+        {/* Billing Modal */}
+        <BillingModal isOpen={showBilling} onClose={() => setShowBilling(false)} />
         </main>
       </div>
     </div>

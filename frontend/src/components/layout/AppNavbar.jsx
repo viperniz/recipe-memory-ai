@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { billingApi } from '../../api/billing'
-import { Sparkles, LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen, User as UserIcon } from 'lucide-react'
+import { Sparkles, LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen, User as UserIcon, CreditCard } from 'lucide-react'
 import NotificationBell from './NotificationBell'
 
 const TIER_DISPLAY_NAMES = {
@@ -12,7 +12,7 @@ const TIER_DISPLAY_NAMES = {
   team: 'Department',
 }
 
-function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar, onShowProfile }) {
+function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar, onShowProfile, onShowBilling }) {
   const navigate = useNavigate()
   const { token } = useAuth()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -118,6 +118,13 @@ function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar, onShowPr
               >
                 <UserIcon className="w-4 h-4" />
                 Profile
+              </button>
+              <button
+                className="app-topnav-dropdown-item"
+                onClick={() => { setIsDropdownOpen(false); onShowBilling?.(); }}
+              >
+                <CreditCard className="w-4 h-4" />
+                Plans & Billing
               </button>
 
               <div className="app-topnav-dropdown-divider" />

@@ -1853,6 +1853,41 @@
   padding: 24px;
 }
 
+/* Billing Modal */
+.billing-modal {
+  max-width: 480px;
+}
+
+.billing-section {
+  padding: 14px 0;
+  border-bottom: 1px solid #2d2d44;
+}
+
+.billing-section:last-child {
+  border-bottom: none;
+}
+
+.billing-plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.billing-section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 10px;
+}
+
+.billing-section-desc {
+  font-size: 12px;
+  color: #71717a;
+  margin: 0 0 10px;
+}
+
 /* Buy Credits Modal */
 .buy-credits-modal {
   max-width: 420px;
@@ -10948,6 +10983,7 @@
   }
 
   /* Smaller modals: centered card instead of full-screen on larger phones */
+  .billing-modal,
   .buy-credits-modal,
   .export-modal,
   .collection-modal,

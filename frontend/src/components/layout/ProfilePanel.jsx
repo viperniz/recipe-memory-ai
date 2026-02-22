@@ -1,27 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { billingApi } from '../../api/billing'
 import { authApi } from '../../api/auth'
 import { toast } from '../../hooks/use-toast'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
-import { Progress } from '../ui/progress'
-import { X, Loader2, Save, AlertTriangle, CreditCard, ArrowUpRight } from 'lucide-react'
-
-const TIER_DISPLAY_NAMES = {
-  free: 'Free',
-  starter: 'Researcher',
-  pro: 'Scholar',
-  team: 'Department',
-}
+import { X, Loader2, Save, AlertTriangle } from 'lucide-react'
 
 function ProfilePanel({ isOpen, onClose }) {
   const { user, token, logout, updateProfile } = useAuth()
   const navigate = useNavigate()
-  const [subscription, setSubscription] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isManaging, setIsManaging] = useState(false)
 
   // Edit profile state
   const [editName, setEditName] = useState('')
@@ -50,27 +38,7 @@ function ProfilePanel({ isOpen, onClose }) {
     if (user?.full_name) setEditName(user.full_name)
   }, [user])
 
-  useEffect(() => {
-    if (!token || !isOpen) return
-    setIsLoading(true)
-    billingApi.getSubscription(token)
-      .then(setSubscription)
-      .catch(() => {})
-      .finally(() => setIsLoading(false))
-  }, [token, isOpen])
-
   if (!isOpen) return null
-
-  const handleManageBilling = async () => {
-    setIsManaging(true)
-    try {
-      const { portal_url } = await billingApi.createPortalSession(token)
-      window.location.href = portal_url
-    } catch (err) {
-      toast({ variant: 'destructive', title: 'Failed to open billing portal', description: err.message })
-      setIsManaging(false)
-    }
-  }
 
   const handleSaveName = async () => {
     if (!editName.trim()) return
@@ -124,16 +92,6 @@ function ProfilePanel({ isOpen, onClose }) {
     }
   }
 
-  const tier = subscription?.tier || 'free'
-  const tierName = TIER_DISPLAY_NAMES[tier] || 'Free'
-  const creditBalance = subscription?.credit_balance ?? 0
-  const creditsMonthly = subscription?.credits_monthly ?? 50
-  const monthlyBalance = subscription?.monthly_balance ?? creditBalance
-  const creditPercentage = creditsMonthly > 0 ? Math.min((monthlyBalance / creditsMonthly) * 100, 100) : 0
-  const storageUsedMb = subscription?.storage_used_mb ?? 0
-  const storageLimitMb = subscription?.storage_mb ?? 100
-  const storagePercent = storageLimitMb > 0 ? Math.min((storageUsedMb / storageLimitMb) * 100, 100) : 0
-  const formatStorage = (mb) => mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`
   const hasPassword = user?.has_password !== false
 
   return (
@@ -150,48 +108,7 @@ function ProfilePanel({ isOpen, onClose }) {
         </div>
 
         <div className="modal-body" style={{ padding: '20px 24px' }}>
-          {isLoading ? (
-            <div className="loading-state" style={{ padding: '2rem' }}>Loading...</div>
-          ) : (
             <>
-              {/* Plan & Usage */}
-              <div className="profile-panel-section">
-                <div className="profile-compact-header">
-                  <h3 style={{ margin: 0 }}>{tierName} Plan</h3>
-                  <span className="profile-compact-status">
-                    <span className="status-dot-indicator" />
-                    Active
-                  </span>
-                </div>
-                <div className="profile-compact-meter">
-                  <div className="profile-compact-meter-label">
-                    <span>Monthly Allowance</span>
-                    <span>{monthlyBalance} / {creditsMonthly}</span>
-                  </div>
-                  <Progress value={creditPercentage} className="h-2" />
-                </div>
-                <div className="profile-compact-meter">
-                  <div className="profile-compact-meter-label">
-                    <span>Storage</span>
-                    <span>{formatStorage(storageUsedMb)} / {formatStorage(storageLimitMb)}</span>
-                  </div>
-                  <Progress value={storagePercent} className="h-2" />
-                </div>
-                <div className="profile-compact-actions">
-                  <Button variant="outline" size="sm" onClick={() => navigate('/pricing')} className="flex-1">
-                    <ArrowUpRight className="w-4 h-4 mr-2" />
-                    Change Plan
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleManageBilling} disabled={isManaging || tier === 'free'} className="flex-1">
-                    {isManaging ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Opening...</>
-                    ) : (
-                      <><CreditCard className="w-4 h-4 mr-2" />Billing</>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
               {/* Edit Profile */}
               <div className="profile-panel-section">
                 <h3 className="profile-section-title">Edit Profile</h3>
@@ -271,7 +188,6 @@ function ProfilePanel({ isOpen, onClose }) {
                 )}
               </div>
             </>
-          )}
         </div>
       </div>
     </div>
