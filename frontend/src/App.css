@@ -1855,37 +1855,222 @@
 
 /* Billing Modal */
 .billing-modal {
-  max-width: 480px;
+  max-width: 680px;
 }
 
-.billing-section {
-  padding: 14px 0;
-  border-bottom: 1px solid #2d2d44;
-}
-
-.billing-section:last-child {
-  border-bottom: none;
-}
-
-.billing-plan-header {
+/* Usage summary bar */
+.billing-usage-bar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
-.billing-section-label {
-  font-size: 13px;
-  font-weight: 600;
+.billing-usage-item {
+  flex: 1;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  font-size: 12px;
   color: #a1a1aa;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 0 0 10px;
 }
 
-.billing-section-desc {
+.billing-usage-item span:nth-child(2) {
+  text-align: right;
+  color: #d4d4d8;
+  font-weight: 500;
+}
+
+.billing-usage-item .h-1\.5 {
+  grid-column: 1 / -1;
+}
+
+/* Plan cards grid */
+.billing-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.billing-plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 16px 12px 14px;
+  background: #18181b;
+  border: 1.5px solid #27272a;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #d4d4d8;
+}
+
+.billing-plan-card:hover:not(:disabled) {
+  border-color: #8b5cf6;
+  background: #1a1a2e;
+}
+
+.billing-plan-card.current {
+  border-color: #3f3f46;
+  opacity: 0.7;
+  cursor: default;
+}
+
+.billing-plan-card.popular {
+  border-color: #7c3aed;
+  background: linear-gradient(180deg, #1e1035 0%, #18181b 60%);
+}
+
+.billing-plan-badge {
+  position: absolute;
+  top: -9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  letter-spacing: 0.3px;
+}
+
+.billing-plan-badge.current-badge {
+  background: #27272a;
+  color: #a1a1aa;
+}
+
+.billing-plan-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f4f4f5;
+  margin-bottom: 4px;
+}
+
+.billing-plan-price {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  margin-bottom: 10px;
+}
+
+.billing-plan-currency {
+  font-size: 14px;
+  color: #71717a;
+  font-weight: 500;
+}
+
+.billing-plan-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #f4f4f5;
+  line-height: 1;
+}
+
+.billing-plan-period {
   font-size: 12px;
   color: #71717a;
-  margin: 0 0 10px;
+}
+
+.billing-plan-highlights {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  width: 100%;
+  text-align: left;
+}
+
+.billing-plan-highlights li {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: 11.5px;
+  color: #a1a1aa;
+  padding: 2px 0;
+  line-height: 1.3;
+}
+
+.billing-plan-highlights li svg {
+  color: #22c55e;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.billing-plan-action {
+  margin-top: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a78bfa;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.billing-plan-card.current .billing-plan-action {
+  color: #52525b;
+}
+
+/* Footer links */
+.billing-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid #2d2d44;
+}
+
+.billing-footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: #71717a;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+
+.billing-footer-link:hover {
+  color: #a78bfa;
+}
+
+/* Responsive: stack cards on small screens */
+@media (max-width: 600px) {
+  .billing-modal {
+    max-width: 100%;
+  }
+
+  .billing-plans-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .billing-plan-card {
+    flex-direction: row;
+    text-align: left;
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  .billing-plan-highlights {
+    margin-bottom: 0;
+  }
+
+  .billing-plan-action {
+    margin-top: 0;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .billing-usage-bar {
+    flex-direction: column;
+    gap: 8px;
+  }
 }
 
 /* Buy Credits Modal */
@@ -10983,7 +11168,6 @@
   }
 
   /* Smaller modals: centered card instead of full-screen on larger phones */
-  .billing-modal,
   .buy-credits-modal,
   .export-modal,
   .collection-modal,
