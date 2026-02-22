@@ -253,15 +253,6 @@ function PricingPage() {
                     )}
                   </div>
 
-                  <ul className="plan-features">
-                    {plan.features?.map((feature, i) => (
-                      <li key={i}>
-                        <Check className="w-4 h-4 text-green-500 shrink-0" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-
                   <Button
                     variant={isCurrentPlan ? 'secondary' : 'default'}
                     className="w-full plan-cta"
@@ -284,6 +275,15 @@ function PricingPage() {
                       'Downgrade'
                     )}
                   </Button>
+
+                  <ul className="plan-features">
+                    {plan.features?.map((feature, i) => (
+                      <li key={i}>
+                        <Check className="w-4 h-4 text-green-500 shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )
             })}
