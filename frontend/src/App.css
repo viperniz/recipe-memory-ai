@@ -1954,7 +1954,7 @@
   display: flex;
   align-items: baseline;
   gap: 1px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .billing-plan-currency {
@@ -1978,7 +1978,7 @@
 .billing-plan-highlights {
   list-style: none;
   padding: 0;
-  margin: 0 0 12px;
+  margin: 0;
   width: 100%;
   text-align: left;
 }
@@ -1999,18 +1999,36 @@
   margin-top: 1px;
 }
 
-.billing-plan-action {
-  margin-top: auto;
-  font-size: 12px;
+.billing-plan-cta {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: #a78bfa;
+  border: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  transition: background 0.15s, opacity 0.15s;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
 }
 
-.billing-plan-card.current .billing-plan-action {
-  color: #52525b;
+.billing-plan-cta:hover:not(:disabled) {
+  background: linear-gradient(135deg, #9b6ff7, #8b5cf6);
+}
+
+.billing-plan-cta:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.billing-plan-cta.current {
+  background: #27272a;
+  color: #71717a;
 }
 
 /* Footer links */
@@ -2051,20 +2069,11 @@
   }
 
   .billing-plan-card {
-    flex-direction: row;
-    text-align: left;
     padding: 12px 14px;
-    gap: 12px;
   }
 
-  .billing-plan-highlights {
-    margin-bottom: 0;
-  }
-
-  .billing-plan-action {
-    margin-top: 0;
-    margin-left: auto;
-    white-space: nowrap;
+  .billing-plan-cta {
+    padding: 7px 10px;
   }
 
   .billing-usage-bar {

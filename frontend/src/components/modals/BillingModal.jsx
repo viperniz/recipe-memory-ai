@@ -138,11 +138,9 @@ function BillingModal({ isOpen, onClose }) {
                   const canUpgrade = isUpgrade(plan.tier)
 
                   return (
-                    <button
+                    <div
                       key={plan.tier}
                       className={`billing-plan-card ${isCurrent ? 'current' : ''} ${plan.popular ? 'popular' : ''}`}
-                      onClick={() => !isCurrent && handleSelectPlan(plan.tier)}
-                      disabled={isCurrent || processingTier === plan.tier}
                     >
                       {plan.popular && <span className="billing-plan-badge"><Sparkles className="w-3 h-3" />Best value</span>}
                       {isCurrent && <span className="billing-plan-badge current-badge"><Crown className="w-3 h-3" />Current</span>}
@@ -154,24 +152,28 @@ function BillingModal({ isOpen, onClose }) {
                         <span className="billing-plan-period">/mo</span>
                       </div>
 
+                      <button
+                        className={`billing-plan-cta ${isCurrent ? 'current' : ''}`}
+                        onClick={() => !isCurrent && handleSelectPlan(plan.tier)}
+                        disabled={isCurrent || processingTier === plan.tier}
+                      >
+                        {processingTier === plan.tier ? (
+                          <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                        ) : isCurrent ? (
+                          'Current Plan'
+                        ) : canUpgrade ? (
+                          'Upgrade'
+                        ) : (
+                          'Switch'
+                        )}
+                      </button>
+
                       <ul className="billing-plan-highlights">
                         {plan.highlights.map((h, i) => (
                           <li key={i}><Check className="w-3.5 h-3.5" />{h}</li>
                         ))}
                       </ul>
-
-                      <div className="billing-plan-action">
-                        {processingTier === plan.tier ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : isCurrent ? (
-                          <span>Active</span>
-                        ) : canUpgrade ? (
-                          <span>Upgrade <ArrowRight className="w-3.5 h-3.5" /></span>
-                        ) : (
-                          <span>Switch</span>
-                        )}
-                      </div>
-                    </button>
+                    </div>
                   )
                 })}
               </div>
