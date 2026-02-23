@@ -462,36 +462,29 @@ async def google_login(
     db: Session = Depends(get_db)
 ):
     """Authenticate with Google OAuth credential."""
-    try:
-        google_info = AuthService.verify_google_token(request.credential)
-        if not google_info:
-            raise HTTPException(status_code=401, detail="Invalid Google credential")
+    google_info = AuthService.verify_google_token(request.credential)
+    if not google_info:
+        raise HTTPException(status_code=401, detail="Invalid Google credential")
 
-        # Check if user already exists (to detect new signups for referral)
-        existing_user = db.query(User).filter(
-            (User.google_id == google_info["google_id"]) | (User.email == google_info["email"])
-        ).first()
-        is_new = existing_user is None
+    # Check if user already exists (to detect new signups for referral)
+    existing_user = db.query(User).filter(
+        (User.google_id == google_info["google_id"]) | (User.email == google_info["email"])
+    ).first()
+    is_new = existing_user is None
 
-        user = AuthService.get_or_create_google_user(db, google_info)
-        if not user.is_active:
-            raise HTTPException(status_code=403, detail="Account is deactivated")
+    user = AuthService.get_or_create_google_user(db, google_info)
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account is deactivated")
 
-        # Process referral for new Google signups
-        if is_new and request.referral_code:
-            try:
-                _process_referral(db, user, request.referral_code)
-            except Exception as e:
-                logger.warning(f"Referral processing failed: {e}")
+    # Process referral for new Google signups
+    if is_new and request.referral_code:
+        try:
+            _process_referral(db, user, request.referral_code)
+        except Exception as e:
+            logger.warning(f"Referral processing failed: {e}")
 
-        tier = AuthService.get_user_tier(db, user.id)
-        return AuthService.create_user_token(user, tier)
-    except HTTPException:
-        raise
-    except Exception as e:
-        import traceback
-        logger.error(f"Google login error: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Google login failed: {type(e).__name__}: {e}")
+    tier = AuthService.get_user_tier(db, user.id)
+    return AuthService.create_user_token(user, tier)
 
 
 # =============================================

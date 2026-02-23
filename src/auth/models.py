@@ -3,9 +3,10 @@ Auth Pydantic Models
 Request/Response schemas for authentication endpoints
 """
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import datetime
+import json
 
 
 # =============================================
@@ -37,6 +38,13 @@ class UserResponse(BaseModel):
     referral_code: Optional[str] = None
     avatar_url: Optional[str] = None
     preferences: Optional[dict] = None
+
+    @field_validator("preferences", mode="before")
+    @classmethod
+    def parse_preferences(cls, v):
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
 
     class Config:
         from_attributes = True
