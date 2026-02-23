@@ -161,9 +161,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [showReportModal, setShowReportModal] = useState(false)
   const [contentTags, setContentTags] = useState([])
   const [showTagDropdown, setShowTagDropdown] = useState(false)
-  const [videoTheater, setVideoTheater] = useState(false)
-  const modalContentRef = useRef(null)
-  const transcriptSectionRef = useRef(null)
   const navigate = useNavigate()
   const { token } = useAuth()
   const { tags: allTags, loadTags } = useData()
@@ -201,22 +198,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       .then(sub => setSubscription(sub))
       .catch(() => {})
   }, [token])
-
-  // Theater mode: detect when transcript section enters viewport
-  useEffect(() => {
-    const transcriptEl = transcriptSectionRef.current
-    const rootEl = modalContentRef.current
-    if (!transcriptEl || !rootEl) {
-      setVideoTheater(false)
-      return
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => setVideoTheater(entry.isIntersecting),
-      { root: rootEl, threshold: 0 }
-    )
-    observer.observe(transcriptEl)
-    return () => observer.disconnect()
-  }, [content?.id, activeTab])
 
   // Load stored guide on mount
   useEffect(() => {
@@ -380,17 +361,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     }
   }
 
-  // Handle export based on active tab
-  const handleExport = () => {
-    if (activeTab === 'guide' && generatedGuide) {
-      // Export guide as markdown (Pro only)
-      handleDownloadGuide()
-    } else {
-      // Regular content export
-      onExport()
-    }
-  }
-
   const copyToClipboard = (text, stepId) => {
     navigator.clipboard.writeText(text)
     setCopiedStep(stepId)
@@ -435,27 +405,18 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   // General mode content (fallback when no mode-specific card)
   const renderGeneralContent = () => (
     <>
-      <div className="content-detail-section">
-        <Badge variant="default" className="mb-4">
-          {content.content_type || 'video'}
-        </Badge>
-        {content.mode && content.mode !== 'general' && (
-          <Badge variant="outline" className="ml-2 mb-4">
-            {content.mode} mode
-          </Badge>
-        )}
-        {content.metadata?.detected_language_name && (
-          <Badge variant="outline" className="ml-2 mb-4">
-            {content.metadata.translated_to_name
-              ? `${content.metadata.detected_language_name} → ${content.metadata.translated_to_name}`
-              : content.metadata.detected_language_name}
-          </Badge>
-        )}
-      </div>
-
       {content.summary && (
         <div className="content-detail-section">
-          <h3>Summary</h3>
+          <h3>
+            Summary
+            {content.metadata?.detected_language_name && (
+              <Badge variant="outline" className="ml-2" style={{ verticalAlign: 'middle', fontSize: 11 }}>
+                {content.metadata.translated_to_name
+                  ? `${content.metadata.detected_language_name} → ${content.metadata.translated_to_name}`
+                  : content.metadata.detected_language_name}
+              </Badge>
+            )}
+          </h3>
           <p>{content.summary}</p>
         </div>
       )}
@@ -1064,142 +1025,138 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   return (
     <YouTubePlayerProvider>
     <div className="modal-overlay" onClick={onClose}>
-      <div ref={modalContentRef} className={`modal-content modal-content-large${isYouTube && activeTab === 'content' ? ' modal-content-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-header-title">
-            {ModeIcon && <ModeIcon className="w-5 h-5 mr-2 text-purple-400" />}
-            <h2>{content.title || 'Untitled'}</h2>
-            {/* Tag pills */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 8, flexWrap: 'wrap' }}>
-              {contentTags.map(tag => (
-                <span key={tag.id} className="tag-pill" style={{ background: `${tag.color || '#3B82F6'}20` }}>
-                  <span className="tag-pill-dot" style={{ background: tag.color || '#3B82F6' }} />
-                  {tag.name}
-                  <button className="tag-pill-remove" onClick={(e) => { e.stopPropagation(); handleRemoveTag(tag.id) }}>
-                    <X className="w-2.5 h-2.5" />
+      <div className={`modal-content modal-content-large${isYouTube && activeTab === 'content' ? ' modal-content-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+        {/* Sticky top: header + tabs (#2) */}
+        <div className="modal-sticky-top">
+          <div className="modal-header">
+            {/* Two-row header (#7) */}
+            <div className="modal-header-title-group">
+              <div className="modal-header-title">
+                {ModeIcon && <ModeIcon className="w-5 h-5 mr-2 text-purple-400" />}
+                <h2>{content.title || 'Untitled'}</h2>
+              </div>
+              <div className="modal-header-tags">
+                {contentTags.map(tag => (
+                  <span key={tag.id} className="tag-pill" style={{ background: `${tag.color || '#3B82F6'}20` }}>
+                    <span className="tag-pill-dot" style={{ background: tag.color || '#3B82F6' }} />
+                    {tag.name}
+                    <button className="tag-pill-remove" onClick={(e) => { e.stopPropagation(); handleRemoveTag(tag.id) }}>
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </span>
+                ))}
+                <div className="tag-assign-dropdown">
+                  <button
+                    style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 10, padding: '2px 8px', color: '#71717a', fontSize: 11, cursor: 'pointer' }}
+                    onClick={() => setShowTagDropdown(!showTagDropdown)}
+                  >
+                    + Tag
                   </button>
-                </span>
-              ))}
-              <div className="tag-assign-dropdown">
-                <button
-                  style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 10, padding: '2px 8px', color: '#71717a', fontSize: 11, cursor: 'pointer' }}
-                  onClick={() => setShowTagDropdown(!showTagDropdown)}
-                >
-                  + Tag
-                </button>
-                {showTagDropdown && (
-                  <div className="tag-assign-menu">
-                    {allTags.filter(t => !contentTags.some(ct => ct.id === t.id)).map(tag => (
-                      <button key={tag.id} className="tag-assign-option" onClick={() => handleAddTag(tag.id)}>
-                        <span className="tag-pill-dot" style={{ background: tag.color || '#3B82F6' }} />
-                        {tag.name}
-                      </button>
-                    ))}
-                    {allTags.filter(t => !contentTags.some(ct => ct.id === t.id)).length === 0 && (
-                      <span style={{ padding: '8px 10px', fontSize: 12, color: '#52525b' }}>No more tags</span>
-                    )}
-                  </div>
-                )}
+                  {showTagDropdown && (
+                    <div className="tag-assign-menu">
+                      {allTags.filter(t => !contentTags.some(ct => ct.id === t.id)).map(tag => (
+                        <button key={tag.id} className="tag-assign-option" onClick={() => handleAddTag(tag.id)}>
+                          <span className="tag-pill-dot" style={{ background: tag.color || '#3B82F6' }} />
+                          {tag.name}
+                        </button>
+                      ))}
+                      {allTags.filter(t => !contentTags.some(ct => ct.id === t.id)).length === 0 && (
+                        <span style={{ padding: '8px 10px', fontSize: 12, color: '#52525b' }}>No more tags</span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="modal-header-actions">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleGenerateGuide()}
-              disabled={isGeneratingGuide}
-            >
-              {isGeneratingGuide ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Generate Study Guide
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              disabled={isDownloadingGuide}
-            >
-              {isDownloadingGuide ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
+            <div className="modal-header-actions">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleGenerateGuide()}
+                disabled={isGeneratingGuide}
+              >
+                {isGeneratingGuide ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Generate Study Guide
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onExport}
+              >
                 <Download className="w-4 h-4 mr-2" />
-              )}
-              {activeTab === 'guide' && generatedGuide ? (
-                'Export Guide'
-              ) : (
-                'Export'
-              )}
-            </Button>
-            <button className="modal-close" onClick={onClose}>
-              <X className="w-5 h-5" />
+                Export
+              </Button>
+              <button className="modal-close" onClick={onClose}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Tab switcher — always visible, with tier gate badges */}
+          <div className="content-tabs">
+            <button
+              className={`content-tab ${activeTab === 'content' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('content'); trackEvent('content_tab_view', { tab: 'content' }) }}
+            >
+              Breakdown
+            </button>
+            <button
+              className={`content-tab ${activeTab === 'guide' ? 'active' : ''}`}
+              onClick={() => {
+                trackEvent('content_tab_view', { tab: 'guide' })
+                if (generatedGuide) {
+                  setActiveTab('guide')
+                } else {
+                  handleGenerateGuide()
+                }
+              }}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              Study Guide
+              {generatedGuide && <CheckCircle className="w-3 h-3" style={{ color: '#22c55e' }} />}
+              {!subscription?.guide_generation && <Lock className="w-3 h-3 text-zinc-500" />}
+            </button>
+            <button
+              className={`content-tab ${activeTab === 'flashcards' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('flashcards'); trackEvent('content_tab_view', { tab: 'flashcards' }) }}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              Flashcards
+              {!subscription?.flashcard_generation && <Lock className="w-3 h-3 text-zinc-500" />}
+            </button>
+            <button
+              className={`content-tab ${activeTab === 'mindmap' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('mindmap'); trackEvent('content_tab_view', { tab: 'mindmap' }) }}
+            >
+              <Network className="w-3.5 h-3.5" />
+              Mind Map
+              {!subscription?.mindmap_generation && <Lock className="w-3 h-3 text-zinc-500" />}
+            </button>
+            <button
+              className={`content-tab ${activeTab === 'notes' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('notes'); trackEvent('content_tab_view', { tab: 'notes' }) }}
+            >
+              <StickyNote className="w-3.5 h-3.5" />
+              Notes
+            </button>
+            <button
+              className="content-tab"
+              onClick={() => setShowReportModal(true)}
+              title="Generate a report from this content"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Report
             </button>
           </div>
-        </div>
-
-        {/* Tab switcher — always visible, with tier gate badges */}
-        <div className="content-tabs">
-          <button
-            className={`content-tab ${activeTab === 'content' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('content'); trackEvent('content_tab_view', { tab: 'content' }) }}
-          >
-            Breakdown
-          </button>
-          <button
-            className={`content-tab ${activeTab === 'guide' ? 'active' : ''}`}
-            onClick={() => {
-              trackEvent('content_tab_view', { tab: 'guide' })
-              if (generatedGuide) {
-                setActiveTab('guide')
-              } else {
-                handleGenerateGuide()
-              }
-            }}
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            Study Guide
-            {generatedGuide && <CheckCircle className="w-3 h-3" style={{ color: '#22c55e' }} />}
-            {!subscription?.guide_generation && <Lock className="w-3 h-3 text-zinc-500" />}
-          </button>
-          <button
-            className={`content-tab ${activeTab === 'flashcards' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('flashcards'); trackEvent('content_tab_view', { tab: 'flashcards' }) }}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            Flashcards
-            {!subscription?.flashcard_generation && <Lock className="w-3 h-3 text-zinc-500" />}
-          </button>
-          <button
-            className={`content-tab ${activeTab === 'mindmap' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('mindmap'); trackEvent('content_tab_view', { tab: 'mindmap' }) }}
-          >
-            <Network className="w-3.5 h-3.5" />
-            Mind Map
-            {!subscription?.mindmap_generation && <Lock className="w-3 h-3 text-zinc-500" />}
-          </button>
-          <button
-            className={`content-tab ${activeTab === 'notes' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('notes'); trackEvent('content_tab_view', { tab: 'notes' }) }}
-          >
-            <StickyNote className="w-3.5 h-3.5" />
-            Notes
-          </button>
-          <button
-            className="content-tab"
-            onClick={() => setShowReportModal(true)}
-            title="Generate a report from this content"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Report
-          </button>
         </div>
 
         <div className="modal-body">
@@ -1230,30 +1187,32 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             <MindMapPanel contentId={content.id} sourceUrl={content.source_url} />
           ) : (
             <>
-              <span className="ai-disclaimer-icon" title="AI-generated analysis — may contain errors. Use the chat bubble for precise answers.">
-                <MessageSquare className="w-3.5 h-3.5" />
-              </span>
               {isYouTube ? (
                 <div className="breakdown-youtube-layout">
-                  <div className={`breakdown-video-sticky ${videoTheater ? 'theater' : ''}`}>
-                    <YouTubeEmbed sourceUrl={content.source_url} />
+                  <div className="breakdown-col-video">
+                    <div className="breakdown-video-sticky">
+                      <YouTubeEmbed sourceUrl={content.source_url} />
+                    </div>
                   </div>
-                  <div className="breakdown-analysis">
+                  <div className="breakdown-col-analysis">
+                    <div className="ai-disclaimer-label" title="AI-generated analysis — may contain errors. Use the chat bubble for precise answers.">
+                      <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
+                    </div>
                     {modeContent || renderGeneralContent()}
-                  </div>
-                  <div
-                    ref={transcriptSectionRef}
-                    className={`breakdown-transcript ${videoTheater ? 'theater' : ''}`}
-                  >
-                    {renderTimelineSection()}
                   </div>
                 </div>
               ) : (
                 <>
+                  <div className="ai-disclaimer-label" title="AI-generated analysis — may contain errors. Use the chat bubble for precise answers.">
+                    <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
+                  </div>
                   {modeContent || renderGeneralContent()}
-                  {renderTimelineSection()}
                 </>
               )}
+              {/* Transcript always full-width below (#1) */}
+              <div className="breakdown-transcript-full">
+                {renderTimelineSection()}
+              </div>
             </>
           )}
         </div>
