@@ -10452,8 +10452,9 @@ button.timestamp-link {
 .youtube-embed-wrapper {
   position: relative;
   width: 100%;
-  padding-bottom: 56.25%; /* 16:9 */
-  max-height: 360px;
+  max-width: 480px;
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
   overflow: hidden;
   background: #000; /* Video iframe is always dark */
 }
@@ -10467,16 +10468,9 @@ button.timestamp-link {
   height: 100% !important;
 }
 
-/* Cap the container height so the player doesn't eat the whole modal */
-@media (min-height: 700px) {
-  .youtube-embed-wrapper {
-    max-height: 360px;
-  }
-}
-
 @media (max-width: 768px) {
   .youtube-embed-wrapper {
-    max-height: 240px;
+    max-width: 100%;
   }
 }
 
