@@ -179,7 +179,11 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# CORS middleware must be added FIRST so it runs outermost (handles OPTIONS preflights before rate limiting)
+# Rate limiting middleware (added first = innermost, runs after CORS)
+app.add_middleware(RateLimitMiddleware)
+
+# CORS middleware must be added LAST so it runs outermost in Starlette's stack
+# (handles OPTIONS preflights before rate limiting or any other middleware can block them)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -187,9 +191,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Add rate limiting middleware (runs after CORS)
-app.add_middleware(RateLimitMiddleware)
 
 
 # Security headers middleware
