@@ -8,7 +8,7 @@ import CreatorCard from './CreatorCard'
 import MeetingCard from './MeetingCard'
 import DeepDiveCard from './DeepDiveCard'
 import TimestampLink from './TimestampLink'
-import YouTubeEmbed from './YouTubeEmbed'
+import YouTubeEmbed from './YouTubeEmbed'h
 import { YouTubePlayerProvider } from '../../context/YouTubePlayerContext'
 
 import FlashcardPanel from './FlashcardPanel'
@@ -260,13 +260,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       setTimeout(() => {
         modal.scrollTop = savedScroll
 
-        const modalRect = modal.getBoundingClientRect()
-        const transcriptRect = transcript.getBoundingClientRect()
-        const transcriptVisualTop = transcriptRect.top - modalRect.top
-        const videoBottom = STICKY_TOP + VIDEO_CENTERED_H
-        const paddingTop = Math.max(0, videoBottom - transcriptVisualTop + 24)
-
-        transcript.style.paddingTop = `${paddingTop}px`
         transcript.style.paddingBottom = `${VIDEO_CENTERED_H}px`
       }, 0)
     }
@@ -276,8 +269,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       state = 'two-col'
       videoCol.classList.remove('is-centered')
       analysisCol.classList.remove('is-exiting')
-      transcript.style.paddingTop = ''
-      transcript.style.paddingBottom = ''
+            transcript.style.paddingBottom = ''
     }
 
     const observer = new IntersectionObserver(
