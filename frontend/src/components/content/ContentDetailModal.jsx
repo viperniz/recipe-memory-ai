@@ -572,6 +572,249 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     </>
   )
 
+  // Timeline / Visual Grid / Transcript sections
+  const renderTimelineSection = () => {
+    if (content.timeline && content.timeline.length > 0) {
+      return (
+        <>
+          {/* View toggle + Generate Thumbnails button */}
+          <div className="content-detail-section">
+            <div className="timeline-view-toggle">
+              <button
+                className={`timeline-toggle-btn ${timelineView === 'timeline' ? 'active' : ''}`}
+                onClick={() => setTimelineView('timeline')}
+              >
+                Timeline
+              </button>
+              <button
+                className={`timeline-toggle-btn ${timelineView === 'visual-grid' ? 'active' : ''}`}
+                onClick={() => setTimelineView('visual-grid')}
+              >
+                <Grid3X3 className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
+                Visual Grid
+              </button>
+              <button
+                className={`timeline-toggle-btn ${timelineView === 'transcript' ? 'active' : ''}`}
+                onClick={() => setTimelineView('transcript')}
+              >
+                Transcript
+              </button>
+              {canGenerateThumbnails && (
+                <button
+                  className="timeline-toggle-btn generate-thumbs-btn"
+                  onClick={handleGenerateThumbnails}
+                  disabled={isGeneratingThumbnails}
+                  title="Generate frame thumbnails from video"
+                >
+                  {isGeneratingThumbnails
+                    ? <Loader2 className="w-3 h-3 animate-spin" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
+                    : <Camera className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
+                  }
+                  {isGeneratingThumbnails ? 'Generating...' : 'Generate Thumbnails'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {timelineView === 'timeline' && (
+            <div className="content-detail-section">
+              <h3>Transcript & Visual Timeline</h3>
+              <div className="timeline-container">
+                {content.timeline.map((entry, idx) => {
+                  const mins = Math.floor(entry.timestamp / 60)
+                  const secs = Math.floor(entry.timestamp % 60)
+                  const tsStr = `${mins}:${secs.toString().padStart(2, '0')}`
+
+                  if (entry.type === 'vision') {
+                    const ytUrl = buildYouTubeTimestampUrl(content.source_url, entry.timestamp)
+                    return (
+                      <div key={idx} className="timeline-entry vision">
+                        <div className="timeline-header">
+                          <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
+                          <span className="timeline-vision-badge">
+                            <Eye className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
+                            Visual
+                          </span>
+                        </div>
+                        {entry.thumbnail && (
+                          <a href={ytUrl || '#'} target="_blank" rel="noopener noreferrer" className="timeline-thumbnail-link">
+                            <img src={entry.thumbnail} alt={entry.caption || ''} className="timeline-thumbnail" loading="lazy" />
+                          </a>
+                        )}
+                        <div className="timeline-caption">{entry.caption || entry.text}</div>
+                        {entry.text && entry.caption && (
+                          <details className="timeline-full-desc">
+                            <summary>Full description</summary>
+                            <div className="timeline-text">{entry.text}</div>
+                          </details>
+                        )}
+                        {!entry.caption && (
+                          <div className="timeline-text">{entry.text}</div>
+                        )}
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div key={idx} className="timeline-entry transcript">
+                      <div className="timeline-header">
+                        <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
+                        {entry.speaker && entry.speaker !== 'Unknown' && (
+                          <span className="transcript-speaker">{entry.speaker}</span>
+                        )}
+                      </div>
+                      <div className="timeline-text">{entry.text}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {timelineView === 'visual-grid' && (
+            <div className="content-detail-section">
+              <h3>Visual Grid</h3>
+              <div className="visual-grid">
+                {content.timeline.filter(e => e.type === 'vision').map((entry, idx) => {
+                  const ytUrl = buildYouTubeTimestampUrl(content.source_url, entry.timestamp)
+                  return (
+                    <a key={idx} href={ytUrl || '#'} target="_blank" rel="noopener noreferrer" className="visual-grid-item">
+                      {entry.thumbnail ? (
+                        <img src={entry.thumbnail} alt="" className="visual-grid-thumb" loading="lazy" />
+                      ) : (
+                        <div className="visual-grid-thumb-placeholder">
+                          <Eye className="w-6 h-6" />
+                        </div>
+                      )}
+                      <div className="visual-grid-overlay">
+                        <span className="visual-grid-time">{formatTimestamp(entry.timestamp)}</span>
+                      </div>
+                      <p className="visual-grid-caption">{entry.caption || entry.text}</p>
+                    </a>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {timelineView === 'transcript' && (
+            <div className="content-detail-section">
+              <h3>Transcript</h3>
+              <div className="transcript-view">
+                {content.timeline.filter(e => e.type === 'transcript').map((entry, idx) => {
+                  const tsStr = formatTimestamp(entry.timestamp)
+                  return (
+                    <div key={idx} className="transcript-entry">
+                      <div className="transcript-header">
+                        <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
+                        {entry.speaker && entry.speaker !== 'Unknown' && (
+                          <span className="transcript-speaker">{entry.speaker}</span>
+                        )}
+                      </div>
+                      <div className="transcript-text">{entry.text}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      )
+    }
+
+    // Fallback: separate sections for old content without timeline
+    return (
+      <>
+        {content.frame_descriptions && content.frame_descriptions.length > 0 && (
+          <div className="content-detail-section">
+            <h3>Visual Analysis</h3>
+            <div className="frame-descriptions-container">
+              {content.frame_descriptions.map((desc, idx) => {
+                const match = desc.match(/^\[(\d+(?:\.\d+)?)s\]\s*(.*)$/)
+                if (match) {
+                  const [, secondsStr, description] = match
+                  const seconds = parseFloat(secondsStr)
+                  return (
+                    <div key={idx} className="frame-description-entry">
+                      <div className="frame-description-header">
+                        <TimestampLink timestamp={String(Math.floor(seconds))} sourceUrl={content.source_url} />
+                      </div>
+                      <div className="frame-description-text">{description.trim()}</div>
+                    </div>
+                  )
+                }
+                return (
+                  <div key={idx} className="frame-description-entry">
+                    <div className="frame-description-text">{desc}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {content.transcript && (
+          <div className="content-detail-section">
+            <h3>Full Transcript</h3>
+            <div className="transcript-container">
+              {content.transcript.split('\n\n').map((paragraph, idx) => {
+                if (!paragraph.trim()) return null
+                const lines = paragraph.split('\n')
+                const firstLine = lines[0] || ''
+                const timestampMatch = firstLine.match(/^\[(\d+):(\d+)\]\s*(.*?)$/)
+
+                if (timestampMatch) {
+                  const [, mins, secs, rest] = timestampMatch
+                  const text = lines.length > 1 ? lines.slice(1).join(' ').trim() : ''
+                  let speaker = null
+                  let actualText = text
+
+                  if (rest && rest.trim()) {
+                    const restTrimmed = rest.trim()
+                    if (text) {
+                      speaker = restTrimmed
+                    } else {
+                      const looksLikeSpeaker =
+                        restTrimmed.length < 30 &&
+                        !restTrimmed.match(/[.!?]\s/) &&
+                        (restTrimmed[0] === restTrimmed[0].toUpperCase() || restTrimmed.startsWith('SPEAKER'))
+
+                      if (looksLikeSpeaker) {
+                        speaker = restTrimmed
+                      } else {
+                        actualText = restTrimmed
+                      }
+                    }
+                  }
+
+                  return (
+                    <div key={idx} className="transcript-entry">
+                      <div className="transcript-header">
+                        <TimestampLink timestamp={`${mins}:${secs}`} sourceUrl={content.source_url} />
+                        {speaker && speaker !== 'Unknown' && (
+                          <span className="transcript-speaker">{speaker}</span>
+                        )}
+                      </div>
+                      {actualText && (
+                        <div className="transcript-text">{actualText}</div>
+                      )}
+                    </div>
+                  )
+                }
+
+                return (
+                  <div key={idx} className="transcript-entry">
+                    <div className="transcript-text">{paragraph}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
+
   // Render the generated guide
   const renderGuide = () => {
     if (!generatedGuide) return null
@@ -980,246 +1223,13 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   </div>
                   <div className="breakdown-col-analysis">
                     {modeContent || renderGeneralContent()}
+                    {renderTimelineSection()}
                   </div>
                 </div>
               ) : (
-                modeContent || renderGeneralContent()
-              )}
-
-              {/* Unified Timeline / Visual Grid / Transcript Views — always shown */}
-              {content.timeline && content.timeline.length > 0 ? (
                 <>
-                  {/* View toggle + Generate Thumbnails button */}
-                  <div className="content-detail-section">
-                    <div className="timeline-view-toggle">
-                      <button
-                        className={`timeline-toggle-btn ${timelineView === 'timeline' ? 'active' : ''}`}
-                        onClick={() => setTimelineView('timeline')}
-                      >
-                        Timeline
-                      </button>
-                      <button
-                        className={`timeline-toggle-btn ${timelineView === 'visual-grid' ? 'active' : ''}`}
-                        onClick={() => setTimelineView('visual-grid')}
-                      >
-                        <Grid3X3 className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
-                        Visual Grid
-                      </button>
-                      <button
-                        className={`timeline-toggle-btn ${timelineView === 'transcript' ? 'active' : ''}`}
-                        onClick={() => setTimelineView('transcript')}
-                      >
-                        Transcript
-                      </button>
-                      {canGenerateThumbnails && (
-                        <button
-                          className="timeline-toggle-btn generate-thumbs-btn"
-                          onClick={handleGenerateThumbnails}
-                          disabled={isGeneratingThumbnails}
-                          title="Generate frame thumbnails from video"
-                        >
-                          {isGeneratingThumbnails
-                            ? <Loader2 className="w-3 h-3 animate-spin" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
-                            : <Camera className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
-                          }
-                          {isGeneratingThumbnails ? 'Generating...' : 'Generate Thumbnails'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {timelineView === 'timeline' && (
-                    <div className="content-detail-section">
-                      <h3>Transcript & Visual Timeline</h3>
-                      <div className="timeline-container">
-                        {content.timeline.map((entry, idx) => {
-                          const mins = Math.floor(entry.timestamp / 60)
-                          const secs = Math.floor(entry.timestamp % 60)
-                          const tsStr = `${mins}:${secs.toString().padStart(2, '0')}`
-
-                          if (entry.type === 'vision') {
-                            const ytUrl = buildYouTubeTimestampUrl(content.source_url, entry.timestamp)
-                            return (
-                              <div key={idx} className="timeline-entry vision">
-                                <div className="timeline-header">
-                                  <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
-                                  <span className="timeline-vision-badge">
-                                    <Eye className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
-                                    Visual
-                                  </span>
-                                </div>
-                                {entry.thumbnail && (
-                                  <a href={ytUrl || '#'} target="_blank" rel="noopener noreferrer" className="timeline-thumbnail-link">
-                                    <img src={entry.thumbnail} alt={entry.caption || ''} className="timeline-thumbnail" loading="lazy" />
-                                  </a>
-                                )}
-                                <div className="timeline-caption">{entry.caption || entry.text}</div>
-                                {entry.text && entry.caption && (
-                                  <details className="timeline-full-desc">
-                                    <summary>Full description</summary>
-                                    <div className="timeline-text">{entry.text}</div>
-                                  </details>
-                                )}
-                                {!entry.caption && (
-                                  <div className="timeline-text">{entry.text}</div>
-                                )}
-                              </div>
-                            )
-                          }
-
-                          return (
-                            <div key={idx} className="timeline-entry transcript">
-                              <div className="timeline-header">
-                                <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
-                                {entry.speaker && entry.speaker !== 'Unknown' && (
-                                  <span className="transcript-speaker">{entry.speaker}</span>
-                                )}
-                              </div>
-                              <div className="timeline-text">{entry.text}</div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {timelineView === 'visual-grid' && (
-                    <div className="content-detail-section">
-                      <h3>Visual Grid</h3>
-                      <div className="visual-grid">
-                        {content.timeline.filter(e => e.type === 'vision').map((entry, idx) => {
-                          const ytUrl = buildYouTubeTimestampUrl(content.source_url, entry.timestamp)
-                          return (
-                            <a key={idx} href={ytUrl || '#'} target="_blank" rel="noopener noreferrer" className="visual-grid-item">
-                              {entry.thumbnail ? (
-                                <img src={entry.thumbnail} alt="" className="visual-grid-thumb" loading="lazy" />
-                              ) : (
-                                <div className="visual-grid-thumb-placeholder">
-                                  <Eye className="w-6 h-6" />
-                                </div>
-                              )}
-                              <div className="visual-grid-overlay">
-                                <span className="visual-grid-time">{formatTimestamp(entry.timestamp)}</span>
-                              </div>
-                              <p className="visual-grid-caption">{entry.caption || entry.text}</p>
-                            </a>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {timelineView === 'transcript' && (
-                    <div className="content-detail-section">
-                      <h3>Transcript</h3>
-                      <div className="transcript-view">
-                        {content.timeline.filter(e => e.type === 'transcript').map((entry, idx) => {
-                          const tsStr = formatTimestamp(entry.timestamp)
-                          return (
-                            <div key={idx} className="transcript-entry">
-                              <div className="transcript-header">
-                                <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
-                                {entry.speaker && entry.speaker !== 'Unknown' && (
-                                  <span className="transcript-speaker">{entry.speaker}</span>
-                                )}
-                              </div>
-                              <div className="transcript-text">{entry.text}</div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  {/* Fallback: separate sections for old content without timeline */}
-                  {content.frame_descriptions && content.frame_descriptions.length > 0 && (
-                    <div className="content-detail-section">
-                      <h3>Visual Analysis</h3>
-                      <div className="frame-descriptions-container">
-                        {content.frame_descriptions.map((desc, idx) => {
-                          const match = desc.match(/^\[(\d+(?:\.\d+)?)s\]\s*(.*)$/)
-                          if (match) {
-                            const [, secondsStr, description] = match
-                            const seconds = parseFloat(secondsStr)
-                            return (
-                              <div key={idx} className="frame-description-entry">
-                                <div className="frame-description-header">
-                                  <TimestampLink timestamp={String(Math.floor(seconds))} sourceUrl={content.source_url} />
-                                </div>
-                                <div className="frame-description-text">{description.trim()}</div>
-                              </div>
-                            )
-                          }
-                          return (
-                            <div key={idx} className="frame-description-entry">
-                              <div className="frame-description-text">{desc}</div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {content.transcript && (
-                    <div className="content-detail-section">
-                      <h3>Full Transcript</h3>
-                      <div className="transcript-container">
-                        {content.transcript.split('\n\n').map((paragraph, idx) => {
-                          if (!paragraph.trim()) return null
-                          const lines = paragraph.split('\n')
-                          const firstLine = lines[0] || ''
-                          const timestampMatch = firstLine.match(/^\[(\d+):(\d+)\]\s*(.*?)$/)
-
-                          if (timestampMatch) {
-                            const [, mins, secs, rest] = timestampMatch
-                            const text = lines.length > 1 ? lines.slice(1).join(' ').trim() : ''
-                            let speaker = null
-                            let actualText = text
-
-                            if (rest && rest.trim()) {
-                              const restTrimmed = rest.trim()
-                              if (text) {
-                                speaker = restTrimmed
-                              } else {
-                                const looksLikeSpeaker =
-                                  restTrimmed.length < 30 &&
-                                  !restTrimmed.match(/[.!?]\s/) &&
-                                  (restTrimmed[0] === restTrimmed[0].toUpperCase() || restTrimmed.startsWith('SPEAKER'))
-
-                                if (looksLikeSpeaker) {
-                                  speaker = restTrimmed
-                                } else {
-                                  actualText = restTrimmed
-                                }
-                              }
-                            }
-
-                            return (
-                              <div key={idx} className="transcript-entry">
-                                <div className="transcript-header">
-                                  <TimestampLink timestamp={`${mins}:${secs}`} sourceUrl={content.source_url} />
-                                  {speaker && speaker !== 'Unknown' && (
-                                    <span className="transcript-speaker">{speaker}</span>
-                                  )}
-                                </div>
-                                {actualText && (
-                                  <div className="transcript-text">{actualText}</div>
-                                )}
-                              </div>
-                            )
-                          }
-
-                          return (
-                            <div key={idx} className="transcript-entry">
-                              <div className="transcript-text">{paragraph}</div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
+                  {modeContent || renderGeneralContent()}
+                  {renderTimelineSection()}
                 </>
               )}
             </>

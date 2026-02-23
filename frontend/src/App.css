@@ -10439,35 +10439,17 @@ button.timestamp-link {
    ============================================================ */
 .youtube-embed-container {
   background: var(--bg-elevated);
-}
-
-.youtube-embed-toggle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  width: 100%;
-  padding: 6px 16px;
-  background: var(--bg-overlay);
-  border: none;
-  border-bottom: 1px solid var(--border-subtle);
-  color: var(--text-tertiary);
-  font-size: 12px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.youtube-embed-toggle:hover {
-  background: var(--bg-overlay-hover);
-  color: var(--text-secondary);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .youtube-embed-wrapper {
   position: relative;
   width: 100%;
-  max-width: 320px;
   aspect-ratio: 16 / 9;
   margin: 0;
   overflow: hidden;
-  background: #000; /* Video iframe is always dark */
+  background: #000;
 }
 .youtube-embed-wrapper iframe,
 .youtube-embed-iframe,
@@ -10490,9 +10472,9 @@ button.timestamp-link {
    ============================================================ */
 .breakdown-two-col {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 2fr 3fr;
   gap: 24px;
-  margin-bottom: 32px;
+  align-items: start;
 }
 
 .breakdown-col-video {
@@ -10507,16 +10489,6 @@ button.timestamp-link {
 
 .breakdown-col-analysis {
   min-width: 0;
-}
-
-/* Inside the grid, embed fills column width instead of 320px cap */
-.breakdown-col-video .youtube-embed-wrapper {
-  max-width: 100%;
-}
-
-/* Remove border from embed when inside grid */
-.breakdown-col-video .youtube-embed-container {
-  border-bottom: none;
 }
 
 @media (max-width: 768px) {

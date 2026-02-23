@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useEffect, useCallback } from 'react'
 import YouTube from 'react-youtube'
-import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useYouTubePlayer } from '../../context/YouTubePlayerContext'
 
 function extractVideoId(url) {
@@ -11,7 +10,6 @@ function extractVideoId(url) {
 }
 
 function YouTubeEmbed({ sourceUrl }) {
-  const [collapsed, setCollapsed] = useState(false)
   const { registerPlayer, unregisterPlayer } = useYouTubePlayer()
   const videoId = extractVideoId(sourceUrl)
 
@@ -37,27 +35,15 @@ function YouTubeEmbed({ sourceUrl }) {
 
   return (
     <div className="youtube-embed-container">
-      <button
-        className="youtube-embed-toggle"
-        onClick={() => setCollapsed(!collapsed)}
-      >
-        {collapsed ? (
-          <><ChevronDown className="w-3.5 h-3.5" /> Show player</>
-        ) : (
-          <><ChevronUp className="w-3.5 h-3.5" /> Hide player</>
-        )}
-      </button>
-      {!collapsed && (
-        <div className="youtube-embed-wrapper">
-          <YouTube
-            videoId={videoId}
-            opts={opts}
-            onReady={onReady}
-            className="youtube-embed-iframe"
-            iframeClassName="youtube-embed-iframe-inner"
-          />
-        </div>
-      )}
+      <div className="youtube-embed-wrapper">
+        <YouTube
+          videoId={videoId}
+          opts={opts}
+          onReady={onReady}
+          className="youtube-embed-iframe"
+          iframeClassName="youtube-embed-iframe-inner"
+        />
+      </div>
     </div>
   )
 }
