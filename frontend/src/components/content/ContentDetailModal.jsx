@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { X, Download, ChefHat, GraduationCap, Video, Users, BookOpen, Loader2, Copy, Check, Globe, MessageSquare, Layers, Network, CheckCircle, RotateCcw, Eye, Lock, Camera, Grid3X3, Search, StickyNote, Bookmark as BookmarkIcon, FileText, Sparkles } from 'lucide-react'
+import { X, Download, ChefHat, GraduationCap, Video, Users, BookOpen, Loader2, Copy, Check, Globe, MessageSquare, Layers, Network, CheckCircle, RotateCcw, Eye, Lock, Camera, Grid3X3, Search, StickyNote, Bookmark as BookmarkIcon, FileText, Sparkles, Play } from 'lucide-react'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import RecipeCard from './RecipeCard'
@@ -163,6 +163,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [showTagDropdown, setShowTagDropdown] = useState(false)
   const stickyTopRef = useRef(null)
   const modalContentRef = useRef(null)
+  const analysisColRef = useRef(null)
+  const transcriptVideoHeaderRef = useRef(null)
+  const stickyVideoRef = useRef(null)
   const navigate = useNavigate()
   const { token } = useAuth()
   const { tags: allTags, loadTags } = useData()
@@ -214,6 +217,35 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [activeTab])
+
+  // Two-phase transition: when analysis col scrolls out, show mini video header
+  useEffect(() => {
+    const analysisCol = analysisColRef.current
+    const header = transcriptVideoHeaderRef.current
+    const video = stickyVideoRef.current
+    const modal = modalContentRef.current
+    const stickyTop = stickyTopRef.current
+    if (!analysisCol || !header || !video || !modal || !stickyTop) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting && entry.boundingClientRect.top < 0) {
+          header.classList.add('is-visible')
+          video.classList.add('is-exited')
+        } else {
+          header.classList.remove('is-visible')
+          video.classList.remove('is-exited')
+        }
+      },
+      {
+        root: modal,
+        threshold: 0,
+        rootMargin: `-${stickyTop.offsetHeight}px 0px 0px 0px`
+      }
+    )
+    observer.observe(analysisCol)
+    return () => observer.disconnect()
+  }, [activeTab, content?.id])
 
   // Load stored guide on mount
   useEffect(() => {
@@ -1204,31 +1236,50 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
           ) : (
             <>
               {isYouTube ? (
-                <div className="breakdown-youtube-layout">
-                  <div className="breakdown-col-video">
-                    <div className="breakdown-video-sticky">
-                      <YouTubeEmbed sourceUrl={content.source_url} />
+                <>
+                  {/* Phase 1: Two-column (video + analysis) */}
+                  <div className="breakdown-youtube-layout">
+                    <div className="breakdown-col-video">
+                      <div ref={stickyVideoRef} className="breakdown-video-sticky">
+                        <YouTubeEmbed sourceUrl={content.source_url} />
+                      </div>
+                    </div>
+                    <div ref={analysisColRef} className="breakdown-col-analysis">
+                      <div className="ai-disclaimer-label" title="AI-generated analysis — may contain errors. Use the chat bubble for precise answers.">
+                        <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
+                      </div>
+                      {modeContent || renderGeneralContent()}
                     </div>
                   </div>
-                  <div className="breakdown-col-analysis">
-                    <div className="ai-disclaimer-label" title="AI-generated analysis — may contain errors. Use the chat bubble for precise answers.">
-                      <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
+                  {/* Phase 2: Transcript zone with mini video header */}
+                  <div className="breakdown-transcript-zone">
+                    <div ref={transcriptVideoHeaderRef} className="breakdown-transcript-video-header">
+                      <img
+                        src={`https://img.youtube.com/vi/${content.source_url.includes('v=') ? content.source_url.split('v=')[1].split('&')[0] : content.source_url.split('youtu.be/')[1]?.split('?')[0]}/mqdefault.jpg`}
+                        alt=""
+                        className="transcript-header-thumb"
+                      />
+                      <div className="transcript-header-info">
+                        <span className="transcript-header-title">{content.title || 'Untitled'}</span>
+                      </div>
+                      <Play className="w-4 h-4" style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                     </div>
-                    {modeContent || renderGeneralContent()}
+                    <div className="breakdown-transcript-full">
+                      {renderTimelineSection()}
+                    </div>
                   </div>
-                </div>
+                </>
               ) : (
                 <>
                   <div className="ai-disclaimer-label" title="AI-generated analysis — may contain errors. Use the chat bubble for precise answers.">
                     <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
                   </div>
                   {modeContent || renderGeneralContent()}
+                  <div className="breakdown-transcript-full">
+                    {renderTimelineSection()}
+                  </div>
                 </>
               )}
-              {/* Transcript always full-width below (#1) */}
-              <div className="breakdown-transcript-full">
-                {renderTimelineSection()}
-              </div>
             </>
           )}
         </div>

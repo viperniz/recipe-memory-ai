@@ -10489,16 +10489,19 @@ button.timestamp-link {
 }
 
 /* ============================================================
-   Breakdown — YouTube Grid Layout (#1)
+   Breakdown — YouTube Two-Phase Layout
    ============================================================ */
+
+/* Phase 1: Two-column grid (video + analysis) */
 .breakdown-youtube-layout {
   display: grid;
   grid-template-columns: 40% 1fr;
   gap: 24px;
+  align-items: start;
 }
 
 .breakdown-col-video {
-  /* stretches to analysis height via grid default */
+  /* natural height — no stretch */
 }
 
 .breakdown-video-sticky {
@@ -10507,14 +10510,72 @@ button.timestamp-link {
   z-index: 5;
   border-radius: 10px;
   overflow: hidden;
+  transition: opacity 0.25s ease;
+}
+
+.breakdown-video-sticky.is-exited {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .breakdown-col-analysis {
   min-width: 0;
 }
 
-.breakdown-transcript-full {
+/* Phase 2: Transcript zone (full width) */
+.breakdown-transcript-zone {
   margin-top: 32px;
+}
+
+.breakdown-transcript-video-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  margin-bottom: 24px;
+  position: sticky;
+  top: var(--sticky-top-h, 0px);
+  z-index: 4;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.breakdown-transcript-video-header.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.transcript-header-thumb {
+  width: 64px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.transcript-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.transcript-header-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.breakdown-transcript-full {
+  margin-top: 0;
 }
 
 @media (max-width: 768px) {
@@ -10525,7 +10586,14 @@ button.timestamp-link {
   .breakdown-video-sticky {
     position: static;
   }
-  .breakdown-transcript-full {
+  .breakdown-video-sticky.is-exited {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .breakdown-transcript-video-header {
+    display: none;
+  }
+  .breakdown-transcript-zone {
     margin-top: 16px;
   }
 }
