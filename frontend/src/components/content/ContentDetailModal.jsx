@@ -161,6 +161,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [showReportModal, setShowReportModal] = useState(false)
   const [contentTags, setContentTags] = useState([])
   const [showTagDropdown, setShowTagDropdown] = useState(false)
+  const [videoTheater, setVideoTheater] = useState(false)
+  const modalContentRef = useRef(null)
+  const transcriptSectionRef = useRef(null)
   const navigate = useNavigate()
   const { token } = useAuth()
   const { tags: allTags, loadTags } = useData()
@@ -198,6 +201,22 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       .then(sub => setSubscription(sub))
       .catch(() => {})
   }, [token])
+
+  // Theater mode: detect when transcript section enters viewport
+  useEffect(() => {
+    const transcriptEl = transcriptSectionRef.current
+    const rootEl = modalContentRef.current
+    if (!transcriptEl || !rootEl) {
+      setVideoTheater(false)
+      return
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => setVideoTheater(entry.isIntersecting),
+      { root: rootEl, threshold: 0 }
+    )
+    observer.observe(transcriptEl)
+    return () => observer.disconnect()
+  }, [content?.id, activeTab])
 
   // Load stored guide on mount
   useEffect(() => {
@@ -1045,7 +1064,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   return (
     <YouTubePlayerProvider>
     <div className="modal-overlay" onClick={onClose}>
-      <div className={`modal-content modal-content-large${isYouTube && activeTab === 'content' ? ' modal-content-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div ref={modalContentRef} className={`modal-content modal-content-large${isYouTube && activeTab === 'content' ? ' modal-content-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-header-title">
             {ModeIcon && <ModeIcon className="w-5 h-5 mr-2 text-purple-400" />}
@@ -1215,14 +1234,17 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                 <MessageSquare className="w-3.5 h-3.5" />
               </span>
               {isYouTube ? (
-                <div className="breakdown-two-col">
-                  <div className="breakdown-col-video">
-                    <div className="breakdown-video-sticky">
-                      <YouTubeEmbed sourceUrl={content.source_url} />
-                    </div>
+                <div className="breakdown-youtube-layout">
+                  <div className={`breakdown-video-sticky ${videoTheater ? 'theater' : ''}`}>
+                    <YouTubeEmbed sourceUrl={content.source_url} />
                   </div>
-                  <div className="breakdown-col-analysis">
+                  <div className="breakdown-analysis">
                     {modeContent || renderGeneralContent()}
+                  </div>
+                  <div
+                    ref={transcriptSectionRef}
+                    className={`breakdown-transcript ${videoTheater ? 'theater' : ''}`}
+                  >
                     {renderTimelineSection()}
                   </div>
                 </div>

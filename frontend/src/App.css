@@ -10468,33 +10468,59 @@ button.timestamp-link {
 }
 
 /* ============================================================
-   Breakdown — Two-Column Layout (YouTube)
+   Breakdown — YouTube Parallax Layout
    ============================================================ */
-.breakdown-two-col {
-  display: grid;
-  grid-template-columns: 2fr 3fr;
-  gap: 24px;
-  align-items: start;
-}
-
-.breakdown-col-video {
-  min-width: 0;
+.breakdown-youtube-layout {
+  position: relative;
 }
 
 .breakdown-video-sticky {
   position: sticky;
   top: 0;
   z-index: 5;
+  width: 40%;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: width 0.35s ease, margin-left 0.35s ease;
 }
 
-.breakdown-col-analysis {
-  min-width: 0;
+.breakdown-video-sticky.theater {
+  width: 70%;
+  margin-left: 15%;
+}
+
+.breakdown-analysis {
+  margin-left: calc(40% + 24px);
+  /* Pull up to sit beside the video — video height = width × 9/16 */
+  margin-top: calc(-40% * 9 / 16);
+  min-height: calc(40% * 9 / 16);
+}
+
+.breakdown-transcript {
+  transition: padding-top 0.35s ease;
+}
+
+.breakdown-transcript.theater {
+  /* Clear space for the wider centered video */
+  padding-top: calc(70% * 9 / 16 + 24px);
 }
 
 @media (max-width: 768px) {
   .modal-content-wide { max-width: 100%; }
-  .breakdown-two-col { grid-template-columns: 1fr; gap: 16px; }
-  .breakdown-video-sticky { position: static; }
+  .breakdown-video-sticky {
+    width: 100% !important;
+    position: static;
+    margin-left: 0 !important;
+    margin-bottom: 16px;
+  }
+  .breakdown-analysis {
+    margin-left: 0;
+    margin-top: 0;
+    min-height: 0;
+  }
+  .breakdown-transcript.theater {
+    padding-top: 0;
+  }
 }
 
 /* ============================================================
