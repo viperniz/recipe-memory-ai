@@ -163,6 +163,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [showTagDropdown, setShowTagDropdown] = useState(false)
   const stickyTopRef = useRef(null)
   const modalContentRef = useRef(null)
+  const videoColRef = useRef(null)
+  const analysisColRef = useRef(null)
+  const layoutRef = useRef(null)
   const navigate = useNavigate()
   const { token } = useAuth()
   const { tags: allTags, loadTags } = useData()
@@ -214,6 +217,55 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [activeTab])
+
+  // Video expansion: when analysis col ends, widen video to full width
+  useEffect(() => {
+    const videoCol = videoColRef.current
+    const analysisCol = analysisColRef.current
+    const layout = layoutRef.current
+    const modal = modalContentRef.current
+    if (!videoCol || !analysisCol || !layout || !modal) return
+
+    // Measure and set CSS vars for transition targets
+    const colWidth = videoCol.offsetWidth
+    const fullWidth = layout.offsetWidth
+    const videoHeight = videoCol.offsetHeight
+    layout.style.setProperty('--video-col-width', `${colWidth}px`)
+    layout.style.setProperty('--video-full-width', `${fullWidth}px`)
+    layout.style.setProperty('--video-height', `${videoHeight}px`)
+
+    // Sentinel at the bottom of analysis col
+    const sentinel = document.createElement('div')
+    sentinel.style.cssText = 'height: 1px; width: 100%; pointer-events: none;'
+    analysisCol.appendChild(sentinel)
+
+    const stickyTopH = stickyTopRef.current?.offsetHeight || 226
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const isPast = !entry.isIntersecting &&
+          entry.boundingClientRect.top < entry.rootBounds.top + stickyTopH + 10
+        if (isPast) {
+          videoCol.classList.add('is-expanded')
+          layout.classList.add('video-expanded')
+        } else {
+          videoCol.classList.remove('is-expanded')
+          layout.classList.remove('video-expanded')
+        }
+      },
+      {
+        root: modal,
+        threshold: 0,
+        rootMargin: `-${stickyTopH}px 0px 0px 0px`
+      }
+    )
+    observer.observe(sentinel)
+
+    return () => {
+      observer.disconnect()
+      sentinel.remove()
+    }
+  }, [activeTab, content?.id])
 
   // Load stored guide on mount
   useEffect(() => {
@@ -1204,11 +1256,11 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
           ) : (
             <>
               {isYouTube ? (
-                <div className="breakdown-youtube-layout">
-                  <div className="breakdown-col-video">
+                <div ref={layoutRef} className="breakdown-youtube-layout">
+                  <div ref={videoColRef} className="breakdown-col-video">
                     <YouTubeEmbed sourceUrl={content.source_url} />
                   </div>
-                  <div className="breakdown-col-analysis">
+                  <div ref={analysisColRef} className="breakdown-col-analysis">
                     <div className="ai-disclaimer-label" title="AI-generated analysis — may contain errors. Use the chat bubble for precise answers.">
                       <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
                     </div>

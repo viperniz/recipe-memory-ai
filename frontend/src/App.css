@@ -10489,7 +10489,7 @@ button.timestamp-link {
 }
 
 /* ============================================================
-   Breakdown — YouTube Grid Layout
+   Breakdown — YouTube Grid Layout + Video Expansion
    ============================================================ */
 .breakdown-youtube-layout {
   display: grid;
@@ -10499,10 +10499,10 @@ button.timestamp-link {
 }
 
 /* Sticky the whole column — grid row height (set by analysis col)
-   gives it the room it needs to slide within */
+   gives it the room it needs to slide within.
+   Transitions max-width for the smooth widen effect. */
 .breakdown-col-video {
-  grid-column: 1;
-  grid-row: 1;
+  grid-area: 1 / 1;
   position: sticky;
   top: var(--sticky-top-h, 0px);
   align-self: start;
@@ -10510,19 +10510,32 @@ button.timestamp-link {
   z-index: 5;
   border-radius: 10px;
   overflow: hidden;
+  width: 100%;
+  max-width: var(--video-col-width, 100%);
+  transition: max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Expanded: span full width with smooth widen */
+.breakdown-col-video.is-expanded {
+  grid-column: 1 / -1;
+  max-width: var(--video-full-width, 100%);
+  z-index: 5;
 }
 
 .breakdown-col-analysis {
-  grid-column: 2;
-  grid-row: 1;
+  grid-area: 1 / 2;
   min-width: 0;
 }
 
 /* Transcript spans both columns as row 2 */
 .breakdown-transcript-full {
-  grid-column: 1 / -1;
-  grid-row: 2;
+  grid-area: 2 / 1 / auto / -1;
   margin-top: 8px;
+}
+
+/* When expanded: push transcript down by video height so it doesn't overlap */
+.breakdown-youtube-layout.video-expanded .breakdown-transcript-full {
+  padding-top: calc(var(--video-height, 167px) + 16px);
 }
 
 @media (max-width: 768px) {
@@ -10532,17 +10545,23 @@ button.timestamp-link {
   }
   .breakdown-col-video {
     position: static;
-    grid-row: auto;
+    grid-area: auto;
+    max-width: none;
+    transition: none;
+  }
+  .breakdown-col-video.is-expanded {
     grid-column: auto;
+    max-width: none;
   }
   .breakdown-col-analysis {
-    grid-row: auto;
-    grid-column: auto;
+    grid-area: auto;
   }
   .breakdown-transcript-full {
-    grid-column: auto;
-    grid-row: auto;
+    grid-area: auto;
     margin-top: 16px;
+  }
+  .breakdown-youtube-layout.video-expanded .breakdown-transcript-full {
+    padding-top: 0;
   }
 }
 
