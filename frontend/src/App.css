@@ -10489,7 +10489,7 @@ button.timestamp-link {
 }
 
 /* ============================================================
-   Breakdown — YouTube Grid Layout + Video Expansion
+   Breakdown — YouTube Grid + Three-Phase Video Transition
    ============================================================ */
 .breakdown-youtube-layout {
   display: grid;
@@ -10498,8 +10498,7 @@ button.timestamp-link {
   gap: 24px;
 }
 
-/* Video column: sticky, constrained to 40% initially.
-   Browser handles smooth scroll physics natively. */
+/* Phase 1: video sticky at top-left, 40% wide */
 .breakdown-col-video {
   grid-area: 1 / 1;
   position: sticky;
@@ -10509,32 +10508,35 @@ button.timestamp-link {
   z-index: 5;
   border-radius: 10px;
   overflow: hidden;
-  max-width: 100%;
 }
 
-/* Expanded: spans both columns — grid reflow widens the video */
-.breakdown-col-video.is-expanded {
+/* Phase 2+3: centered, comfortable fixed width */
+.breakdown-col-video.is-centered {
   grid-column: 1 / -1;
+  width: 460px;
+  margin: 0 auto;
+  transition:
+    width  0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    margin 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Right column fades out to the right on trigger */
 .breakdown-col-analysis {
   grid-area: 1 / 2;
   min-width: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.breakdown-col-analysis.is-exiting {
+  opacity: 0;
+  transform: translateX(40px);
+  pointer-events: none;
 }
 
 /* Transcript: row 2, spans both columns */
 .breakdown-transcript-full {
   grid-area: 2 / 1 / auto / -1;
   margin-top: 8px;
-}
-
-/* Spacer: first child of transcript, height driven by JS.
-   Prevents sticky expanded video from overlapping transcript text. */
-.transcript-video-spacer {
-  width: 100%;
-  height: 0px;
-  transition: height 0.38s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: none;
 }
 
 @media (max-width: 768px) {
@@ -10546,18 +10548,24 @@ button.timestamp-link {
     position: static;
     grid-area: auto;
   }
-  .breakdown-col-video.is-expanded {
+  .breakdown-col-video.is-centered {
     grid-column: auto;
+    width: 100%;
+    margin: 0;
+    transition: none;
   }
   .breakdown-col-analysis {
     grid-area: auto;
+    transition: none;
+  }
+  .breakdown-col-analysis.is-exiting {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
   }
   .breakdown-transcript-full {
     grid-area: auto;
     margin-top: 16px;
-  }
-  .transcript-video-spacer {
-    display: none;
   }
 }
 

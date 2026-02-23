@@ -218,26 +218,17 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     return () => ro.disconnect()
   }, [activeTab])
 
-  // Video expansion: when the sentinel at the bottom of the analysis col
-  // crosses below the video's bottom edge, expand the video to full width.
-  // Uses position: sticky (browser handles smooth scroll physics) + a spacer
-  // div inside the transcript to prevent overlap. No inline top/left/position.
+  // Three-phase video transition:
+  // Phase 1: Two-col, video sticky left at 40%
+  // Phase 2: Right col fades out, video centers at 460px, scroll pinned
+  // Phase 3: Transcript scrolls under centered sticky video
   useEffect(() => {
     const videoCol = videoColRef.current
     const analysisCol = analysisColRef.current
     const modal = modalContentRef.current
-    const transcript = layoutRef.current?.querySelector('.breakdown-transcript-full')
-    if (!videoCol || !analysisCol || !modal || !transcript) return
+    if (!videoCol || !analysisCol || !modal) return
 
-    // Spacer: first child of transcript, height driven by JS
-    let spacer = transcript.querySelector('.transcript-video-spacer')
-    if (!spacer) {
-      spacer = document.createElement('div')
-      spacer.className = 'transcript-video-spacer'
-      transcript.prepend(spacer)
-    }
-
-    // Sentinel: 1px div at bottom of analysis col
+    // Sentinel at bottom of analysis col
     let sentinel = analysisCol.querySelector('.breakdown-analysis-sentinel')
     if (!sentinel) {
       sentinel = document.createElement('div')
@@ -249,31 +240,66 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     const STICKY_TOP = parseInt(
       getComputedStyle(modal).getPropertyValue('--sticky-top-h')
     ) || 226
-    const VIDEO_H_COLLAPSED = videoCol.offsetHeight
-    // Fire when sentinel's top crosses below the video's bottom edge
-    const TRIGGER_LINE = STICKY_TOP + VIDEO_H_COLLAPSED
+    const VIDEO_H_SMALL = videoCol.offsetHeight
+    const TRIGGER_LINE = STICKY_TOP + VIDEO_H_SMALL
+    const TRANSITION_MS = 400
 
-    let isExpanded = false
+    let state = 'two-col' // 'two-col' | 'transitioning' | 'centered'
+    let pinnedScrollTop = null
+
+    // Scroll lock during transition
+    function enforceScrollLock() {
+      modal.scrollTop = pinnedScrollTop
+    }
+    function lockScroll(scrollTop) {
+      pinnedScrollTop = scrollTop
+      modal.addEventListener('scroll', enforceScrollLock, { passive: false })
+    }
+    function unlockScroll() {
+      modal.removeEventListener('scroll', enforceScrollLock)
+      pinnedScrollTop = null
+    }
+
+    function triggerTransition() {
+      if (state !== 'two-col') return
+      state = 'transitioning'
+
+      // 1. Lock scroll at current position
+      lockScroll(modal.scrollTop)
+
+      // 2. Fade right column out to the right
+      analysisCol.classList.add('is-exiting')
+
+      // 3. After fade starts, center video
+      setTimeout(() => {
+        videoCol.classList.add('is-centered')
+      }, 100)
+
+      // 4. After full transition, unlock scroll
+      setTimeout(() => {
+        state = 'centered'
+        unlockScroll()
+      }, TRANSITION_MS + 100)
+    }
+
+    function reverseTransition() {
+      if (state !== 'centered') return
+      state = 'two-col'
+      videoCol.classList.remove('is-centered')
+      analysisCol.classList.remove('is-exiting')
+      unlockScroll()
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        const sentinelTopInModal =
+        const sentinelTop =
           entry.boundingClientRect.top - modal.getBoundingClientRect().top
-        const shouldExpand =
-          !entry.isIntersecting && sentinelTopInModal < TRIGGER_LINE
+        const isPast = !entry.isIntersecting && sentinelTop < TRIGGER_LINE
 
-        if (shouldExpand && !isExpanded) {
-          isExpanded = true
-          videoCol.classList.add('is-expanded')
-          // After grid reflows, measure expanded height and set spacer
-          requestAnimationFrame(() => {
-            const expandedH = videoCol.getBoundingClientRect().height
-            spacer.style.height = expandedH + 'px'
-          })
-        } else if (!shouldExpand && isExpanded) {
-          isExpanded = false
-          videoCol.classList.remove('is-expanded')
-          spacer.style.height = '0px'
+        if (isPast && state === 'two-col') {
+          triggerTransition()
+        } else if (!isPast && state === 'centered') {
+          reverseTransition()
         }
       },
       {
@@ -287,7 +313,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     return () => {
       observer.disconnect()
       sentinel.remove()
-      spacer.remove()
+      unlockScroll()
     }
   }, [activeTab, content?.id])
 
