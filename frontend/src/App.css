@@ -10452,7 +10452,7 @@ button.timestamp-link {
 .youtube-embed-wrapper {
   position: relative;
   width: 100%;
-  max-width: 480px;
+  max-width: 320px;
   aspect-ratio: 16 / 9;
   margin: 0 auto;
   overflow: hidden;
