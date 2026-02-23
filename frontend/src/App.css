@@ -2355,11 +2355,21 @@
 }
 
 .entity-tag {
-  background: rgba(6, 182, 212, 0.2);
-  color: #67e8f9;
+  background: rgba(6, 182, 212, 0.12);
+  color: #0891b2;
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 13px;
+}
+
+:root .entity-tag {
+  color: #67e8f9;
+  background: rgba(6, 182, 212, 0.2);
+}
+
+[data-theme="light"] .entity-tag {
+  color: #0e7490;
+  background: rgba(6, 182, 212, 0.1);
 }
 
 .action-items-list {
@@ -10454,7 +10464,7 @@ button.timestamp-link {
   width: 100%;
   max-width: 320px;
   aspect-ratio: 16 / 9;
-  margin: 0 auto;
+  margin: 0;
   overflow: hidden;
   background: #000; /* Video iframe is always dark */
 }
