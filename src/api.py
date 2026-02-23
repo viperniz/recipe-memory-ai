@@ -4,7 +4,7 @@ With authentication, billing, notes, tags, search, and collection chat features
 """
 from fastapi import FastAPI, HTTPException, Depends, Request, Header, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import sys
@@ -365,6 +365,8 @@ async def get_me(
         tier=tier,
         has_password=current_user.hashed_password is not None,
         referral_code=referral_code,
+        avatar_url=getattr(current_user, 'avatar_url', None),
+        preferences=getattr(current_user, 'preferences', None),
     )
 
 
@@ -573,6 +575,8 @@ async def update_profile(
         "is_active": current_user.is_active,
         "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
         "tier": tier,
+        "avatar_url": getattr(current_user, 'avatar_url', None),
+        "preferences": getattr(current_user, 'preferences', None),
     }
 
 
@@ -591,6 +595,117 @@ async def change_password(
         raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
     AuthService.change_password(db, current_user, request.new_password)
     return {"message": "Password changed successfully"}
+
+
+# =============================================
+# Avatar Upload / Serve
+# =============================================
+import re as _re
+
+@app.post("/api/users/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Upload avatar image (jpg/png/webp, max 2MB)."""
+    allowed = {"image/jpeg", "image/png", "image/webp"}
+    if file.content_type not in allowed:
+        raise HTTPException(status_code=400, detail="Only jpg, png, webp images are allowed")
+    contents = await file.read()
+    if len(contents) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 2MB)")
+
+    ext_map = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+    ext = ext_map[file.content_type]
+    avatars_dir = Path("data/avatars")
+    avatars_dir.mkdir(parents=True, exist_ok=True)
+
+    # Remove old avatar files for this user
+    for old in avatars_dir.glob(f"{current_user.id}.*"):
+        old.unlink(missing_ok=True)
+
+    filename = f"{current_user.id}.{ext}"
+    filepath = avatars_dir / filename
+    filepath.write_bytes(contents)
+
+    avatar_url = f"/api/avatars/{filename}"
+    current_user.avatar_url = avatar_url
+    db.commit()
+    return {"avatar_url": avatar_url}
+
+
+@app.get("/api/avatars/{filename}")
+async def serve_avatar(filename: str):
+    """Serve avatar image file (unauthenticated for <img> tags)."""
+    # Validate filename pattern: {int}.{ext}
+    if not _re.match(r"^\d+\.(jpg|png|webp)$", filename):
+        raise HTTPException(status_code=404, detail="Not found")
+    filepath = Path("data/avatars") / filename
+    if not filepath.exists():
+        raise HTTPException(status_code=404, detail="Not found")
+    media_types = {"jpg": "image/jpeg", "png": "image/png", "webp": "image/webp"}
+    ext = filename.rsplit(".", 1)[-1]
+    return FileResponse(str(filepath), media_type=media_types.get(ext, "application/octet-stream"))
+
+
+# =============================================
+# User Preferences
+# =============================================
+PREFERENCE_DEFAULTS = {
+    "default_mode": "general",
+    "default_language": "auto",
+    "theme": "dark",
+    "email_job_complete": True,
+    "email_low_credits": True,
+    "email_referral": True,
+}
+
+class PreferencesUpdateRequest(BaseModel):
+    default_mode: Optional[str] = None
+    default_language: Optional[str] = None
+    theme: Optional[str] = None
+    email_job_complete: Optional[bool] = None
+    email_low_credits: Optional[bool] = None
+    email_referral: Optional[bool] = None
+
+
+@app.get("/api/users/preferences")
+async def get_preferences(
+    current_user: User = Depends(get_current_active_user),
+):
+    """Get user preferences (merged with defaults)."""
+    stored = getattr(current_user, 'preferences', None) or {}
+    merged = {**PREFERENCE_DEFAULTS, **stored}
+    return merged
+
+
+@app.put("/api/users/preferences")
+async def update_preferences(
+    request: PreferencesUpdateRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Update user preferences (partial update)."""
+    valid_modes = {"general", "learn", "meeting", "creator", "deepdive"}
+    valid_themes = {"dark", "light"}
+
+    if request.default_mode is not None and request.default_mode not in valid_modes:
+        raise HTTPException(status_code=400, detail=f"Invalid mode. Must be one of: {', '.join(valid_modes)}")
+    if request.theme is not None and request.theme not in valid_themes:
+        raise HTTPException(status_code=400, detail="Invalid theme. Must be 'dark' or 'light'")
+
+    stored = getattr(current_user, 'preferences', None) or {}
+    updates = request.model_dump(exclude_none=True)
+    stored.update(updates)
+    current_user.preferences = stored
+    # Force SQLAlchemy to detect JSON mutation
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(current_user, "preferences")
+    db.commit()
+
+    merged = {**PREFERENCE_DEFAULTS, **stored}
+    return merged
 
 
 @app.delete("/api/users/account")

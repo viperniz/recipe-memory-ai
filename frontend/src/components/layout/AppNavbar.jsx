@@ -5,6 +5,7 @@ import { billingApi } from '../../api/billing'
 import { Sparkles, LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen, User as UserIcon, CreditCard } from 'lucide-react'
 import NotificationBell from './NotificationBell'
 import { setUserProperties, setUserId } from '../../utils/analytics'
+import { API_BASE } from '../../lib/apiBase'
 
 const TIER_DISPLAY_NAMES = {
   free: 'Free',
@@ -34,6 +35,16 @@ function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar, onShowPr
     if (user?.email) return user.email.charAt(0).toUpperCase()
     return 'U'
   }
+
+  const getAvatarUrl = () => {
+    if (!user?.avatar_url) return null
+    if (user.avatar_url.startsWith('/api/')) {
+      return API_BASE.replace('/api', '') + user.avatar_url
+    }
+    return user.avatar_url
+  }
+
+  const avatarUrl = getAvatarUrl()
 
   useEffect(() => {
     if (!isDropdownOpen) return
@@ -95,7 +106,7 @@ function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar, onShowPr
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           >
             <div className="app-topnav-avatar">
-              {getUserInitial()}
+              {avatarUrl ? <img src={avatarUrl} alt="" className="app-topnav-avatar-img" /> : getUserInitial()}
             </div>
             <span className="app-topnav-user-name">
               {user?.full_name || user?.email?.split('@')[0] || 'User'}
@@ -106,7 +117,9 @@ function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar, onShowPr
           {isDropdownOpen && (
             <div className="app-topnav-dropdown">
               <div className="app-topnav-dropdown-header">
-                <div className="app-topnav-avatar">{getUserInitial()}</div>
+                <div className="app-topnav-avatar">
+                  {avatarUrl ? <img src={avatarUrl} alt="" className="app-topnav-avatar-img" /> : getUserInitial()}
+                </div>
                 <div>
                   {user?.full_name && <div className="app-topnav-dropdown-name">{user.full_name}</div>}
                   <div className="app-topnav-dropdown-email">{user?.email}</div>

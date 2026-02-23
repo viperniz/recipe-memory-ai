@@ -35,6 +35,8 @@ class UserResponse(BaseModel):
     tier: str = "free"
     has_password: bool = True
     referral_code: Optional[str] = None
+    avatar_url: Optional[str] = None
+    preferences: Optional[dict] = None
 
     class Config:
         from_attributes = True

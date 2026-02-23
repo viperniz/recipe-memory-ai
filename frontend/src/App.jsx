@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useLocation } 
 import { initGA, trackPageView } from './utils/analytics'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { DataProvider } from './context/DataContext'
+import { ThemeProvider } from './context/ThemeContext'
 import { Toaster } from './components/ui/toaster'
 import ErrorBoundary from './components/ErrorBoundary'
 import HomePage from './pages/HomePage'
@@ -183,16 +184,18 @@ function AppRoutes() {
 function App() {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <RouteTracker />
-        <AuthProvider>
-          <DataProvider>
-            <a href="#main-content" className="skip-nav">Skip to main content</a>
-            <AppRoutes />
-            <Toaster />
-          </DataProvider>
-        </AuthProvider>
-      </BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
+          <RouteTracker />
+          <AuthProvider>
+            <DataProvider>
+              <a href="#main-content" className="skip-nav">Skip to main content</a>
+              <AppRoutes />
+              <Toaster />
+            </DataProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
     </ErrorBoundary>
   )
 }

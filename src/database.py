@@ -67,6 +67,9 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    avatar_url = Column(String(500), nullable=True)
+    preferences = Column(JSON, nullable=True)
+
     is_edu_verified = Column(Boolean, default=False)
     deleted_at = Column(DateTime, nullable=True)
     referral_code = Column(String(8), unique=True, nullable=True, index=True)
@@ -580,6 +583,9 @@ def init_db():
         ("subscriptions", "low_credit_warned_at", "DATETIME", None),
         # Referral program
         ("users", "referral_code", "VARCHAR(8)", None),
+        # Avatar and preferences
+        ("users", "avatar_url", "VARCHAR(500)", None),
+        ("users", "preferences", "TEXT", None),
     ]
     with engine.connect() as conn:
         for table, column, col_type, default in migrations:

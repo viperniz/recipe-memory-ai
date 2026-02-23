@@ -185,10 +185,12 @@ class BillingService:
                 try:
                     user = db.query(User).filter(User.id == user_id).first()
                     if user:
-                        from email_service import send_low_credit_warning
-                        send_low_credit_warning(
-                            user.email, user.full_name or "", monthly_remaining, sub.tier or "free"
-                        )
+                        prefs = getattr(user, 'preferences', None) or {}
+                        if prefs.get('email_low_credits', True):
+                            from email_service import send_low_credit_warning
+                            send_low_credit_warning(
+                                user.email, user.full_name or "", monthly_remaining, sub.tier or "free"
+                            )
                         # In-app notification
                         try:
                             from notification_service import create_notification

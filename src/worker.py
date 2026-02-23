@@ -47,9 +47,11 @@ def _send_completion_notifications(db, user_id: int, result_dict: dict):
             return
         content_title = result_dict.get("title", "Untitled")
         content_id = result_dict.get("id", "")
-        # Email
-        from email_service import send_job_complete_email
-        send_job_complete_email(user.email, user.full_name or "", content_title, content_id)
+        # Email (respect user preference)
+        prefs = getattr(user, 'preferences', None) or {}
+        if prefs.get('email_job_complete', True):
+            from email_service import send_job_complete_email
+            send_job_complete_email(user.email, user.full_name or "", content_title, content_id)
         # In-app notification
         try:
             from notification_service import create_notification

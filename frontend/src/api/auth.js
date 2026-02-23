@@ -79,6 +79,30 @@ export const authApi = {
     const client = createAuthClient(token)
     const response = await client.delete('/users/account')
     return response.data
+  },
+
+  async uploadAvatar(token, file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await axios.post(`${API_BASE}/users/avatar`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    return response.data
+  },
+
+  async getPreferences(token) {
+    const client = createAuthClient(token)
+    const response = await client.get('/users/preferences')
+    return response.data
+  },
+
+  async updatePreferences(token, prefs) {
+    const client = createAuthClient(token)
+    const response = await client.put('/users/preferences', prefs)
+    return response.data
   }
 }
 

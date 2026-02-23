@@ -5,6 +5,7 @@ import { Input } from '../ui/input'
 import { useNavigate } from 'react-router-dom'
 import { useCreditBalance } from '../billing/FeatureGate'
 import { useExtensionDetection, useCookieReadiness, requestExtensionCookies } from '../../hooks/useExtensionDetection'
+import { useAuth } from '../../context/AuthContext'
 
 const ALLOWED_EXTENSIONS = ['.mp4', '.mkv', '.webm', '.avi', '.mov']
 
@@ -33,11 +34,15 @@ function isValidYoutubeUrl(url) {
 }
 
 function NewNoteTab({ isAddingVideo, onAddUrl, isAddingUrl, onUploadFile, onAddYoutube, settings, setSettings }) {
+    const { user } = useAuth()
+    const defaultMode = user?.preferences?.default_mode || 'general'
+    const defaultLang = user?.preferences?.default_language || 'auto'
+
     const [inputMode, setInputMode] = useState('video') // 'video' or 'web'
   const [webUrl, setWebUrl] = useState('')
     const [researchMode, setResearchMode] = useState(false)
-    const [contentMode, setContentMode] = useState('general')
-    const [language, setLanguage] = useState('auto')
+    const [contentMode, setContentMode] = useState(defaultMode)
+    const [language, setLanguage] = useState(defaultLang)
     const [selectedFile, setSelectedFile] = useState(null)
     const [isDragging, setIsDragging] = useState(false)
     const [uploadProgress, setUploadProgress] = useState(null)

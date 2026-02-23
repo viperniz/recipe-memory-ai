@@ -174,7 +174,8 @@ class AuthService:
             load_only(
                 User.id, User.email, User.full_name,
                 User.is_active, User.is_superuser, User.google_id,
-                User.is_edu_verified, User.created_at, User.updated_at
+                User.is_edu_verified, User.created_at, User.updated_at,
+                User.avatar_url, User.preferences
             )
         ).filter(User.id == user_id).first()
 
@@ -260,7 +261,9 @@ class AuthService:
             is_active=user.is_active,
             created_at=user.created_at,
             tier=subscription_tier,
-            referral_code=getattr(user, 'referral_code', None)
+            referral_code=getattr(user, 'referral_code', None),
+            avatar_url=getattr(user, 'avatar_url', None),
+            preferences=getattr(user, 'preferences', None),
         )
 
         return Token(
@@ -345,6 +348,7 @@ class AuthService:
                 "google_id": idinfo["sub"],
                 "email": idinfo.get("email", ""),
                 "name": idinfo.get("name", ""),
+                "picture": idinfo.get("picture", ""),
             }
         except Exception as e:
             import logging
@@ -365,6 +369,8 @@ class AuthService:
             user.google_id = google_info["google_id"]
             if not user.full_name and google_info.get("name"):
                 user.full_name = google_info["name"]
+            if not user.avatar_url and google_info.get("picture"):
+                user.avatar_url = google_info["picture"]
             db.commit()
             db.refresh(user)
             return user
@@ -374,7 +380,8 @@ class AuthService:
             email=google_info["email"],
             full_name=google_info.get("name"),
             google_id=google_info["google_id"],
-            hashed_password=None
+            hashed_password=None,
+            avatar_url=google_info.get("picture") or None,
         )
         db.add(new_user)
         db.commit()

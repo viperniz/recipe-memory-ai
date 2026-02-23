@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { authApi } from '../api/auth'
 import { trackEvent, setUserId, setUserProperties } from '../utils/analytics'
+import { useTheme } from './ThemeContext'
 
 const AuthContext = createContext(null)
 
@@ -9,6 +10,15 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('token'))
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const { setTheme } = useTheme()
+
+  // Sync theme from user preferences
+  const syncTheme = useCallback((userData) => {
+    const prefTheme = userData?.preferences?.theme
+    if (prefTheme && (prefTheme === 'dark' || prefTheme === 'light')) {
+      setTheme(prefTheme)
+    }
+  }, [setTheme])
 
   // Check if user is authenticated on mount
   useEffect(() => {
@@ -20,6 +30,7 @@ export function AuthProvider({ children }) {
           if (userData) {
             setUser(userData)
             setToken(storedToken)
+            syncTheme(userData)
           } else {
             // Invalid response, clear token
             localStorage.removeItem('token')
@@ -55,6 +66,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('token', token)
       setToken(token)
       setUser(response.user)
+      syncTheme(response.user)
 
       trackEvent('login', { method: 'email' })
       setUserId(response.user.id)
@@ -118,6 +130,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('token', response.access_token)
       setToken(response.access_token)
       setUser(response.user)
+      syncTheme(response.user)
 
       trackEvent('login', { method: 'google' })
       if (referralCode) trackEvent('referral_signup', { code: referralCode })
@@ -150,6 +163,13 @@ export function AuthProvider({ children }) {
     return response
   }, [token])
 
+  const updateAvatar = useCallback(async (file) => {
+    if (!token) throw new Error('Not authenticated')
+    const response = await authApi.uploadAvatar(token, file)
+    setUser(prev => ({ ...prev, avatar_url: response.avatar_url }))
+    return response
+  }, [token])
+
   const value = {
     user,
     token,
@@ -162,6 +182,7 @@ export function AuthProvider({ children }) {
     logout,
     refreshUser,
     updateProfile,
+    updateAvatar,
     clearError: () => setError(null)
   }
 
