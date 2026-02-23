@@ -3,6 +3,7 @@ FastAPI Backend for Video Memory AI
 With authentication, billing, notes, tags, search, and collection chat features
 """
 from fastapi import FastAPI, HTTPException, Depends, Request, Header, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, FileResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
@@ -178,40 +179,22 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# Rate limiting middleware (innermost — runs after CORS/security)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Add rate limiting middleware (runs after CORS)
 app.add_middleware(RateLimitMiddleware)
 
 
-# Combined CORS + Security headers middleware (outermost user middleware)
-# Handles CORS manually instead of CORSMiddleware to guarantee CORS headers
-# on EVERY response including 500 errors and middleware failures.
+# Security headers middleware
 @app.middleware("http")
-async def add_cors_and_security_headers(request: Request, call_next):
-    # Handle CORS preflight immediately — no further processing needed
-    if request.method == "OPTIONS":
-        response = Response(status_code=200)
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        response.headers["Access-Control-Max-Age"] = "600"
-        return response
-
-    # Process the actual request
-    try:
-        response = await call_next(request)
-    except Exception as exc:
-        logging.getLogger(__name__).error(f"Unhandled error on {request.method} {request.url.path}: {exc}")
-        response = JSONResponse(
-            status_code=500,
-            content={"detail": "Internal server error"},
-        )
-
-    # CORS headers on every response
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-
-    # Security headers
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
