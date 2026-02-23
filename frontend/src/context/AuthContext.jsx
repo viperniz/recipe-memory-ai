@@ -72,15 +72,16 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
-  const register = useCallback(async (email, password, fullName) => {
+  const register = useCallback(async (email, password, fullName, referralCode = null) => {
     setError(null)
     try {
-      const response = await authApi.register(email, password, fullName)
+      const response = await authApi.register(email, password, fullName, referralCode)
       localStorage.setItem('token', response.access_token)
       setToken(response.access_token)
       setUser(response.user)
 
       trackEvent('sign_up', { method: 'email' })
+      if (referralCode) trackEvent('referral_signup', { code: referralCode })
       setUserId(response.user.id)
       setUserProperties({ tier: 'free' })
 
@@ -107,10 +108,10 @@ export function AuthProvider({ children }) {
     }
   }, [token])
 
-  const googleLogin = useCallback(async (credential) => {
+  const googleLogin = useCallback(async (credential, referralCode = null) => {
     setError(null)
     try {
-      const response = await authApi.googleLogin(credential)
+      const response = await authApi.googleLogin(credential, referralCode)
       if (!response || !response.access_token || !response.user) {
         throw new Error('Invalid Google login response')
       }
@@ -119,6 +120,7 @@ export function AuthProvider({ children }) {
       setUser(response.user)
 
       trackEvent('login', { method: 'google' })
+      if (referralCode) trackEvent('referral_signup', { code: referralCode })
       setUserId(response.user.id)
       setUserProperties({ tier: 'free' })
 

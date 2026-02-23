@@ -12,6 +12,9 @@ from jose import JWTError, jwt
 import bcrypt
 from sqlalchemy.orm import Session, load_only
 
+import string
+import random
+
 from database import User, Subscription, TokenBlacklist, get_tier_limits
 from .models import UserCreate, UserResponse, Token, TokenData
 
@@ -256,7 +259,8 @@ class AuthService:
             full_name=user.full_name,
             is_active=user.is_active,
             created_at=user.created_at,
-            tier=subscription_tier
+            tier=subscription_tier,
+            referral_code=getattr(user, 'referral_code', None)
         )
 
         return Token(
@@ -404,3 +408,18 @@ class AuthService:
             return current_count < limit
 
         return True
+
+    @staticmethod
+    def get_or_create_referral_code(db: Session, user: User) -> str:
+        """Generate an 8-char alphanumeric referral code with uniqueness retry."""
+        if user.referral_code:
+            return user.referral_code
+        chars = string.ascii_uppercase + string.digits
+        for _ in range(10):
+            code = ''.join(random.choices(chars, k=8))
+            existing = db.query(User).filter(User.referral_code == code).first()
+            if not existing:
+                user.referral_code = code
+                db.commit()
+                return code
+        raise ValueError("Could not generate unique referral code")

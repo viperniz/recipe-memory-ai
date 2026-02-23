@@ -38,6 +38,7 @@ import { Sparkles, FileText, Loader2 } from 'lucide-react'
 
 import { API_BASE } from '../lib/apiBase'
 import { trackEvent, setUserProperties } from '../utils/analytics'
+import AdUnit from '../components/ads/AdUnit'
 
 /**
  * Handle 403 errors: feature_locked, limit_reached, insufficient_credits.
@@ -750,6 +751,8 @@ function HomePage() {
   return (
     <div className="app-layout">
       <AppNavbar user={user} onLogout={handleLogout} sidebarCollapsed={sidebarCollapsed} onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} onShowProfile={() => setShowProfile(true)} onShowBilling={() => setShowBilling(true)} />
+
+      <AdUnit slot="leaderboard" format="horizontal" tier={user?.tier} className="ad-leaderboard" />
 
       <div className="app-body">
         <Sidebar

@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useData } from '../../context/DataContext'
 import { billingApi } from '../../api/billing'
 import { Progress } from '../ui/progress'
+import AdUnit from '../ads/AdUnit'
 import BuyCreditsModal from '../modals/BuyCreditsModal'
 import TagManagerModal from '../modals/TagManagerModal'
 import ReportConfigModal from '../modals/ReportConfigModal'
@@ -298,6 +299,8 @@ function Sidebar({
             </div>
           )}
         </div>
+
+          <AdUnit slot="sidebar" format="rectangle" tier={tier} className="ad-sidebar" />
       </aside>
 
       <BuyCreditsModal

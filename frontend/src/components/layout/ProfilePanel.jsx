@@ -5,7 +5,8 @@ import { authApi } from '../../api/auth'
 import { toast } from '../../hooks/use-toast'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
-import { X, Loader2, Save, AlertTriangle } from 'lucide-react'
+import { X, Loader2, Save, AlertTriangle, Copy, Check, Users, Gift } from 'lucide-react'
+import { referralsApi } from '../../api/referrals'
 
 function ProfilePanel({ isOpen, onClose }) {
   const { user, token, logout, updateProfile } = useAuth()
@@ -26,6 +27,10 @@ function ProfilePanel({ isOpen, onClose }) {
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // Referral state
+  const [referralStats, setReferralStats] = useState(null)
+  const [copiedLink, setCopiedLink] = useState(false)
+
   useEffect(() => {
     // reset form state when panel closes
     if (!isOpen) {
@@ -37,6 +42,12 @@ function ProfilePanel({ isOpen, onClose }) {
   useEffect(() => {
     if (user?.full_name) setEditName(user.full_name)
   }, [user])
+
+  useEffect(() => {
+    if (isOpen && token) {
+      referralsApi.getStats(token).then(setReferralStats).catch(() => {})
+    }
+  }, [isOpen, token])
 
   if (!isOpen) return null
 
@@ -90,6 +101,14 @@ function ProfilePanel({ isOpen, onClose }) {
       toast({ variant: 'destructive', title: 'Failed to delete account', description: err.message })
       setIsDeleting(false)
     }
+  }
+
+  const handleCopyReferralLink = () => {
+    if (!referralStats?.referral_link) return
+    navigator.clipboard.writeText(referralStats.referral_link)
+    setCopiedLink(true)
+    toast({ variant: 'success', title: 'Referral link copied!' })
+    setTimeout(() => setCopiedLink(false), 2000)
   }
 
   const hasPassword = user?.has_password !== false
@@ -152,6 +171,39 @@ function ProfilePanel({ isOpen, onClose }) {
                       {isChangingPassword ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Changing...</> : 'Change Password'}
                     </Button>
                   </form>
+                </div>
+              )}
+
+              {/* Referral Program */}
+              {referralStats && (
+                <div className="profile-panel-section">
+                  <h3 className="profile-section-title">
+                    <Gift className="w-4 h-4" style={{ marginRight: 6 }} />
+                    Refer & Earn
+                  </h3>
+                  <p className="profile-referral-desc">
+                    Share your link and earn <strong>50 credits</strong> for each friend who signs up. They get <strong>25 bonus credits</strong> too.
+                  </p>
+                  <div className="profile-referral-link-row">
+                    <Input
+                      value={referralStats.referral_link}
+                      readOnly
+                      className="profile-referral-input"
+                    />
+                    <Button size="sm" variant="outline" onClick={handleCopyReferralLink}>
+                      {copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                  <div className="profile-referral-stats">
+                    <div className="profile-referral-stat">
+                      <span className="profile-referral-stat-value">{referralStats.total_referrals}</span>
+                      <span className="profile-referral-stat-label">Referrals</span>
+                    </div>
+                    <div className="profile-referral-stat">
+                      <span className="profile-referral-stat-value">{referralStats.total_credits_earned}</span>
+                      <span className="profile-referral-stat-label">Credits earned</span>
+                    </div>
+                  </div>
                 </div>
               )}
 

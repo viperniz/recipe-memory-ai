@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from app import VideoMemoryAI
 from video_processor import _extract_video_id
-from database import get_db, init_db, User, get_tier_limits, engine, SessionLocal, ChatSession, ChatMessage, GeneratedContent, ContentVector, Collection, CREDIT_COSTS, TIER_CREDITS, TOPUP_PACKS, Team, TeamMember, TeamInvitation, TeamContent, Notification, Report
+from database import get_db, init_db, User, get_tier_limits, engine, SessionLocal, ChatSession, ChatMessage, GeneratedContent, ContentVector, Collection, CREDIT_COSTS, TIER_CREDITS, TOPUP_PACKS, Team, TeamMember, TeamInvitation, TeamContent, Notification, Report, Referral, CreditTransaction, Subscription
 from auth import (
     UserCreate, UserLogin, UserResponse, Token,
     ForgotPasswordRequest, ResetPasswordRequest, GoogleAuthRequest,
@@ -103,6 +103,58 @@ def _get_chat_model(db: Session, user_id: int) -> str:
     limits = get_tier_limits(sub.tier)
     return limits.get("ai_model", "gpt-4o-mini")
 
+def _process_referral(db: Session, new_user: User, code: str):
+    """Award referral credits to both referrer and new user."""
+    if not code:
+        return
+    referrer = db.query(User).filter(User.referral_code == code).first()
+    if not referrer or referrer.id == new_user.id:
+        return
+    # Prevent duplicate referral
+    existing = db.query(Referral).filter(Referral.referred_user_id == new_user.id).first()
+    if existing:
+        return
+
+    referrer_credits = 50
+    referred_credits = 25
+
+    # Award credits to referrer
+    ref_sub = db.query(Subscription).filter(Subscription.user_id == referrer.id).first()
+    if ref_sub:
+        ref_sub.credit_balance = (ref_sub.credit_balance or 0) + referrer_credits
+        ref_total = (ref_sub.credit_balance or 0) + (ref_sub.topup_balance or 0)
+        db.add(CreditTransaction(
+            user_id=referrer.id,
+            amount=referrer_credits,
+            balance_after=ref_total,
+            action="referral_bonus",
+            description=f"Referral bonus: {new_user.email} signed up with your code"
+        ))
+
+    # Award credits to new user
+    new_sub = db.query(Subscription).filter(Subscription.user_id == new_user.id).first()
+    if new_sub:
+        new_sub.credit_balance = (new_sub.credit_balance or 0) + referred_credits
+        new_total = (new_sub.credit_balance or 0) + (new_sub.topup_balance or 0)
+        db.add(CreditTransaction(
+            user_id=new_user.id,
+            amount=referred_credits,
+            balance_after=new_total,
+            action="referral_welcome",
+            description=f"Welcome bonus: signed up with referral code {code}"
+        ))
+
+    # Create referral record
+    db.add(Referral(
+        referrer_id=referrer.id,
+        referred_user_id=new_user.id,
+        code=code,
+        referrer_credits=referrer_credits,
+        referred_credits=referred_credits,
+    ))
+    db.commit()
+
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -149,11 +201,11 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' https://accounts.google.com; "
+        "script-src 'self' https://accounts.google.com https://pagead2.googlesyndication.com https://www.googletagservices.com; "
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data: https:; "
-        "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com; "
-        "frame-src https://accounts.google.com"
+        "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://pagead2.googlesyndication.com; "
+        "frame-src https://accounts.google.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com"
     )
     # HSTS only in production (when not localhost)
     host = request.headers.get("host", "")
@@ -258,6 +310,13 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     # Create user
     user = AuthService.create_user(db, user_data)
 
+    # Process referral if code provided
+    if user_data.referral_code:
+        try:
+            _process_referral(db, user, user_data.referral_code)
+        except Exception as e:
+            logger.warning(f"Referral processing failed: {e}")
+
     # Send welcome email (non-blocking)
     try:
         from email_service import send_welcome_email
@@ -295,6 +354,8 @@ async def get_me(
 ):
     """Get current user info"""
     tier = AuthService.get_user_tier(db, current_user.id)
+    # Ensure user has a referral code
+    referral_code = AuthService.get_or_create_referral_code(db, current_user)
     return UserResponse(
         id=current_user.id,
         email=current_user.email,
@@ -303,6 +364,7 @@ async def get_me(
         created_at=current_user.created_at,
         tier=tier,
         has_password=current_user.hashed_password is not None,
+        referral_code=referral_code,
     )
 
 
@@ -403,9 +465,22 @@ async def google_login(
     if not google_info:
         raise HTTPException(status_code=401, detail="Invalid Google credential")
 
+    # Check if user already exists (to detect new signups for referral)
+    existing_user = db.query(User).filter(
+        (User.google_id == google_info["google_id"]) | (User.email == google_info["email"])
+    ).first()
+    is_new = existing_user is None
+
     user = AuthService.get_or_create_google_user(db, google_info)
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account is deactivated")
+
+    # Process referral for new Google signups
+    if is_new and request.referral_code:
+        try:
+            _process_referral(db, user, request.referral_code)
+        except Exception as e:
+            logger.warning(f"Referral processing failed: {e}")
 
     tier = AuthService.get_user_tier(db, user.id)
     return AuthService.create_user_token(user, tier)
@@ -425,6 +500,35 @@ async def verify_edu(
         db.commit()
         return {"verified": True}
     return {"verified": False, "message": "Only .edu email addresses qualify for the education discount."}
+
+
+# =============================================
+# Referral Program
+# =============================================
+@app.get("/api/referrals/stats")
+async def get_referral_stats(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get referral stats for the current user."""
+    code = AuthService.get_or_create_referral_code(db, current_user)
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    referral_link = f"{frontend_url}/register?ref={code}"
+
+    total_referrals = db.query(func.count(Referral.id)).filter(
+        Referral.referrer_id == current_user.id
+    ).scalar() or 0
+
+    total_credits_earned = db.query(func.coalesce(func.sum(Referral.referrer_credits), 0)).filter(
+        Referral.referrer_id == current_user.id
+    ).scalar()
+
+    return {
+        "referral_code": code,
+        "referral_link": referral_link,
+        "total_referrals": total_referrals,
+        "total_credits_earned": total_credits_earned,
+    }
 
 
 # =============================================

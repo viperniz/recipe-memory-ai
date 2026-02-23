@@ -69,6 +69,7 @@ class User(Base):
 
     is_edu_verified = Column(Boolean, default=False)
     deleted_at = Column(DateTime, nullable=True)
+    referral_code = Column(String(8), unique=True, nullable=True, index=True)
 
     # Relationships
     subscription = relationship("Subscription", back_populates="user", uselist=False)
@@ -239,6 +240,24 @@ class CreditTopup(Base):
     stripe_session_id = Column(String(255), nullable=True)
     status = Column(String(50), default="pending")   # pending, completed, failed
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+# =============================================
+# Referral Model
+# =============================================
+class Referral(Base):
+    __tablename__ = "referrals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    referrer_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    referred_user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    code = Column(String(8), nullable=False)
+    referrer_credits = Column(Integer, default=50)
+    referred_credits = Column(Integer, default=25)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    referrer = relationship("User", foreign_keys=[referrer_id])
+    referred_user = relationship("User", foreign_keys=[referred_user_id])
 
 
 # =============================================
@@ -559,6 +578,8 @@ def init_db():
         # Phase 2: soft-delete + low credit warning dedup
         ("users", "deleted_at", "DATETIME", None),
         ("subscriptions", "low_credit_warned_at", "DATETIME", None),
+        # Referral program
+        ("users", "referral_code", "VARCHAR(8)", None),
     ]
     with engine.connect() as conn:
         for table, column, col_type, default in migrations:

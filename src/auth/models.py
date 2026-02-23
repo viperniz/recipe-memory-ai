@@ -16,6 +16,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
     full_name: Optional[str] = None
+    referral_code: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -33,6 +34,7 @@ class UserResponse(BaseModel):
     created_at: datetime
     tier: str = "free"
     has_password: bool = True
+    referral_code: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -64,6 +66,7 @@ class ResetPasswordRequest(BaseModel):
 class GoogleAuthRequest(BaseModel):
     """Schema for Google OAuth login"""
     credential: str
+    referral_code: Optional[str] = None
 
 
 # =============================================

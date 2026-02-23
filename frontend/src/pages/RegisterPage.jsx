@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Alert, AlertDescription } from '../components/ui/alert'
-import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Mail, Lock, Eye, EyeOff, Gift } from 'lucide-react'
 
 const registerSchema = z.object({
   email: z
@@ -32,6 +32,8 @@ function RegisterPage() {
   const { register: authRegister, googleLogin } = useAuth()
   const navigate = useNavigate()
   const googleBtnRef = useRef(null)
+  const [searchParams] = useSearchParams()
+  const referralCode = searchParams.get('ref') || null
 
   useEffect(() => {
     document.title = 'Create Account — Second Mind'
@@ -49,7 +51,7 @@ function RegisterPage() {
         callback: async (response) => {
           setServerError('')
           try {
-            await googleLogin(response.credential)
+            await googleLogin(response.credential, referralCode)
             navigate('/app')
           } catch (err) {
             setServerError(err.message || 'Google sign-up failed')
@@ -93,7 +95,7 @@ function RegisterPage() {
   const onSubmit = async (data) => {
     setServerError('')
     try {
-      await authRegister(data.email, data.password, null)
+      await authRegister(data.email, data.password, null, referralCode)
       navigate('/app')
     } catch (err) {
       setServerError(err.message || 'Registration failed. Please try again.')
@@ -107,6 +109,13 @@ function RegisterPage() {
           <h1>Create Account</h1>
           <p>For creators, researchers & students: turn long videos into notes and searchable content in minutes</p>
         </div>
+
+        {referralCode && (
+          <div className="referral-banner">
+            <Gift className="w-4 h-4" />
+            <span>You've been referred! Sign up to get <strong>25 bonus credits</strong>.</span>
+          </div>
+        )}
 
         {serverError && (
           <Alert variant="destructive" className="mb-4">

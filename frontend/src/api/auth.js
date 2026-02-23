@@ -13,12 +13,10 @@ const createAuthClient = (token) => {
 }
 
 export const authApi = {
-  async register(email, password, fullName = null) {
-    const response = await axios.post(`${API_BASE}/auth/register`, {
-      email,
-      password,
-      full_name: fullName
-    })
+  async register(email, password, fullName = null, referralCode = null) {
+    const payload = { email, password, full_name: fullName }
+    if (referralCode) payload.referral_code = referralCode
+    const response = await axios.post(`${API_BASE}/auth/register`, payload)
     return response.data
   },
 
@@ -55,8 +53,10 @@ export const authApi = {
     return response.data
   },
 
-  async googleLogin(credential) {
-    const response = await axios.post(`${API_BASE}/auth/google`, { credential })
+  async googleLogin(credential, referralCode = null) {
+    const payload = { credential }
+    if (referralCode) payload.referral_code = referralCode
+    const response = await axios.post(`${API_BASE}/auth/google`, payload)
     return response.data
   },
 
