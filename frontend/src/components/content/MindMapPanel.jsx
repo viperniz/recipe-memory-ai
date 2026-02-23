@@ -7,6 +7,7 @@ import axios from 'axios'
 import { toast } from '../../hooks/use-toast'
 
 import { API_BASE } from '../../lib/apiBase'
+import { trackEvent } from '../../utils/analytics'
 
 function MindMapNode({ node, sourceUrl, depth = 0 }) {
   const [expanded, setExpanded] = useState(depth < 2)
@@ -86,6 +87,7 @@ function MindMapPanel({ contentId, sourceUrl }) {
         { headers: { Authorization: `Bearer ${token}` } }
       )
       setMindmap(response.data.mindmap)
+      trackEvent('mindmap_generate')
     } catch (err) {
       const detail = err.response?.data?.detail
       if (err.response?.status === 403 && typeof detail === 'object') {

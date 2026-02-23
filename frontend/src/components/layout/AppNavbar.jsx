@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { billingApi } from '../../api/billing'
 import { Sparkles, LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen, User as UserIcon, CreditCard } from 'lucide-react'
 import NotificationBell from './NotificationBell'
+import { setUserProperties, setUserId } from '../../utils/analytics'
 
 const TIER_DISPLAY_NAMES = {
   free: 'Free',
@@ -21,7 +22,11 @@ function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar, onShowPr
 
   useEffect(() => {
     if (!token) return
-    billingApi.getSubscription(token).then(setSubscription).catch(() => {})
+    billingApi.getSubscription(token).then(sub => {
+      setSubscription(sub)
+      if (user?.id) setUserId(user.id)
+      setUserProperties({ tier: sub?.tier || 'free', credits_remaining: sub?.credit_balance ?? 0 })
+    }).catch(() => {})
   }, [token])
 
   const getUserInitial = () => {

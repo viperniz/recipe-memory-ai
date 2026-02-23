@@ -4,6 +4,7 @@ import { billingApi } from '../../api/billing'
 import { toast } from '../../hooks/use-toast'
 import { Progress } from '../ui/progress'
 import { X, Coins, Loader2, ShoppingCart } from 'lucide-react'
+import { trackEvent } from '../../utils/analytics'
 
 function BuyCreditsModal({ isOpen, onClose }) {
   const { token } = useAuth()
@@ -25,6 +26,8 @@ function BuyCreditsModal({ isOpen, onClose }) {
   }, [isOpen, token])
 
   const handleBuy = async (packId) => {
+    const pack = packs?.packs?.find(p => p.id === packId)
+    trackEvent('topup_initiated', { pack: packId, credits: pack?.credits })
     setBuyingPack(packId)
     try {
       const { checkout_url } = await billingApi.purchaseTopup(token, packId)

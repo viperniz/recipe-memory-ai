@@ -6,6 +6,7 @@ import { searchApi } from '../api/search'
 import { tagsApi } from '../api/tags'
 
 import { API_BASE } from '../lib/apiBase'
+import { trackEvent } from '../utils/analytics'
 
 const DataContext = createContext(null)
 
@@ -235,6 +236,7 @@ export function DataProvider({ children }) {
         n_results: 50
       })
       setSearchResults(data.results || [])
+      trackEvent('search')
     } catch (err) {
       console.error('Search failed:', err)
       setSearchResults(null)

@@ -5,6 +5,7 @@ import { billingApi } from '../../api/billing'
 import { toast } from '../../hooks/use-toast'
 import { Progress } from '../ui/progress'
 import { X, Loader2, Check, Crown, Sparkles, ExternalLink, ArrowRight } from 'lucide-react'
+import { trackEvent } from '../../utils/analytics'
 
 const PLANS = [
   {
@@ -55,6 +56,7 @@ function BillingModal({ isOpen, onClose }) {
 
   useEffect(() => {
     if (!isOpen || !token) return
+    trackEvent('billing_modal_view')
     setIsLoading(true)
     billingApi.getSubscription(token)
       .then(setSubscription)
@@ -66,6 +68,7 @@ function BillingModal({ isOpen, onClose }) {
 
   const handleSelectPlan = async (tier) => {
     if (tier === currentTier) return
+    trackEvent('checkout_initiated', { tier })
     setProcessingTier(tier)
     try {
       const { checkout_url } = await billingApi.createCheckout(token, tier)
@@ -77,6 +80,7 @@ function BillingModal({ isOpen, onClose }) {
   }
 
   const handleManageBilling = async () => {
+    trackEvent('manage_billing_click')
     setIsManaging(true)
     try {
       const { portal_url } = await billingApi.createPortalSession(token)

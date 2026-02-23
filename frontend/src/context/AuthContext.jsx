@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { authApi } from '../api/auth'
+import { trackEvent, setUserId, setUserProperties } from '../utils/analytics'
 
 const AuthContext = createContext(null)
 
@@ -54,7 +55,11 @@ export function AuthProvider({ children }) {
       localStorage.setItem('token', token)
       setToken(token)
       setUser(response.user)
-      
+
+      trackEvent('login', { method: 'email' })
+      setUserId(response.user.id)
+      setUserProperties({ tier: 'free' })
+
       return response.user
     } catch (err) {
       const message = err.response?.data?.detail || err.message || 'Login failed'
@@ -74,6 +79,11 @@ export function AuthProvider({ children }) {
       localStorage.setItem('token', response.access_token)
       setToken(response.access_token)
       setUser(response.user)
+
+      trackEvent('sign_up', { method: 'email' })
+      setUserId(response.user.id)
+      setUserProperties({ tier: 'free' })
+
       return response.user
     } catch (err) {
       const message = err.response?.data?.detail || 'Registration failed'
@@ -83,6 +93,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   const logout = useCallback(async () => {
+    trackEvent('logout')
     try {
       if (token) {
         await authApi.logout(token)
@@ -106,6 +117,11 @@ export function AuthProvider({ children }) {
       localStorage.setItem('token', response.access_token)
       setToken(response.access_token)
       setUser(response.user)
+
+      trackEvent('login', { method: 'google' })
+      setUserId(response.user.id)
+      setUserProperties({ tier: 'free' })
+
       return response.user
     } catch (err) {
       const message = err.response?.data?.detail || err.message || 'Google login failed'

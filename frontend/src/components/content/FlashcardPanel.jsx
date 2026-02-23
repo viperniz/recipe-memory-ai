@@ -6,6 +6,7 @@ import axios from 'axios'
 import { toast } from '../../hooks/use-toast'
 
 import { API_BASE } from '../../lib/apiBase'
+import { trackEvent } from '../../utils/analytics'
 
 function FlashcardPanel({ contentId }) {
   const [cards, setCards] = useState(null)
@@ -56,6 +57,7 @@ function FlashcardPanel({ contentId }) {
       setAnkiCsv(response.data.anki_csv || '')
       setCurrentIndex(0)
       setFlipped(false)
+      trackEvent('flashcard_generate')
     } catch (err) {
       const detail = err.response?.data?.detail
       if (err.response?.status === 403 && typeof detail === 'object') {

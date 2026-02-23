@@ -23,6 +23,7 @@ import { tagsApi } from '../../api/tags'
 import ReportConfigModal from '../modals/ReportConfigModal'
 
 import { API_BASE } from '../../lib/apiBase'
+import { trackEvent } from '../../utils/analytics'
 
 const MODE_ICONS = {
   recipe: ChefHat,
@@ -272,6 +273,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       if (response.data.success) {
         setGeneratedGuide(response.data.guide)
         setActiveTab('guide')
+        trackEvent('guide_generate')
         toast({
           variant: 'success',
           title: regenerate ? 'Guide regenerated' : 'Guide generated',
@@ -721,13 +723,14 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         <div className="content-tabs">
           <button
             className={`content-tab ${activeTab === 'content' ? 'active' : ''}`}
-            onClick={() => setActiveTab('content')}
+            onClick={() => { setActiveTab('content'); trackEvent('content_tab_view', { tab: 'content' }) }}
           >
             Breakdown
           </button>
           <button
             className={`content-tab ${activeTab === 'guide' ? 'active' : ''}`}
             onClick={() => {
+              trackEvent('content_tab_view', { tab: 'guide' })
               if (generatedGuide) {
                 setActiveTab('guide')
               } else {
@@ -742,7 +745,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
           </button>
           <button
             className={`content-tab ${activeTab === 'flashcards' ? 'active' : ''}`}
-            onClick={() => setActiveTab('flashcards')}
+            onClick={() => { setActiveTab('flashcards'); trackEvent('content_tab_view', { tab: 'flashcards' }) }}
           >
             <Layers className="w-3.5 h-3.5" />
             Flashcards
@@ -750,7 +753,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
           </button>
           <button
             className={`content-tab ${activeTab === 'mindmap' ? 'active' : ''}`}
-            onClick={() => setActiveTab('mindmap')}
+            onClick={() => { setActiveTab('mindmap'); trackEvent('content_tab_view', { tab: 'mindmap' }) }}
           >
             <Network className="w-3.5 h-3.5" />
             Mind Map
@@ -758,7 +761,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
           </button>
           <button
             className={`content-tab ${activeTab === 'notes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('notes')}
+            onClick={() => { setActiveTab('notes'); trackEvent('content_tab_view', { tab: 'notes' }) }}
           >
             <StickyNote className="w-3.5 h-3.5" />
             Notes

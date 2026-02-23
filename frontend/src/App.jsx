@@ -1,5 +1,6 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useLocation } from 'react-router-dom'
+import { initGA, trackPageView } from './utils/analytics'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { DataProvider } from './context/DataContext'
 import { Toaster } from './components/ui/toaster'
@@ -19,6 +20,17 @@ import ExtensionCallbackPage from './pages/ExtensionCallbackPage'
 import TeamPage from './pages/TeamPage'
 import NotFoundPage from './pages/NotFoundPage'
 import './App.css'
+
+// Initialize GA4 (no-op if VITE_GA_MEASUREMENT_ID is not set)
+initGA()
+
+function RouteTracker() {
+  const location = useLocation()
+  React.useEffect(() => {
+    trackPageView(location.pathname, document.title)
+  }, [location.pathname])
+  return null
+}
 
 // Protected route wrapper
 function ProtectedRoute({ children }) {
@@ -172,6 +184,7 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
+        <RouteTracker />
         <AuthProvider>
           <DataProvider>
             <a href="#main-content" className="skip-nav">Skip to main content</a>

@@ -37,6 +37,7 @@ import { reportsApi } from '../api/reports'
 import { Sparkles, FileText, Loader2 } from 'lucide-react'
 
 import { API_BASE } from '../lib/apiBase'
+import { trackEvent, setUserProperties } from '../utils/analytics'
 
 /**
  * Handle 403 errors: feature_locked, limit_reached, insufficient_credits.
@@ -49,6 +50,7 @@ const handle403Error = (err, navigate, toastFn) => {
   }
 
   if (errorDetail.error === 'feature_locked') {
+    trackEvent('feature_locked', { feature: errorDetail.feature, required_tier: errorDetail.required_tier })
     const tierName = errorDetail.required_tier
       ? errorDetail.required_tier.charAt(0).toUpperCase() + errorDetail.required_tier.slice(1)
       : 'a higher'
@@ -430,6 +432,7 @@ function HomePage() {
       })
 
       if (response.data.success) {
+        trackEvent('content_import', { source: 'url' })
         toast({
           variant: 'success',
           title: 'Article imported',
@@ -483,6 +486,7 @@ function HomePage() {
       const newJob = response.data.job
       if (newJob) {
         addJob(newJob)
+        trackEvent('video_upload', { source: 'youtube' })
         toast({
           variant: 'info',
           title: 'YouTube video queued',
@@ -521,6 +525,7 @@ function HomePage() {
       const newJob = response.job
       if (newJob) {
         addJob(newJob)
+        trackEvent('video_upload', { source: 'file' })
         toast({
           variant: 'info',
           title: 'Upload complete',
@@ -612,6 +617,7 @@ function HomePage() {
         downloadBlob(res.data, filename)
       }
       setShowExportModal(false)
+      trackEvent('export', { format: exportFormat })
       toast({
         variant: 'success',
         title: 'Export complete',
@@ -642,6 +648,7 @@ function HomePage() {
         name: newCollectionName,
         description: newCollectionDesc
       })
+      trackEvent('collection_create')
       toast({
         variant: 'success',
         title: 'Collection created',

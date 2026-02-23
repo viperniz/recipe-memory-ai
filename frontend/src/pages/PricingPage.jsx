@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { billingApi } from '../api/billing'
 import { toast } from '../hooks/use-toast'
+import { trackEvent } from '../utils/analytics'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Skeleton } from '../components/ui/skeleton'
@@ -107,6 +108,7 @@ function PricingPage() {
       return
     }
 
+    trackEvent('pricing_plan_select', { tier, period: billingPeriod })
     setProcessingTier(tier)
     try {
       const { checkout_url } = await billingApi.createCheckout(token, tier, billingPeriod)

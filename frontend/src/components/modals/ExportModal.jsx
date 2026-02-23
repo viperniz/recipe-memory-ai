@@ -8,6 +8,7 @@ import { Badge } from '../ui/badge'
 import { toast } from '../../hooks/use-toast'
 
 import { API_BASE } from '../../lib/apiBase'
+import { trackEvent } from '../../utils/analytics'
 
 const ALL_FORMATS = [
   {

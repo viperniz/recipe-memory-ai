@@ -4,6 +4,7 @@ import { billingApi } from '../../api/billing'
 import { toast } from '../../hooks/use-toast'
 
 import { API_BASE } from '../../lib/apiBase'
+import { trackEvent } from '../../utils/analytics'
 
 function AIChatWidget({ onContentClick, collectionId, collectionName, selectedContent }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -179,6 +180,8 @@ function AIChatWidget({ onContentClick, collectionId, collectionName, selectedCo
     const userMsg = { role: 'user', content: userMessage, sources: [] }
     setMessages(prev => [...prev, userMsg])
     setIsLoading(true)
+    const scope = selectedContent ? 'content' : collectionId ? 'collection' : 'global'
+    trackEvent('chat_message', { scope })
 
     try {
       const token = localStorage.getItem('token')
