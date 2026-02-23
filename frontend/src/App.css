@@ -10489,32 +10489,32 @@ button.timestamp-link {
 }
 
 /* ============================================================
-   Breakdown — YouTube Grid Layout + Scroll-Driven Video
+   Breakdown — YouTube Grid Layout + Video Expansion
    ============================================================ */
 .breakdown-youtube-layout {
   display: grid;
   grid-template-columns: 40% 1fr;
   grid-template-rows: auto auto;
   gap: 24px;
-  position: relative; /* positioning context for absolute video */
 }
 
-/* JS scroll handler manages top — not CSS sticky.
-   position: absolute lets us control release precisely. */
+/* Video column: sticky, constrained to 40% initially.
+   Browser handles smooth scroll physics natively. */
 .breakdown-col-video {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 40%;
+  grid-area: 1 / 1;
+  position: sticky;
+  top: var(--sticky-top-h, 226px);
+  align-self: start;
   height: fit-content;
   z-index: 5;
   border-radius: 10px;
   overflow: hidden;
-  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 100%;
 }
 
+/* Expanded: spans both columns — grid reflow widens the video */
 .breakdown-col-video.is-expanded {
-  width: 100%;
+  grid-column: 1 / -1;
 }
 
 .breakdown-col-analysis {
@@ -10522,10 +10522,19 @@ button.timestamp-link {
   min-width: 0;
 }
 
-/* Transcript spans both columns as row 2 */
+/* Transcript: row 2, spans both columns */
 .breakdown-transcript-full {
   grid-area: 2 / 1 / auto / -1;
   margin-top: 8px;
+}
+
+/* Spacer: first child of transcript, height driven by JS.
+   Prevents sticky expanded video from overlapping transcript text. */
+.transcript-video-spacer {
+  width: 100%;
+  height: 0px;
+  transition: height 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
 }
 
 @media (max-width: 768px) {
@@ -10535,11 +10544,10 @@ button.timestamp-link {
   }
   .breakdown-col-video {
     position: static;
-    width: 100%;
-    transition: none;
+    grid-area: auto;
   }
   .breakdown-col-video.is-expanded {
-    width: 100%;
+    grid-column: auto;
   }
   .breakdown-col-analysis {
     grid-area: auto;
@@ -10547,7 +10555,9 @@ button.timestamp-link {
   .breakdown-transcript-full {
     grid-area: auto;
     margin-top: 16px;
-    padding-top: 0 !important;
+  }
+  .transcript-video-spacer {
+    display: none;
   }
 }
 

@@ -218,60 +218,77 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     return () => ro.disconnect()
   }, [activeTab])
 
-  // Scroll-driven video positioning: replaces CSS sticky (which can't
-  // release at the grid row boundary — its containing block is the
-  // scroll ancestor, not the grid row). This gives precise control.
+  // Video expansion: when the sentinel at the bottom of the analysis col
+  // crosses below the video's bottom edge, expand the video to full width.
+  // Uses position: sticky (browser handles smooth scroll physics) + a spacer
+  // div inside the transcript to prevent overlap. No inline top/left/position.
   useEffect(() => {
     const videoCol = videoColRef.current
     const analysisCol = analysisColRef.current
-    const layout = layoutRef.current
     const modal = modalContentRef.current
-    const stickyTopEl = stickyTopRef.current
-    if (!videoCol || !analysisCol || !layout || !modal || !stickyTopEl) return
+    const transcript = layoutRef.current?.querySelector('.breakdown-transcript-full')
+    if (!videoCol || !analysisCol || !modal || !transcript) return
 
-    const STICKY_TOP_H = stickyTopEl.offsetHeight
-
-    // Layout's absolute position within the modal's scrollable content
-    const layoutRect = layout.getBoundingClientRect()
-    const modalRect = modal.getBoundingClientRect()
-    const layoutOffsetInModal = layoutRect.top - modalRect.top + modal.scrollTop
-
-    // Pre-calculate expanded video height from full width (16:9 aspect)
-    const fullWidth = layout.offsetWidth
-    const expandedVideoH = Math.round(fullWidth * 9 / 16)
-
-    const handleScroll = () => {
-      const scroll = modal.scrollTop
-      const videoH = videoCol.offsetHeight
-      const analysisH = analysisCol.offsetHeight
-      const maxTop = Math.max(0, analysisH - videoH)
-
-      // Where video should be to appear STICKY_TOP_H from visible modal top
-      const desiredTop = scroll + STICKY_TOP_H - layoutOffsetInModal
-      const top = Math.max(0, Math.min(desiredTop, maxTop))
-      videoCol.style.top = top + 'px'
-
-      // Expand when video reaches its max (analysis col has scrolled past)
-      const shouldExpand = desiredTop >= maxTop && maxTop > 0
-
-      if (shouldExpand && !videoCol.classList.contains('is-expanded')) {
-        videoCol.classList.add('is-expanded')
-        layout.classList.add('video-expanded')
-        // Push transcript down by expanded video height + gap
-        const transcript = layout.querySelector('.breakdown-transcript-full')
-        if (transcript) transcript.style.paddingTop = (expandedVideoH + 16) + 'px'
-      } else if (!shouldExpand && videoCol.classList.contains('is-expanded')) {
-        videoCol.classList.remove('is-expanded')
-        layout.classList.remove('video-expanded')
-        const transcript = layout.querySelector('.breakdown-transcript-full')
-        if (transcript) transcript.style.paddingTop = '0px'
-      }
+    // Spacer: first child of transcript, height driven by JS
+    let spacer = transcript.querySelector('.transcript-video-spacer')
+    if (!spacer) {
+      spacer = document.createElement('div')
+      spacer.className = 'transcript-video-spacer'
+      transcript.prepend(spacer)
     }
 
-    modal.addEventListener('scroll', handleScroll, { passive: true })
-    handleScroll() // set initial position
+    // Sentinel: 1px div at bottom of analysis col
+    let sentinel = analysisCol.querySelector('.breakdown-analysis-sentinel')
+    if (!sentinel) {
+      sentinel = document.createElement('div')
+      sentinel.className = 'breakdown-analysis-sentinel'
+      sentinel.style.cssText = 'height:1px;width:100%;pointer-events:none;'
+      analysisCol.appendChild(sentinel)
+    }
 
-    return () => modal.removeEventListener('scroll', handleScroll)
+    const STICKY_TOP = parseInt(
+      getComputedStyle(modal).getPropertyValue('--sticky-top-h')
+    ) || 226
+    const VIDEO_H_COLLAPSED = videoCol.offsetHeight
+    // Fire when sentinel's top crosses below the video's bottom edge
+    const TRIGGER_LINE = STICKY_TOP + VIDEO_H_COLLAPSED
+
+    let isExpanded = false
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const sentinelTopInModal =
+          entry.boundingClientRect.top - modal.getBoundingClientRect().top
+        const shouldExpand =
+          !entry.isIntersecting && sentinelTopInModal < TRIGGER_LINE
+
+        if (shouldExpand && !isExpanded) {
+          isExpanded = true
+          videoCol.classList.add('is-expanded')
+          // After grid reflows, measure expanded height and set spacer
+          requestAnimationFrame(() => {
+            const expandedH = videoCol.getBoundingClientRect().height
+            spacer.style.height = expandedH + 'px'
+          })
+        } else if (!shouldExpand && isExpanded) {
+          isExpanded = false
+          videoCol.classList.remove('is-expanded')
+          spacer.style.height = '0px'
+        }
+      },
+      {
+        root: modal,
+        threshold: 0,
+        rootMargin: `-${TRIGGER_LINE}px 0px 0px 0px`
+      }
+    )
+    observer.observe(sentinel)
+
+    return () => {
+      observer.disconnect()
+      sentinel.remove()
+      spacer.remove()
+    }
   }, [activeTab, content?.id])
 
   // Load stored guide on mount
