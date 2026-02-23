@@ -1843,6 +1843,11 @@
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   animation: modal-content-in 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: max-width 0.25s ease;
+}
+
+.modal-content-wide {
+  max-width: 1100px;
 }
 
 @keyframes modal-content-in {
@@ -10433,11 +10438,7 @@ button.timestamp-link {
    YouTube Embedded Player
    ============================================================ */
 .youtube-embed-container {
-  position: sticky;
-  top: 0;
-  z-index: 10;
   background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border-subtle);
 }
 
 .youtube-embed-toggle {
@@ -10485,30 +10486,62 @@ button.timestamp-link {
 }
 
 /* ============================================================
+   Breakdown — Two-Column Layout (YouTube)
+   ============================================================ */
+.breakdown-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.breakdown-col-video {
+  min-width: 0;
+}
+
+.breakdown-video-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.breakdown-col-analysis {
+  min-width: 0;
+}
+
+/* Inside the grid, embed fills column width instead of 320px cap */
+.breakdown-col-video .youtube-embed-wrapper {
+  max-width: 100%;
+}
+
+/* Remove border from embed when inside grid */
+.breakdown-col-video .youtube-embed-container {
+  border-bottom: none;
+}
+
+@media (max-width: 768px) {
+  .modal-content-wide { max-width: 100%; }
+  .breakdown-two-col { grid-template-columns: 1fr; gap: 16px; }
+  .breakdown-video-sticky { position: static; }
+}
+
+/* ============================================================
    Content Detail Modal â€" Tabs (extended)
    ============================================================ */
-.ai-disclaimer {
-  display: flex;
+.ai-disclaimer-icon {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: rgba(59, 130, 246, 0.06);
-  border: 1px solid rgba(59, 130, 246, 0.15);
-  border-radius: 8px;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.08);
   color: var(--text-muted);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.15s;
+  cursor: help;
   margin-bottom: 12px;
 }
-
-.ai-disclaimer:hover {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: var(--text-tertiary);
-}
-
-.ai-disclaimer strong {
+.ai-disclaimer-icon:hover {
+  background: rgba(59, 130, 246, 0.15);
   color: #60a5fa;
 }
 

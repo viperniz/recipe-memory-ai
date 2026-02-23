@@ -413,6 +413,165 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
   const modeContent = renderModeContent()
 
+  // General mode content (fallback when no mode-specific card)
+  const renderGeneralContent = () => (
+    <>
+      <div className="content-detail-section">
+        <Badge variant="default" className="mb-4">
+          {content.content_type || 'video'}
+        </Badge>
+        {content.mode && content.mode !== 'general' && (
+          <Badge variant="outline" className="ml-2 mb-4">
+            {content.mode} mode
+          </Badge>
+        )}
+        {content.metadata?.detected_language_name && (
+          <Badge variant="outline" className="ml-2 mb-4">
+            {content.metadata.translated_to_name
+              ? `${content.metadata.detected_language_name} → ${content.metadata.translated_to_name}`
+              : content.metadata.detected_language_name}
+          </Badge>
+        )}
+      </div>
+
+      {content.summary && (
+        <div className="content-detail-section">
+          <h3>Summary</h3>
+          <p>{content.summary}</p>
+        </div>
+      )}
+
+      {content.key_points && content.key_points.length > 0 && (
+        <div className="content-detail-section">
+          <h3>Key Points</h3>
+          <ul className="key-points-list">
+            {content.key_points.map((kp, idx) => (
+              <li key={idx}>
+                {typeof kp === 'object' ? (
+                  <>
+                    <strong>{kp.point || kp.text || 'Point'}</strong>
+                    {kp.timestamp && (
+                      <>
+                        {' '}
+                        <TimestampLink timestamp={kp.timestamp} sourceUrl={content.source_url} />
+                      </>
+                    )}
+                    {kp.description && <p>{kp.description}</p>}
+                  </>
+                ) : (
+                  <span>{kp}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {content.tools_mentioned?.length > 0 && (
+        <div className="content-detail-section">
+          <h3>Tools Mentioned</h3>
+          <div className="tools-list">
+            {content.tools_mentioned.map((tool, idx) => (
+              <div key={idx} className="tool-item">
+                <strong>{tool.name}</strong>
+                {tool.pricing && <Badge variant="outline" className="ml-2">{tool.pricing}</Badge>}
+                {tool.description && <p>{tool.description}</p>}
+                {tool.url && (
+                  <a href={tool.url} target="_blank" rel="noopener noreferrer" className="tool-link">
+                    Visit {tool.name}
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {content.methods?.length > 0 && (
+        <div className="content-detail-section">
+          <h3>Methods</h3>
+          {content.methods.map((method, idx) => (
+            <div key={idx} className="method-item">
+              <strong>{method.method}</strong>
+              {method.difficulty && <Badge variant="outline" className="ml-2">{method.difficulty}</Badge>}
+              {method.steps?.length > 0 && (
+                <ol className="method-steps">
+                  {method.steps.map((step, stepIdx) => (
+                    <li key={stepIdx}>{step}</li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {content.entities && content.entities.length > 0 && (
+        <div className="content-detail-section">
+          <h3>Entities</h3>
+          <div className="entities-list">
+            {content.entities.map((entity, idx) => (
+              <span key={idx} className="entity-tag">
+                {typeof entity === 'object' ? entity.name || entity.entity : entity}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {content.tags && content.tags.length > 0 && (
+        <div className="content-detail-section">
+          <h3>Tags</h3>
+          <div className="tags-list">
+            {content.tags.map((tag, idx) => (
+              <span key={idx} className="tag">{tag}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {content.topics && content.topics.length > 0 && (
+        <div className="content-detail-section">
+          <h3>Topics</h3>
+          <p>{content.topics.join(', ')}</p>
+        </div>
+      )}
+
+      {content.action_items && content.action_items.length > 0 && (
+        <div className="content-detail-section">
+          <h3>Action Items</h3>
+          <ul className="action-items-list">
+            {content.action_items.map((item, idx) => (
+              <li key={idx}>{typeof item === 'object' ? item.item || item.text : item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {content.quotes && content.quotes.length > 0 && (
+        <div className="content-detail-section">
+          <h3>Notable Quotes</h3>
+          <div className="quotes-list">
+            {content.quotes.map((quote, idx) => (
+              <blockquote key={idx} className="quote">
+                {typeof quote === 'object' ? quote.text || quote.quote : quote}
+                {typeof quote === 'object' && quote.speaker && (
+                  <cite>- {quote.speaker}</cite>
+                )}
+                {typeof quote === 'object' && quote.timestamp && (
+                  <>
+                    {' '}
+                    <TimestampLink timestamp={quote.timestamp} sourceUrl={content.source_url} />
+                  </>
+                )}
+              </blockquote>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  )
+
   // Render the generated guide
   const renderGuide = () => {
     if (!generatedGuide) return null
@@ -643,7 +802,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   return (
     <YouTubePlayerProvider>
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-content-large" onClick={(e) => e.stopPropagation()}>
+      <div className={`modal-content modal-content-large${isYouTube && activeTab === 'content' ? ' modal-content-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-header-title">
             {ModeIcon && <ModeIcon className="w-5 h-5 mr-2 text-purple-400" />}
@@ -781,8 +940,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
           </button>
         </div>
 
-        {isYouTube && <YouTubeEmbed sourceUrl={content.source_url} />}
-
         <div className="modal-body">
           {isLoading ? (
             <div className="loading-state">Loading...</div>
@@ -811,171 +968,22 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             <MindMapPanel contentId={content.id} sourceUrl={content.source_url} />
           ) : (
             <>
-              <div className="ai-disclaimer">
+              <span className="ai-disclaimer-icon" title="AI-generated analysis — may contain errors. Use the chat bubble for precise answers.">
                 <MessageSquare className="w-3.5 h-3.5" />
-                <span>AI-generated analysis — may contain errors. Use the <strong>chat bubble</strong> for precise answers.</span>
-              </div>
-              {modeContent ? (
-                // Mode-specific display (creator, recipe, learn, meeting)
-                modeContent
-              ) : (
-                // General Mode Display (fallback)
-                <>
-                  <div className="content-detail-section">
-                    <Badge variant="default" className="mb-4">
-                      {content.content_type || 'video'}
-                    </Badge>
-                    {content.mode && content.mode !== 'general' && (
-                      <Badge variant="outline" className="ml-2 mb-4">
-                        {content.mode} mode
-                      </Badge>
-                    )}
-                    {content.metadata?.detected_language_name && (
-                      <Badge variant="outline" className="ml-2 mb-4">
-                        {content.metadata.translated_to_name
-                          ? `${content.metadata.detected_language_name} → ${content.metadata.translated_to_name}`
-                          : content.metadata.detected_language_name}
-                      </Badge>
-                    )}
+              </span>
+              {isYouTube ? (
+                <div className="breakdown-two-col">
+                  <div className="breakdown-col-video">
+                    <div className="breakdown-video-sticky">
+                      <YouTubeEmbed sourceUrl={content.source_url} />
+                    </div>
                   </div>
-
-                  {content.summary && (
-                    <div className="content-detail-section">
-                      <h3>Summary</h3>
-                      <p>{content.summary}</p>
-                    </div>
-                  )}
-
-                  {content.key_points && content.key_points.length > 0 && (
-                    <div className="content-detail-section">
-                      <h3>Key Points</h3>
-                      <ul className="key-points-list">
-                        {content.key_points.map((kp, idx) => (
-                          <li key={idx}>
-                            {typeof kp === 'object' ? (
-                              <>
-                                <strong>{kp.point || kp.text || 'Point'}</strong>
-                                {kp.timestamp && (
-                                  <>
-                                    {' '}
-                                    <TimestampLink timestamp={kp.timestamp} sourceUrl={content.source_url} />
-                                  </>
-                                )}
-                                {kp.description && <p>{kp.description}</p>}
-                              </>
-                            ) : (
-                              <span>{kp}</span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Web content specific sections */}
-                  {content.tools_mentioned?.length > 0 && (
-                    <div className="content-detail-section">
-                      <h3>Tools Mentioned</h3>
-                      <div className="tools-list">
-                        {content.tools_mentioned.map((tool, idx) => (
-                          <div key={idx} className="tool-item">
-                            <strong>{tool.name}</strong>
-                            {tool.pricing && <Badge variant="outline" className="ml-2">{tool.pricing}</Badge>}
-                            {tool.description && <p>{tool.description}</p>}
-                            {tool.url && (
-                              <a href={tool.url} target="_blank" rel="noopener noreferrer" className="tool-link">
-                                Visit {tool.name}
-                              </a>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {content.methods?.length > 0 && (
-                    <div className="content-detail-section">
-                      <h3>Methods</h3>
-                      {content.methods.map((method, idx) => (
-                        <div key={idx} className="method-item">
-                          <strong>{method.method}</strong>
-                          {method.difficulty && <Badge variant="outline" className="ml-2">{method.difficulty}</Badge>}
-                          {method.steps?.length > 0 && (
-                            <ol className="method-steps">
-                              {method.steps.map((step, stepIdx) => (
-                                <li key={stepIdx}>{step}</li>
-                              ))}
-                            </ol>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {content.entities && content.entities.length > 0 && (
-                    <div className="content-detail-section">
-                      <h3>Entities</h3>
-                      <div className="entities-list">
-                        {content.entities.map((entity, idx) => (
-                          <span key={idx} className="entity-tag">
-                            {typeof entity === 'object' ? entity.name || entity.entity : entity}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {content.tags && content.tags.length > 0 && (
-                    <div className="content-detail-section">
-                      <h3>Tags</h3>
-                      <div className="tags-list">
-                        {content.tags.map((tag, idx) => (
-                          <span key={idx} className="tag">{tag}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {content.topics && content.topics.length > 0 && (
-                    <div className="content-detail-section">
-                      <h3>Topics</h3>
-                      <p>{content.topics.join(', ')}</p>
-                    </div>
-                  )}
-
-                  {content.action_items && content.action_items.length > 0 && (
-                    <div className="content-detail-section">
-                      <h3>Action Items</h3>
-                      <ul className="action-items-list">
-                        {content.action_items.map((item, idx) => (
-                          <li key={idx}>{typeof item === 'object' ? item.item || item.text : item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {content.quotes && content.quotes.length > 0 && (
-                    <div className="content-detail-section">
-                      <h3>Notable Quotes</h3>
-                      <div className="quotes-list">
-                        {content.quotes.map((quote, idx) => (
-                          <blockquote key={idx} className="quote">
-                            {typeof quote === 'object' ? quote.text || quote.quote : quote}
-                            {typeof quote === 'object' && quote.speaker && (
-                              <cite>- {quote.speaker}</cite>
-                            )}
-                            {typeof quote === 'object' && quote.timestamp && (
-                              <>
-                                {' '}
-                                <TimestampLink timestamp={quote.timestamp} sourceUrl={content.source_url} />
-                              </>
-                            )}
-                          </blockquote>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
+                  <div className="breakdown-col-analysis">
+                    {modeContent || renderGeneralContent()}
+                  </div>
+                </div>
+              ) : (
+                modeContent || renderGeneralContent()
               )}
 
               {/* Unified Timeline / Visual Grid / Transcript Views — always shown */}
