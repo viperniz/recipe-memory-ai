@@ -14,7 +14,7 @@ from typing import Optional
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from video_processor import download_video, download_audio, extract_frames, extract_audio, get_video_info, save_frame_thumbnails, _extract_video_id
+from video_processor import download_video, download_audio, extract_frames, extract_audio, get_video_info, save_frame_thumbnails, _extract_video_id, fetch_youtube_captions, get_video_metadata_fast
 from transcriber import Transcriber
 from content_analyzer import ContentAnalyzer, ContentExtract
 from speaker_diarization import SpeakerDiarizer
@@ -430,32 +430,56 @@ class VideoMemoryAI:
         video_path = source
         audio_path = None
         source_url = None
+        caption_fast_path = False  # True when YouTube captions bypass Whisper
+        caption_result = None      # Holds YouTube caption data for fast path
+
+        # =============================================
+        # Phase 0: YouTube caption fast path check
+        # =============================================
+        is_youtube = is_url and any(d in source for d in ["youtube.com", "youtu.be"])
+        if is_youtube:
+            video_id = _extract_video_id(source)
+            if video_id:
+                update_progress(3, "Checking for captions...")
+                caption_result = fetch_youtube_captions(video_id)
+                if caption_result:
+                    caption_fast_path = True
+                    print(f"YouTube captions found! Fast path enabled ({caption_result['language']})")
 
         # =============================================
         # Phase 1: Download (parallel audio + video for URLs)
         # =============================================
         if is_url:
             source_url = source
-            update_progress(5, "Downloading...")
+            update_progress(5, "Downloading..." if not caption_fast_path else "Fetching metadata...")
             print(f"Downloading from: {source}")
 
             download_done = threading.Event()
 
             def simulate_download_progress():
                 pct = 6
-                update_progress(pct, "Downloading...")
+                label = "Fetching metadata..." if caption_fast_path else "Downloading..."
+                update_progress(pct, label)
                 while not download_done.is_set():
                     time.sleep(1.5)
                     if pct < 14:
                         pct += 1
-                        update_progress(pct, "Downloading...")
+                        update_progress(pct, label)
 
             dl_progress_thread = threading.Thread(target=simulate_download_progress, daemon=True)
             dl_progress_thread.start()
 
             try:
                 videos_dir = str(self.data_dir / "videos")
-                if analyze_frames:
+                if caption_fast_path:
+                    # Fast path: skip audio download entirely
+                    if analyze_frames:
+                        # Still need video for frame extraction
+                        video_path = download_video(source, videos_dir, cookies_file=cookies_file)
+                        print(f"  Video (for frames): {video_path}")
+                    else:
+                        video_path = source  # No file needed
+                elif analyze_frames:
                     # Need both audio (for transcription) and video (for frames)
                     # Download sequentially to limit peak memory (avoid 2 concurrent yt-dlp subprocesses)
                     audio_path = download_audio(source, videos_dir, cookies_file=cookies_file)
@@ -471,7 +495,7 @@ class VideoMemoryAI:
                 download_done.set()
                 dl_progress_thread.join(timeout=1)
 
-            update_progress(15, "Downloaded")
+            update_progress(15, "Downloaded" if not caption_fast_path else "Metadata ready")
         else:
             # Local file — use as-is for both audio and video
             audio_path = source
@@ -479,7 +503,11 @@ class VideoMemoryAI:
         print(f"\nProcessing: {video_path}")
 
         # Get video info (duration, resolution) — works on video or audio files
-        info = get_video_info(video_path) if analyze_frames or not is_url else {"duration": 0, "width": 0, "height": 0}
+        if caption_fast_path and not analyze_frames:
+            # No local file — use metadata from yt-dlp
+            info = {"duration": 0, "width": 0, "height": 0}
+        else:
+            info = get_video_info(video_path) if analyze_frames or not is_url else {"duration": 0, "width": 0, "height": 0}
         if info.get("duration", 0) > 0:
             print(f"Duration: {info['duration']:.1f}s, Resolution: {info['width']}x{info['height']}")
 
@@ -495,99 +523,133 @@ class VideoMemoryAI:
         frame_analyses = []
         raw_frames = []
 
-        def do_transcription():
-            """Thread A: Transcribe audio, diarize, format transcript."""
-            nonlocal transcript, transcript_result, segments
-            update_progress(15, "Transcribing audio...")
-            print("\n[Thread A] Transcribing audio...")
-
-            transcriber = self._get_transcriber()
-            whisper_task = "transcribe"
-            if language and language == "en":
-                whisper_task = "translate"
-
-            # Transcribe using audio file (much smaller than video)
-            transcript_result = transcriber.transcribe(audio_path, task=whisper_task)
-            transcript = transcript_result["text"]
-            segments = transcript_result["segments"]
-            print(f"[Thread A] Transcribed {len(transcript)} characters in {transcript_result['language']}")
-
-            update_progress(30, "Transcribed")
-
-            # Speaker diarization
-            if detect_speakers:
-                update_progress(30, "Detecting speakers...")
-                print("[Thread A] Detecting speakers...")
-                try:
-                    diarizer = self._get_diarizer()
-                    if diarizer:
-                        speaker_segs = diarizer.diarize(audio_path)
-                        segments[:] = diarizer.merge_with_transcript(segments, speaker_segs)
-                        print(f"[Thread A] Detected {len(set(s.get('speaker') for s in segments))} speakers")
-                except Exception as e:
-                    print(f"[Thread A] Speaker detection skipped: {e}")
-
+        if caption_fast_path:
+            # --- FAST PATH: use YouTube captions as transcript ---
+            update_progress(20, "Using YouTube captions...")
+            print("[Fast path] Using YouTube captions instead of Whisper")
+            transcript = caption_result["text"]
+            segments = caption_result["segments"]
+            transcript_result = caption_result  # has language, etc.
             update_progress(40, "Transcript ready")
 
-        def do_frame_analysis():
-            """Thread B: Extract frames and analyze them in parallel."""
-            nonlocal frame_descriptions, frame_analyses, raw_frames
-            update_progress(42, "Extracting frames...")
-            print(f"\n[Thread B] Extracting frames (every {frame_interval}s)...")
+            # Frame analysis still runs if requested
+            if analyze_frames:
+                update_progress(42, "Extracting frames...")
+                print(f"\n[Fast path] Extracting frames (every {frame_interval}s)...")
+                raw_frames = extract_frames(video_path, interval_seconds=frame_interval)
+                total_frames = len(raw_frames)
+                update_progress(45, f"Extracted {total_frames} frames")
+                print(f"[Fast path] Extracted {total_frames} frames, analyzing in parallel...")
 
-            raw_frames = extract_frames(video_path, interval_seconds=frame_interval)
-            total_frames = len(raw_frames)
-            update_progress(45, f"Extracted {total_frames} frames")
-            print(f"[Thread B] Extracted {total_frames} frames, analyzing in parallel...")
+                def frame_progress(completed, total):
+                    pct = 45 + int((completed / max(total, 1)) * 40)
+                    update_progress(pct, f"Analyzing frame {completed}/{total}")
 
-            def frame_progress(completed, total):
-                pct = 45 + int((completed / max(total, 1)) * 40)
-                update_progress(pct, f"Analyzing frame {completed}/{total}")
-
-            frame_descriptions = self.analyzer.analyze_frames_parallel(
-                raw_frames, with_captions=True, max_workers=3,
-                progress_callback=frame_progress
-            )
-            if hasattr(self.analyzer, '_last_frame_analyses'):
-                frame_analyses = list(self.analyzer._last_frame_analyses)
-
-            update_progress(85, "Frames analyzed")
-            print(f"[Thread B] Analyzed {len(frame_descriptions)} frames")
-
-        # Run transcription and frame analysis in parallel
-        if analyze_frames:
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                transcription_future = executor.submit(do_transcription)
-                frame_future = executor.submit(do_frame_analysis)
-
-                # Wait for both to complete, propagate exceptions
-                transcription_future.result()
-                frame_future.result()
+                frame_descriptions = self.analyzer.analyze_frames_parallel(
+                    raw_frames, with_captions=True, max_workers=3,
+                    progress_callback=frame_progress
+                )
+                if hasattr(self.analyzer, '_last_frame_analyses'):
+                    frame_analyses = list(self.analyzer._last_frame_analyses)
+                update_progress(85, "Frames analyzed")
+                print(f"[Fast path] Analyzed {len(frame_descriptions)} frames")
+            else:
+                update_progress(50, "Skipped frames")
         else:
-            # No frame analysis — just transcribe sequentially
-            # Simulate progress during transcription
-            transcription_done = threading.Event()
+            # --- STANDARD PATH: download + Whisper ---
+            def do_transcription():
+                """Thread A: Transcribe audio, diarize, format transcript."""
+                nonlocal transcript, transcript_result, segments
+                update_progress(15, "Transcribing audio...")
+                print("\n[Thread A] Transcribing audio...")
 
-            def simulate_transcription_progress():
-                pct = 16
-                update_progress(pct, "Transcribing audio...")
-                while not transcription_done.is_set():
-                    time.sleep(1.5)
-                    if pct < 28:
-                        pct += 1
-                        update_progress(pct, "Transcribing audio...")
+                transcriber = self._get_transcriber()
+                whisper_task = "transcribe"
+                if language and language == "en":
+                    whisper_task = "translate"
 
-            progress_thread = threading.Thread(target=simulate_transcription_progress, daemon=True)
-            progress_thread.start()
+                # Transcribe using audio file (much smaller than video)
+                transcript_result = transcriber.transcribe(audio_path, task=whisper_task)
+                transcript = transcript_result["text"]
+                segments = transcript_result["segments"]
+                print(f"[Thread A] Transcribed {len(transcript)} characters in {transcript_result['language']}")
 
-            try:
-                do_transcription()
-            finally:
-                transcription_done.set()
-                progress_thread.join(timeout=1)
+                update_progress(30, "Transcribed")
 
-            print("\n[3/4] Skipping frame analysis")
-            update_progress(50, "Skipped frames")
+                # Speaker diarization
+                if detect_speakers:
+                    update_progress(30, "Detecting speakers...")
+                    print("[Thread A] Detecting speakers...")
+                    try:
+                        diarizer = self._get_diarizer()
+                        if diarizer:
+                            speaker_segs = diarizer.diarize(audio_path)
+                            segments[:] = diarizer.merge_with_transcript(segments, speaker_segs)
+                            print(f"[Thread A] Detected {len(set(s.get('speaker') for s in segments))} speakers")
+                    except Exception as e:
+                        print(f"[Thread A] Speaker detection skipped: {e}")
+
+                update_progress(40, "Transcript ready")
+
+            def do_frame_analysis():
+                """Thread B: Extract frames and analyze them in parallel."""
+                nonlocal frame_descriptions, frame_analyses, raw_frames
+                update_progress(42, "Extracting frames...")
+                print(f"\n[Thread B] Extracting frames (every {frame_interval}s)...")
+
+                raw_frames = extract_frames(video_path, interval_seconds=frame_interval)
+                total_frames = len(raw_frames)
+                update_progress(45, f"Extracted {total_frames} frames")
+                print(f"[Thread B] Extracted {total_frames} frames, analyzing in parallel...")
+
+                def frame_progress(completed, total):
+                    pct = 45 + int((completed / max(total, 1)) * 40)
+                    update_progress(pct, f"Analyzing frame {completed}/{total}")
+
+                frame_descriptions = self.analyzer.analyze_frames_parallel(
+                    raw_frames, with_captions=True, max_workers=3,
+                    progress_callback=frame_progress
+                )
+                if hasattr(self.analyzer, '_last_frame_analyses'):
+                    frame_analyses = list(self.analyzer._last_frame_analyses)
+
+                update_progress(85, "Frames analyzed")
+                print(f"[Thread B] Analyzed {len(frame_descriptions)} frames")
+
+            # Run transcription and frame analysis in parallel
+            if analyze_frames:
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    transcription_future = executor.submit(do_transcription)
+                    frame_future = executor.submit(do_frame_analysis)
+
+                    # Wait for both to complete, propagate exceptions
+                    transcription_future.result()
+                    frame_future.result()
+            else:
+                # No frame analysis — just transcribe sequentially
+                # Simulate progress during transcription
+                transcription_done = threading.Event()
+
+                def simulate_transcription_progress():
+                    pct = 16
+                    update_progress(pct, "Transcribing audio...")
+                    while not transcription_done.is_set():
+                        time.sleep(1.5)
+                        if pct < 28:
+                            pct += 1
+                            update_progress(pct, "Transcribing audio...")
+
+                progress_thread = threading.Thread(target=simulate_transcription_progress, daemon=True)
+                progress_thread.start()
+
+                try:
+                    do_transcription()
+                finally:
+                    transcription_done.set()
+                    progress_thread.join(timeout=1)
+
+                print("\n[3/4] Skipping frame analysis")
+                update_progress(50, "Skipped frames")
 
         # =============================================
         # Phase 3: Post-processing (needs results from both threads)
@@ -687,6 +749,13 @@ class VideoMemoryAI:
             )
 
         update_progress(95, "Saving")
+
+        # Store transcript source info in metadata
+        if caption_fast_path:
+            content.metadata["transcript_source"] = "youtube_captions"
+            content.metadata["captions_auto_generated"] = caption_result.get("captions_auto_generated", False)
+        else:
+            content.metadata["transcript_source"] = "whisper"
 
         # Store language info in metadata
         content.metadata["detected_language"] = detected_lang

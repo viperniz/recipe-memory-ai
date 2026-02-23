@@ -73,6 +73,128 @@ def _extract_video_id(url: str) -> str | None:
     return None
 
 
+def fetch_youtube_captions(video_id: str, preferred_languages=None) -> dict | None:
+    """Fetch YouTube's built-in captions (manual or auto-generated).
+
+    Returns a Whisper-compatible dict: {text, segments, language, transcript_source}
+    or None if captions are unavailable (graceful fallback to Whisper).
+    """
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+    except ImportError:
+        print("  youtube-transcript-api not installed, skipping caption fetch")
+        return None
+
+    if preferred_languages is None:
+        preferred_languages = ["en", "en-US", "en-GB"]
+
+    try:
+        ytt_api = YouTubeTranscriptApi()
+
+        # Try fetching transcript in preferred languages
+        try:
+            transcript = ytt_api.fetch(video_id, languages=preferred_languages)
+        except Exception:
+            # Fall back to any available language
+            try:
+                transcript_list = ytt_api.list(video_id)
+                if not transcript_list:
+                    return None
+                # Pick first available transcript
+                first = transcript_list[0]
+                transcript = ytt_api.fetch(video_id, languages=[first.language_code])
+            except Exception:
+                return None
+
+        if not transcript or not transcript.snippets:
+            return None
+
+        # Determine language and if auto-generated
+        detected_language = "en"
+        is_auto_generated = False
+        try:
+            transcript_list = ytt_api.list(video_id)
+            for t in transcript_list:
+                if t.language_code in preferred_languages or not detected_language:
+                    detected_language = t.language_code
+                    is_auto_generated = t.is_generated
+                    break
+            if transcript_list:
+                detected_language = transcript_list[0].language_code
+                is_auto_generated = transcript_list[0].is_generated
+        except Exception:
+            pass
+
+        # Convert to Whisper-compatible format
+        segments = []
+        full_text_parts = []
+
+        for snippet in transcript.snippets:
+            start = snippet.start
+            duration = snippet.duration if snippet.duration else 0
+            end = start + duration
+            text = snippet.text.strip()
+
+            if text:
+                segments.append({
+                    "start": start,
+                    "end": end,
+                    "text": text,
+                })
+                full_text_parts.append(text)
+
+        if not segments:
+            return None
+
+        full_text = " ".join(full_text_parts)
+        print(f"  YouTube captions fetched: {len(segments)} segments, {len(full_text)} chars, lang={detected_language}")
+
+        return {
+            "text": full_text,
+            "segments": segments,
+            "language": detected_language,
+            "transcript_source": "youtube_captions",
+            "captions_auto_generated": is_auto_generated,
+        }
+
+    except Exception as e:
+        print(f"  YouTube caption fetch failed (will fall back to Whisper): {e}")
+        return None
+
+
+def get_video_metadata_fast(url: str, cookies_file: str = None) -> dict:
+    """Fetch video metadata without downloading any media.
+
+    Uses yt-dlp --no-download + --print to get duration, title, stats, etc.
+    Needed for credit billing when using the caption fast path.
+    """
+    ytdlp = get_ytdlp_path()
+
+    meta_fields = [
+        "duration", "title", "view_count", "like_count",
+        "comment_count", "channel_follower_count", "upload_date",
+        "uploader", "categories", "description", "id",
+    ]
+    print_template = "|||".join(f"%({f})s" for f in meta_fields)
+
+    cmd = [
+        ytdlp, "--no-download",
+        "--print", print_template,
+        "--no-playlist", "--js-runtimes", "node", "--remote-components", "ejs:github",
+    ]
+    if cookies_file:
+        cmd.extend(["--cookies", cookies_file])
+    cmd.append(url)
+
+    result = subprocess.run(
+        cmd, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=30,
+    )
+
+    metadata = _parse_metadata_output(result.stdout, meta_fields)
+    return metadata
+
+
 def download_video(url: str, output_dir: str = "data/videos", cookies_file: str = None) -> str:
     """Download video from YouTube or other platforms using yt-dlp"""
     os.makedirs(output_dir, exist_ok=True)

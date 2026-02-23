@@ -8,6 +8,8 @@ import CreatorCard from './CreatorCard'
 import MeetingCard from './MeetingCard'
 import DeepDiveCard from './DeepDiveCard'
 import TimestampLink from './TimestampLink'
+import YouTubeEmbed from './YouTubeEmbed'
+import { YouTubePlayerProvider } from '../../context/YouTubePlayerContext'
 
 import FlashcardPanel from './FlashcardPanel'
 import MindMapPanel from './MindMapPanel'
@@ -636,7 +638,10 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     )
   }
 
+  const isYouTube = content.source_url && (content.source_url.includes('youtube.com') || content.source_url.includes('youtu.be'))
+
   return (
+    <YouTubePlayerProvider>
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content modal-content-large" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
@@ -775,6 +780,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             Report
           </button>
         </div>
+
+        {isYouTube && <YouTubeEmbed sourceUrl={content.source_url} />}
 
         <div className="modal-body">
           {isLoading ? (
@@ -1218,6 +1225,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         contentIds={content?.id ? [content.id] : []}
       />
     </div>
+    </YouTubePlayerProvider>
   )
 }
 

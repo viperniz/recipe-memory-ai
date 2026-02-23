@@ -24,7 +24,7 @@ import openai  # noqa: F401
 from database import SessionLocal, Job as JobModel, Report, ContentVector, Collection
 from job_service import JobService
 from billing import BillingService
-from video_processor import download_audio_with_metadata, get_video_info
+from video_processor import download_audio_with_metadata, get_video_info, fetch_youtube_captions, get_video_metadata_fast, _extract_video_id
 from vector_memory import VectorMemory
 from config import get_config, init_config
 
@@ -166,19 +166,32 @@ def process_video_job(
             cookies_temp_path = cookies_temp.name
 
         try:
-            # Download audio + metadata
+            # Check for YouTube caption fast path before downloading audio
             youtube_stats = None
             duration_min = 0
+            caption_fast_path = False
+
             if url_or_path.startswith(("http://", "https://")):
-                try:
+                # Try YouTube caption fast path first
+                if is_youtube:
+                    video_id = _extract_video_id(url_or_path)
+                    if video_id:
+                        JobService.update_job_progress(
+                            db=bg_db, job_id=job_id, progress=2,
+                            status="Checking for captions...",
+                        )
+                        captions = fetch_youtube_captions(video_id)
+                        if captions:
+                            caption_fast_path = True
+                            print(f"[Job {job_id}] YouTube captions found! Fast path enabled.")
+
+                if caption_fast_path:
+                    # Fast path: fetch metadata only (no audio download)
                     JobService.update_job_progress(
-                        db=bg_db, job_id=job_id, progress=2,
-                        status="Downloading audio & metadata...",
+                        db=bg_db, job_id=job_id, progress=3,
+                        status="Fetching video metadata...",
                     )
-                    _audio_path, meta = download_audio_with_metadata(
-                        url_or_path, output_dir="data/videos",
-                        cookies_file=cookies_temp_path,
-                    )
+                    meta = get_video_metadata_fast(url_or_path, cookies_file=cookies_temp_path)
                     duration_sec = meta.get("duration", 0)
                     duration_min = duration_sec / 60
 
@@ -193,16 +206,42 @@ def process_video_job(
                             "categories": meta.get("categories", []),
                             "description": meta.get("description", "")[:500],
                         }
-                        print(f"[Job {job_id}] YouTube stats: {youtube_stats.get('view_count', 0)} views")
+                    print(f"[Job {job_id}] Fast path metadata: duration={duration_min:.1f} min")
+                else:
+                    # Standard path: download audio + metadata
+                    try:
+                        JobService.update_job_progress(
+                            db=bg_db, job_id=job_id, progress=2,
+                            status="Downloading audio & metadata...",
+                        )
+                        _audio_path, meta = download_audio_with_metadata(
+                            url_or_path, output_dir="data/videos",
+                            cookies_file=cookies_temp_path,
+                        )
+                        duration_sec = meta.get("duration", 0)
+                        duration_min = duration_sec / 60
 
-                    print(f"[Job {job_id}] Audio downloaded: {_audio_path}, duration: {duration_min:.1f} min")
-                except Exception as dur_err:
-                    # If download itself failed, don't bother trying again in process_video
-                    err_str = str(dur_err)
-                    if "ERROR:" in err_str or "Unable to download" in err_str:
-                        raise
-                    # Metadata parsing errors are non-fatal — proceed without stats
-                    print(f"[Job {job_id}] Metadata extraction failed (proceeding): {dur_err}")
+                        if meta.get("view_count") or meta.get("title"):
+                            youtube_stats = {
+                                "view_count": meta.get("view_count", 0),
+                                "like_count": meta.get("like_count", 0),
+                                "comment_count": meta.get("comment_count", 0),
+                                "subscriber_count": meta.get("channel_follower_count", 0),
+                                "upload_date": meta.get("upload_date", ""),
+                                "channel": meta.get("uploader", ""),
+                                "categories": meta.get("categories", []),
+                                "description": meta.get("description", "")[:500],
+                            }
+                            print(f"[Job {job_id}] YouTube stats: {youtube_stats.get('view_count', 0)} views")
+
+                        print(f"[Job {job_id}] Audio downloaded: {_audio_path}, duration: {duration_min:.1f} min")
+                    except Exception as dur_err:
+                        # If download itself failed, don't bother trying again in process_video
+                        err_str = str(dur_err)
+                        if "ERROR:" in err_str or "Unable to download" in err_str:
+                            raise
+                        # Metadata parsing errors are non-fatal — proceed without stats
+                        print(f"[Job {job_id}] Metadata extraction failed (proceeding): {dur_err}")
 
             # Feature gate: check video duration against tier limits
             if duration_min > 0:

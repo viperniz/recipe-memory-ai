@@ -205,7 +205,7 @@ async def add_security_headers(request: Request, call_next):
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data: https:; "
         "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://pagead2.googlesyndication.com; "
-        "frame-src https://accounts.google.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com"
+        "frame-src https://accounts.google.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.youtube.com"
     )
     # HSTS only in production (when not localhost)
     host = request.headers.get("host", "")
