@@ -10503,7 +10503,7 @@ button.timestamp-link {
 
 .breakdown-video-sticky {
   position: sticky;
-  top: 0;
+  top: var(--sticky-top-h, 0px);
   z-index: 5;
   border-radius: 10px;
   overflow: hidden;

@@ -161,6 +161,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [showReportModal, setShowReportModal] = useState(false)
   const [contentTags, setContentTags] = useState([])
   const [showTagDropdown, setShowTagDropdown] = useState(false)
+  const stickyTopRef = useRef(null)
+  const modalContentRef = useRef(null)
   const navigate = useNavigate()
   const { token } = useAuth()
   const { tags: allTags, loadTags } = useData()
@@ -198,6 +200,20 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       .then(sub => setSubscription(sub))
       .catch(() => {})
   }, [token])
+
+  // Measure sticky header height so video sticky offset clears it
+  useEffect(() => {
+    const el = stickyTopRef.current
+    const modal = modalContentRef.current
+    if (!el || !modal) return
+    const update = () => {
+      modal.style.setProperty('--sticky-top-h', `${el.offsetHeight}px`)
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [activeTab])
 
   // Load stored guide on mount
   useEffect(() => {
@@ -1025,9 +1041,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   return (
     <YouTubePlayerProvider>
     <div className="modal-overlay" onClick={onClose}>
-      <div className={`modal-content modal-content-large${isYouTube && activeTab === 'content' ? ' modal-content-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div ref={modalContentRef} className={`modal-content modal-content-large${isYouTube && activeTab === 'content' ? ' modal-content-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
         {/* Sticky top: header + tabs (#2) */}
-        <div className="modal-sticky-top">
+        <div ref={stickyTopRef} className="modal-sticky-top">
           <div className="modal-header">
             {/* Two-row header (#7) */}
             <div className="modal-header-title-group">
