@@ -10513,7 +10513,7 @@ button.timestamp-link {
 /* Phase 2+3: centered, comfortable fixed width */
 .breakdown-col-video.is-centered {
   grid-column: 1 / -1;
-  width: 460px;
+  width: 320px;
   margin: 0 auto;
   transition:
     width  0.4s cubic-bezier(0.4, 0, 0.2, 1),

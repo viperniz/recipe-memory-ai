@@ -166,6 +166,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const videoColRef = useRef(null)
   const analysisColRef = useRef(null)
   const layoutRef = useRef(null)
+  const transcriptRef = useRef(null)
   const navigate = useNavigate()
   const { token } = useAuth()
   const { tags: allTags, loadTags } = useData()
@@ -220,13 +221,14 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
   // Three-phase video transition:
   // Phase 1: Two-col, video sticky left at 40%
-  // Phase 2: Right col fades out, video centers at 460px, scroll pinned
+  // Phase 2: Right col fades out, video centers at 320px, transcript padded
   // Phase 3: Transcript scrolls under centered sticky video
   useEffect(() => {
     const videoCol = videoColRef.current
     const analysisCol = analysisColRef.current
     const modal = modalContentRef.current
-    if (!videoCol || !analysisCol || !modal) return
+    const transcript = transcriptRef.current
+    if (!videoCol || !analysisCol || !modal || !transcript) return
 
     // Sentinel at bottom of analysis col
     let sentinel = analysisCol.querySelector('.breakdown-analysis-sentinel')
@@ -242,52 +244,40 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     ) || 226
     const VIDEO_H_SMALL = videoCol.offsetHeight
     const TRIGGER_LINE = STICKY_TOP + VIDEO_H_SMALL
-    const TRANSITION_MS = 400
+    const VIDEO_CENTERED_H = 180 // 320px wide × 16:9
 
-    let state = 'two-col' // 'two-col' | 'transitioning' | 'centered'
-    let pinnedScrollTop = null
+    let state = 'two-col' // 'two-col' | 'centered'
 
-    // Scroll lock during transition
-    function enforceScrollLock() {
-      modal.scrollTop = pinnedScrollTop
-    }
-    function lockScroll(scrollTop) {
-      pinnedScrollTop = scrollTop
-      modal.addEventListener('scroll', enforceScrollLock, { passive: false })
-    }
-    function unlockScroll() {
-      modal.removeEventListener('scroll', enforceScrollLock)
-      pinnedScrollTop = null
-    }
-
-    function triggerTransition() {
+    function expand() {
       if (state !== 'two-col') return
-      state = 'transitioning'
+      state = 'centered'
 
-      // 1. Lock scroll at current position
-      lockScroll(modal.scrollTop)
-
-      // 2. Fade right column out to the right
+      const savedScroll = modal.scrollTop
+      videoCol.classList.add('is-centered')
       analysisCol.classList.add('is-exiting')
 
-      // 3. After fade starts, center video
+      // setTimeout(0) runs after React's scroll restoration
       setTimeout(() => {
-        videoCol.classList.add('is-centered')
-      }, 100)
+        modal.scrollTop = savedScroll
 
-      // 4. After full transition, unlock scroll
-      setTimeout(() => {
-        state = 'centered'
-        unlockScroll()
-      }, TRANSITION_MS + 100)
+        const modalRect = modal.getBoundingClientRect()
+        const transcriptRect = transcript.getBoundingClientRect()
+        const transcriptVisualTop = transcriptRect.top - modalRect.top
+        const videoBottom = STICKY_TOP + VIDEO_CENTERED_H
+        const paddingTop = Math.max(0, videoBottom - transcriptVisualTop + 24)
+
+        transcript.style.paddingTop = `${paddingTop}px`
+        transcript.style.paddingBottom = `${VIDEO_CENTERED_H}px`
+      }, 0)
     }
 
-    function reverseTransition() {
+    function collapse() {
       if (state !== 'centered') return
       state = 'two-col'
       videoCol.classList.remove('is-centered')
       analysisCol.classList.remove('is-exiting')
-      unlockScroll()
+      transcript.style.paddingTop = ''
+      transcript.style.paddingBottom = ''
     }
 
     const observer = new IntersectionObserver(
@@ -297,9 +287,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         const isPast = !entry.isIntersecting && sentinelTop < TRIGGER_LINE
 
         if (isPast && state === 'two-col') {
-          triggerTransition()
+          expand()
         } else if (!isPast && state === 'centered') {
-          reverseTransition()
+          collapse()
         }
       },
       {
@@ -313,7 +303,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     return () => {
       observer.disconnect()
       sentinel.remove()
-      unlockScroll()
+      collapse()
     }
   }, [activeTab, content?.id])
 
@@ -1316,7 +1306,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                     </div>
                     {modeContent || renderGeneralContent()}
                   </div>
-                  <div className="breakdown-transcript-full">
+                  <div ref={transcriptRef} className="breakdown-transcript-full">
                     {renderTimelineSection()}
                   </div>
                 </div>
