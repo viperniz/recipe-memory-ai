@@ -4,7 +4,7 @@ With authentication, billing, notes, tags, search, and collection chat features
 """
 from fastapi import FastAPI, HTTPException, Depends, Request, Header, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, FileResponse
+from fastapi.responses import Response, FileResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import sys
@@ -191,6 +191,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Global exception handler — ensures unhandled errors return JSON with CORS headers
+# (without this, Starlette's ServerErrorMiddleware returns a plain 500 that bypasses CORSMiddleware)
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import logging
+    logging.getLogger(__name__).error(f"Unhandled error on {request.method} {request.url.path}: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
 
 
 # Security headers middleware
