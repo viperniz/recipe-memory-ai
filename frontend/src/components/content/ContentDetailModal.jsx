@@ -218,53 +218,60 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     return () => ro.disconnect()
   }, [activeTab])
 
-  // Video expansion: when analysis col ends, widen video to full width
+  // Scroll-driven video positioning: replaces CSS sticky (which can't
+  // release at the grid row boundary — its containing block is the
+  // scroll ancestor, not the grid row). This gives precise control.
   useEffect(() => {
     const videoCol = videoColRef.current
     const analysisCol = analysisColRef.current
     const layout = layoutRef.current
     const modal = modalContentRef.current
-    if (!videoCol || !analysisCol || !layout || !modal) return
+    const stickyTopEl = stickyTopRef.current
+    if (!videoCol || !analysisCol || !layout || !modal || !stickyTopEl) return
 
-    // Measure and set CSS vars for transition targets
-    const colWidth = videoCol.offsetWidth
+    const STICKY_TOP_H = stickyTopEl.offsetHeight
+
+    // Layout's absolute position within the modal's scrollable content
+    const layoutRect = layout.getBoundingClientRect()
+    const modalRect = modal.getBoundingClientRect()
+    const layoutOffsetInModal = layoutRect.top - modalRect.top + modal.scrollTop
+
+    // Pre-calculate expanded video height from full width (16:9 aspect)
     const fullWidth = layout.offsetWidth
-    const videoHeight = videoCol.offsetHeight
-    layout.style.setProperty('--video-col-width', `${colWidth}px`)
-    layout.style.setProperty('--video-full-width', `${fullWidth}px`)
-    layout.style.setProperty('--video-height', `${videoHeight}px`)
+    const expandedVideoH = Math.round(fullWidth * 9 / 16)
 
-    // Sentinel at the bottom of analysis col
-    const sentinel = document.createElement('div')
-    sentinel.style.cssText = 'height: 1px; width: 100%; pointer-events: none;'
-    analysisCol.appendChild(sentinel)
+    const handleScroll = () => {
+      const scroll = modal.scrollTop
+      const videoH = videoCol.offsetHeight
+      const analysisH = analysisCol.offsetHeight
+      const maxTop = Math.max(0, analysisH - videoH)
 
-    const stickyTopH = stickyTopRef.current?.offsetHeight || 226
+      // Where video should be to appear STICKY_TOP_H from visible modal top
+      const desiredTop = scroll + STICKY_TOP_H - layoutOffsetInModal
+      const top = Math.max(0, Math.min(desiredTop, maxTop))
+      videoCol.style.top = top + 'px'
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const isPast = !entry.isIntersecting &&
-          entry.boundingClientRect.top < entry.rootBounds.top + stickyTopH + 10
-        if (isPast) {
-          videoCol.classList.add('is-expanded')
-          layout.classList.add('video-expanded')
-        } else {
-          videoCol.classList.remove('is-expanded')
-          layout.classList.remove('video-expanded')
-        }
-      },
-      {
-        root: modal,
-        threshold: 0,
-        rootMargin: `-${stickyTopH}px 0px 0px 0px`
+      // Expand when video reaches its max (analysis col has scrolled past)
+      const shouldExpand = desiredTop >= maxTop && maxTop > 0
+
+      if (shouldExpand && !videoCol.classList.contains('is-expanded')) {
+        videoCol.classList.add('is-expanded')
+        layout.classList.add('video-expanded')
+        // Push transcript down by expanded video height + gap
+        const transcript = layout.querySelector('.breakdown-transcript-full')
+        if (transcript) transcript.style.paddingTop = (expandedVideoH + 16) + 'px'
+      } else if (!shouldExpand && videoCol.classList.contains('is-expanded')) {
+        videoCol.classList.remove('is-expanded')
+        layout.classList.remove('video-expanded')
+        const transcript = layout.querySelector('.breakdown-transcript-full')
+        if (transcript) transcript.style.paddingTop = '0px'
       }
-    )
-    observer.observe(sentinel)
-
-    return () => {
-      observer.disconnect()
-      sentinel.remove()
     }
+
+    modal.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll() // set initial position
+
+    return () => modal.removeEventListener('scroll', handleScroll)
   }, [activeTab, content?.id])
 
   // Load stored guide on mount
