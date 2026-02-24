@@ -271,7 +271,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       videoCol.style.width = VID_W_START + 'px'
       videoCol.style.height = VID_H_START + 'px'
       videoCol.style.margin = '0 auto 0 auto'
-      transcript.style.paddingTop = (VID_H_START + 24) + 'px'
       scrollDriver = () => {
         if (state !== 'centered') return
         const rawProgress = Math.min(1, Math.max(0,
@@ -285,9 +284,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         videoCol.style.width = Math.round(w) + 'px'
         videoCol.style.height = Math.round(h) + 'px'
         videoCol.style.borderRadius = Math.round(12 * (1 - rawProgress)) + 'px'
-        transcript.style.paddingTop = (Math.round(h) + 24) + 'px'
         if (rawProgress >= 1) {
-          transcript.style.paddingTop = ''
           videoCol.style.margin = ''
         }
       }
@@ -305,7 +302,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       videoCol.style.height = ''
       videoCol.style.margin = ''
       videoCol.style.borderRadius = ''
-      transcript.style.paddingTop = ''
     }
 
     function expand() {
