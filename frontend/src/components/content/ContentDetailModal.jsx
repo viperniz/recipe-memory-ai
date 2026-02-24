@@ -354,8 +354,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         videoCol.style.borderRadius = Math.round(radius) + 'px'
         videoCol.style.zIndex = '10'
 
-        // ── Phase 5 (0.62 → 0.80): Transcript fades in alongside video return ──
-        const tP = easeInOut(zP(raw, 0.62, 0.80))
+        // ── Phase 5 (0.60 → 0.75): Transcript fades in with video return ──
+        const tP = easeInOut(zP(raw, 0.60, 0.75))
         transcript.style.opacity = String(tP)
         transcript.style.transform = `translateY(${50 * (1 - tP)}px)`
       }
