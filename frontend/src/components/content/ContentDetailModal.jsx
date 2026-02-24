@@ -264,16 +264,14 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2
     }
 
-        function startScrollDriver() {
+            function startScrollDriver() {
       if (scrollDriver) return
       const scrollAtTransition = modal.scrollTop
-      // Make video sticky at top while it grows (concom.tv style)
-      videoCol.style.position = 'sticky'
-      const stickyH = (modal.querySelector('.modal-sticky-top') || {offsetHeight:0}).offsetHeight
-      videoCol.style.top = stickyH + 'px'
-      videoCol.style.zIndex = '10'
+      videoCol.style.position = 'relative'
       videoCol.style.width = VID_W_START + 'px'
       videoCol.style.height = VID_H_START + 'px'
+      videoCol.style.margin = '0 auto 0 auto'
+      transcript.style.paddingTop = (VID_H_START + 24) + 'px'
       scrollDriver = () => {
         if (state !== 'centered') return
         const rawProgress = Math.min(1, Math.max(0,
@@ -287,10 +285,10 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         videoCol.style.width = Math.round(w) + 'px'
         videoCol.style.height = Math.round(h) + 'px'
         videoCol.style.borderRadius = Math.round(12 * (1 - rawProgress)) + 'px'
+        transcript.style.paddingTop = (Math.round(h) + 24) + 'px'
         if (rawProgress >= 1) {
-          videoCol.style.position = 'relative'
-          videoCol.style.top = ''
-          videoCol.style.zIndex = ''
+          transcript.style.paddingTop = ''
+          videoCol.style.margin = ''
         }
       }
       modal.addEventListener('scroll', scrollDriver, { passive: true })
@@ -303,11 +301,11 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         scrollDriver = null
       }
       videoCol.style.position = ''
-      videoCol.style.top = ''
-      videoCol.style.zIndex = ''
       videoCol.style.width = ''
       videoCol.style.height = ''
+      videoCol.style.margin = ''
       videoCol.style.borderRadius = ''
+      transcript.style.paddingTop = ''
     }
 
     function expand() {
