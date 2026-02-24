@@ -260,9 +260,20 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       setTimeout(() => {
         // Size transcript to fill remaining modal height below video
         const modalRect = modal.getBoundingClientRect()
+        const videoRect = videoCol.getBoundingClientRect()
         const transcriptRect = transcript.getBoundingClientRect()
+
+        // Push transcript below the sticky video if they overlap
+        const videoBottom = videoRect.bottom - modalRect.top
         const transcriptTop = transcriptRect.top - modalRect.top
-        const availableH = modal.clientHeight - transcriptTop - 16
+        const overlap = videoBottom - transcriptTop
+        if (overlap > 0) {
+          transcript.style.marginTop = `${overlap}px`
+        }
+
+        // Recalculate after margin adjustment
+        const transcriptTopAdjusted = transcriptTop + (overlap > 0 ? overlap : 0)
+        const availableH = modal.clientHeight - transcriptTopAdjusted - 16
         transcript.style.height = `${Math.max(200, availableH)}px`
         transcript.style.overflowY = 'scroll'
         transcript.style.flexShrink = '0'
@@ -287,6 +298,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       transcript.style.height = ''
       transcript.style.overflowY = ''
       transcript.style.flexShrink = ''
+      transcript.style.marginTop = ''
       modal.style.overflow = ''
       if (wheelHandler) {
         modal.removeEventListener('wheel', wheelHandler)
