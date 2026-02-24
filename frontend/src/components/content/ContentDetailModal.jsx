@@ -313,6 +313,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       state = 'centered'
       videoCol.classList.add('is-centered')
       analysisCol.classList.add('is-exiting')
+      const layout = videoCol.closest('.breakdown-youtube-layout')
+      if (layout) layout.classList.add('is-video-centered')
       startScrollDriver()
     }
 
@@ -321,6 +323,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       state = 'two-col'
       videoCol.classList.remove('is-centered')
       analysisCol.classList.remove('is-exiting')
+      const layout = videoCol.closest('.breakdown-youtube-layout')
+      if (layout) layout.classList.remove('is-video-centered')
       transcript.style.marginTop = ''
       stopScrollDriver()
     }
