@@ -249,28 +249,44 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     let state = 'two-col' // 'two-col' | 'centered'
     // No wheel handler needed - modal scrolls naturally
 
+    // ── concom-style scroll-driven scale animation ──────────────────────────
+    const SCALE_MIN = 0.38
+    const SCALE_MAX = 0.95
+    const SCROLL_ZONE = 600
+
+    let scrollDriver = null
+
+    function startScrollDriver() {
+      if (scrollDriver) return
+      const scrollAtTransition = modal.scrollTop
+      scrollDriver = () => {
+        if (state !== 'centered') return
+        const progress = Math.min(1, Math.max(0,
+          (modal.scrollTop - scrollAtTransition) / SCROLL_ZONE
+        ))
+        const scale = SCALE_MIN + (SCALE_MAX - SCALE_MIN) * progress
+        videoCol.style.transform = `scale(${scale.toFixed(3)})`
+        videoCol.style.borderRadius = `${Math.round(12 * (1 - progress))}px`
+      }
+      modal.addEventListener('scroll', scrollDriver, { passive: true })
+      scrollDriver()
+    }
+
+    function stopScrollDriver() {
+      if (scrollDriver) {
+        modal.removeEventListener('scroll', scrollDriver)
+        scrollDriver = null
+      }
+      videoCol.style.transform = ''
+      videoCol.style.borderRadius = ''
+    }
+
     function expand() {
       if (state !== 'two-col') return
       state = 'centered'
-
       videoCol.classList.add('is-centered')
       analysisCol.classList.add('is-exiting')
-
-      // setTimeout(0) runs after React's scroll restoration so video is positioned
-      setTimeout(() => {
-        // Push transcript below the sticky video if they overlap
-        const modalRect = modal.getBoundingClientRect()
-        const videoRect = videoCol.getBoundingClientRect()
-        const transcriptRect = transcript.getBoundingClientRect()
-
-        const videoBottom = videoRect.bottom - modalRect.top
-        const transcriptTop = transcriptRect.top - modalRect.top
-        const overlap = videoBottom - transcriptTop
-        if (overlap > 0) {
-          transcript.style.marginTop = `${overlap}px`
-        }
-        // transcript expands naturally — modal scrollbar controls all scrolling
-      }, 0)
+      startScrollDriver()
     }
 
     function collapse() {
@@ -279,6 +295,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       videoCol.classList.remove('is-centered')
       analysisCol.classList.remove('is-exiting')
       transcript.style.marginTop = ''
+      stopScrollDriver()
     }
 
     const observer = new IntersectionObserver(
@@ -304,6 +321,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     return () => {
       observer.disconnect()
       sentinel.remove()
+      stopScrollDriver()
       collapse()
     }
   }, [activeTab, content?.id])
