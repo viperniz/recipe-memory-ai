@@ -10531,10 +10531,15 @@ button.timestamp-link {
   pointer-events: none;
 }
 
-/* Transcript: row 2, spans both columns */
+/* Transcript: row 2 — stays in col 2 until video centers (avoids sticky video overlap) */
 .breakdown-transcript-full {
-  grid-area: 2 / 1 / auto / -1;
+  grid-area: 2 / 2 / auto / -1;
   margin-top: 8px;
+}
+
+/* Once video is centered (spans full width), transcript expands to full width too */
+.breakdown-youtube-layout:has(.breakdown-col-video.is-centered) .breakdown-transcript-full {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 768px) {
