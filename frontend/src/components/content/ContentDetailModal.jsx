@@ -306,9 +306,15 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       analysisCol.style.transition = 'none'
       transcript.style.transition = 'none'
 
-      // Transcript starts hidden, pushed down
+      // Transcript: move into row 1 (same tall row as spacer) and make sticky
+      // so it appears just below the tab bar when it fades in
+      transcript.style.gridRow = '1'
+      transcript.style.gridColumn = '2'
+      transcript.style.alignSelf = 'start'
+      transcript.style.position = 'sticky'
+      transcript.style.top = '0'
       transcript.style.opacity = '0'
-      transcript.style.transform = 'translateY(50px)'
+      transcript.style.transform = 'translateY(30px)'
 
       scrollDriverFn = () => {
         if (state !== 'transitioning') return
@@ -357,7 +363,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         // ── Phase 5 (0.60 → 0.75): Transcript fades in with video return ──
         const tP = easeInOut(zP(raw, 0.60, 0.75))
         transcript.style.opacity = String(tP)
-        transcript.style.transform = `translateY(${50 * (1 - tP)}px)`
+        transcript.style.transform = `translateY(${30 * (1 - tP)}px)`
       }
 
       onScrollBound = () => {
@@ -396,6 +402,11 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       transcript.style.opacity = ''
       transcript.style.transform = ''
       transcript.style.transition = ''
+      transcript.style.gridRow = ''
+      transcript.style.gridColumn = ''
+      transcript.style.alignSelf = ''
+      transcript.style.position = ''
+      transcript.style.top = ''
     }
 
     function expand() {
