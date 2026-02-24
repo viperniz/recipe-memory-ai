@@ -247,26 +247,35 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     const VIDEO_CENTERED_H = 180 // 320px wide × 16:9
 
     let state = 'two-col' // 'two-col' | 'centered'
+    let wheelHandler = null
 
     function expand() {
       if (state !== 'two-col') return
       state = 'centered'
 
-      const savedScroll = modal.scrollTop
       videoCol.classList.add('is-centered')
       analysisCol.classList.add('is-exiting')
 
-      // setTimeout(0) runs after React's scroll restoration
+      // setTimeout(0) runs after React's scroll restoration so video is positioned
       setTimeout(() => {
-        modal.scrollTop = savedScroll
+        // Size transcript to fill remaining modal height below video
+        const modalRect = modal.getBoundingClientRect()
+        const transcriptRect = transcript.getBoundingClientRect()
+        const transcriptTop = transcriptRect.top - modalRect.top
+        const availableH = modal.clientHeight - transcriptTop - 16
+        transcript.style.height = `${Math.max(200, availableH)}px`
+        transcript.style.overflowY = 'scroll'
+        transcript.style.flexShrink = '0'
 
-        // Make transcript a fixed-height scrollable box
-              const modalRect = modal.getBoundingClientRect()
-              const transcriptRect = transcript.getBoundingClientRect()
-              const transcriptTop = transcriptRect.top - modalRect.top
-              const availableH = modal.clientHeight - transcriptTop - 24
-              transcript.style.height = `${Math.max(200, availableH)}px`
-              transcript.style.overflowY = 'auto'
+        // Stop the modal from scrolling — its scrollbar now belongs to transcript
+        modal.style.overflow = 'hidden'
+
+        // Forward wheel events on the modal to scroll inside the transcript
+        wheelHandler = (e) => {
+          e.preventDefault()
+          transcript.scrollTop += e.deltaY
+        }
+        modal.addEventListener('wheel', wheelHandler, { passive: false })
       }, 0)
     }
 
@@ -275,8 +284,14 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       state = 'two-col'
       videoCol.classList.remove('is-centered')
       analysisCol.classList.remove('is-exiting')
-                    transcript.style.height = ''
-            transcript.style.overflowY = ''
+      transcript.style.height = ''
+      transcript.style.overflowY = ''
+      transcript.style.flexShrink = ''
+      modal.style.overflow = ''
+      if (wheelHandler) {
+        modal.removeEventListener('wheel', wheelHandler)
+        wheelHandler = null
+      }
     }
 
     const observer = new IntersectionObserver(
