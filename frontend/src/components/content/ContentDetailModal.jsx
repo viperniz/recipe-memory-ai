@@ -347,8 +347,20 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     )
     observer.observe(sentinel)
 
+    // Fallback: also check transition on scroll for fast scrolling
+    const scrollFallback = () => {
+      const sentPos = sentinel.getBoundingClientRect().top - modal.getBoundingClientRect().top
+      if (sentPos < TRIGGER_LINE && state === 'two-col') {
+        expand()
+      } else if (sentPos >= TRIGGER_LINE && state === 'centered') {
+        collapse()
+      }
+    }
+    modal.addEventListener('scroll', scrollFallback, { passive: true })
+
     return () => {
       observer.disconnect()
+      modal.removeEventListener('scroll', scrollFallback)
       sentinel.remove()
       stopScrollDriver()
       collapse()
