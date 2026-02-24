@@ -10506,18 +10506,18 @@ button.timestamp-link {
   z-index: 5;
   border-radius: 10px;
   overflow: hidden;
+  transform-origin: top center;
 }
 
 /* Phase 2+3: centered, comfortable fixed width */
 .breakdown-col-video.is-centered {
   grid-column: 1 / -1;
-  width: 320px;
-  margin: 0 auto;
-  position: relative; /* override sticky so video scrolls with content */
+  width: 100%;
+  margin: 0;
+  position: relative; /* non-sticky, scrolls with content */
   top: auto;
-  transition:
-    width  0.4s cubic-bezier(0.4, 0, 0.2, 1),
-    margin 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top center;
+  transform: scale(0.38); /* JS scroll driver overrides this */
 }
 
 /* Right column fades out to the right on trigger */
