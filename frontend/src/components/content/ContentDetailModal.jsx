@@ -306,17 +306,15 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       analysisCol.style.transition = 'none'
       transcript.style.transition = 'none'
 
-      // Transcript: move into row 1 (same tall row as spacer) and make sticky
-      // so it appears just below the tab bar when it fades in.
-      // Use visibility:hidden to guarantee nothing peeks through.
-      transcript.style.gridRow = '1'
-      transcript.style.gridColumn = '2'
-      transcript.style.alignSelf = 'start'
-      transcript.style.position = 'sticky'
-      transcript.style.top = '0'
+      // Transcript: absolute-positioned, tracked to viewport top each frame.
+      // Stays invisible until Phase 5.
+      layout.style.position = 'relative'
+      transcript.style.position = 'absolute'
+      transcript.style.left = analysisCol.offsetLeft + 'px'
+      transcript.style.width = analysisCol.offsetWidth + 'px'
       transcript.style.visibility = 'hidden'
       transcript.style.opacity = '0'
-      transcript.style.transform = 'translateY(30px)'
+      transcript.style.zIndex = '8'
 
       // Reset transcript scroll to the very beginning
       transcript.scrollTop = 0
@@ -368,6 +366,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         videoCol.style.zIndex = '10'
 
         // ── Phase 5 (0.76 → 0.92): Transcript fades in AFTER video is back ──
+        // Position transcript at the top of the visible area each frame
+        const viewportTop = modal.scrollTop - layout.offsetTop
+        transcript.style.top = Math.round(viewportTop) + 'px'
         const tP = easeInOut(zP(raw, 0.76, 0.92))
         transcript.style.visibility = tP > 0 ? 'visible' : 'hidden'
         transcript.style.opacity = String(tP)
@@ -398,6 +399,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       }
       // Reset all inline styles
       layout.style.overflow = ''
+      layout.style.position = ''
       modal.style.overflowX = ''
       videoCol.style.width = ''
       videoCol.style.transform = ''
@@ -411,11 +413,11 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       transcript.style.opacity = ''
       transcript.style.transform = ''
       transcript.style.transition = ''
-      transcript.style.gridRow = ''
-      transcript.style.gridColumn = ''
-      transcript.style.alignSelf = ''
       transcript.style.position = ''
       transcript.style.top = ''
+      transcript.style.left = ''
+      transcript.style.width = ''
+      transcript.style.zIndex = ''
     }
 
     function expand() {
