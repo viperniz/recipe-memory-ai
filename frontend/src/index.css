@@ -76,7 +76,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background: var(--bg-base);
 }
 
 ::-webkit-scrollbar-thumb {

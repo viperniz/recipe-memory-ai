@@ -678,7 +678,7 @@
 }
 
 .sidebar-queue-list::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--bg-base);
 }
 
 .sidebar-queue-list::-webkit-scrollbar-thumb {
@@ -1978,7 +1978,7 @@
 }
 
 .modal-content::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--bg-elevated);
 }
 
 .modal-content::-webkit-scrollbar-thumb {
@@ -7357,7 +7357,7 @@
 }
 
 .ai-chat-messages::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--bg-base);
 }
 
 .ai-chat-messages::-webkit-scrollbar-thumb {
