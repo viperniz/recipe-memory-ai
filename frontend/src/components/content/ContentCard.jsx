@@ -99,7 +99,7 @@ function ContentCard({
         {contentUserTags.length > 0 && (
           <div className="card-tag-pills">
             {contentUserTags.slice(0, 3).map(tag => (
-              <span key={tag.id} className="tag-pill" style={{ background: `${tag.color || '#3B82F6'}20` }}>
+              <span key={tag.id} className="tag-pill" style={{ background: `${tag.color || '#3B82F6'}18`, color: tag.color || '#3B82F6' }}>
                 <span className="tag-pill-dot" style={{ background: tag.color || '#3B82F6' }} />
                 {tag.name}
               </span>

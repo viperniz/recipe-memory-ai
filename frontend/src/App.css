@@ -146,7 +146,7 @@
   right: 0;
   height: 60px;
   background: var(--bg-surface);
-  border-bottom: 1px solid var(--bg-overlay);
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -419,7 +419,7 @@
 .sidebar {
   width: 200px;
   background: var(--bg-base);
-  border-right: 1px solid var(--bg-overlay);
+  border-right: 1px solid var(--border-subtle);
   padding: 24px 10px 16px;
   display: flex;
   flex-direction: column;
@@ -12325,8 +12325,7 @@ button.timestamp-link {
   padding: 2px 8px;
   border-radius: 10px;
   font-size: 11px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
   border: 1px solid transparent;

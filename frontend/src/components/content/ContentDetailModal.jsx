@@ -1211,7 +1211,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
               </div>
               <div className="modal-header-tags">
                 {contentTags.map(tag => (
-                  <span key={tag.id} className="tag-pill" style={{ background: `${tag.color || '#3B82F6'}20` }}>
+                  <span key={tag.id} className="tag-pill" style={{ background: `${tag.color || '#3B82F6'}18`, color: tag.color || '#3B82F6' }}>
                     <span className="tag-pill-dot" style={{ background: tag.color || '#3B82F6' }} />
                     {tag.name}
                     <button className="tag-pill-remove" onClick={(e) => { e.stopPropagation(); handleRemoveTag(tag.id) }}>
@@ -1221,7 +1221,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                 ))}
                 <div className="tag-assign-dropdown">
                   <button
-                    style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 10, padding: '2px 8px', color: '#71717a', fontSize: 11, cursor: 'pointer' }}
+                    style={{ background: 'none', border: '1px dashed var(--border-default)', borderRadius: 10, padding: '2px 8px', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}
                     onClick={() => setShowTagDropdown(!showTagDropdown)}
                   >
                     + Tag
