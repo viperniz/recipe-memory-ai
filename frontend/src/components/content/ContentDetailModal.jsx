@@ -336,9 +336,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
           // As width grows, pull translateX back so video fills from left edge
           tx = lerp(peakTX, 0, p)
           radius = lerp(10, 0, p)
-        } else if (raw <= 0.85) {
-          // Phase 4 (0.60 → 0.85): Video shrinks back to original left position
-          const p = easeInOut(zP(raw, 0.60, 0.85))
+        } else if (raw <= 0.75) {
+          // Phase 4 (0.60 → 0.75): Video shrinks back to original left position
+          const p = easeInOut(zP(raw, 0.60, 0.75))
           w = lerp(fullW, startW, p)
           tx = 0
           radius = lerp(0, 10, p)
@@ -354,8 +354,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         videoCol.style.borderRadius = Math.round(radius) + 'px'
         videoCol.style.zIndex = '10'
 
-        // ── Phase 5 (0.80 → 1.0): Transcript fades in ──
-        const tP = easeInOut(zP(raw, 0.80, 1.0))
+        // ── Phase 5 (0.62 → 0.80): Transcript fades in alongside video return ──
+        const tP = easeInOut(zP(raw, 0.62, 0.80))
         transcript.style.opacity = String(tP)
         transcript.style.transform = `translateY(${50 * (1 - tP)}px)`
       }
