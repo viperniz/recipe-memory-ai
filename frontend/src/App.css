@@ -10542,6 +10542,11 @@ button.timestamp-link {
   grid-column: 1 / -1;
 }
 
+/* When video is centered (sticky), push transcript content below the video height */
+.breakdown-youtube-layout:has(.breakdown-col-video.is-centered) .transcript-container {
+  padding-top: 196px; /* 180px centered video height + 16px gap */
+}
+
 @media (max-width: 768px) {
   .modal-content-wide { max-width: 100%; }
   .breakdown-youtube-layout {
