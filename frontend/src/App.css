@@ -10513,6 +10513,8 @@ button.timestamp-link {
   grid-column: 1 / -1;
   width: 320px;
   margin: 0 auto;
+  position: relative; /* override sticky so video scrolls with content */
+  top: auto;
   transition:
     width  0.4s cubic-bezier(0.4, 0, 0.2, 1),
     margin 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -10542,10 +10544,6 @@ button.timestamp-link {
   grid-column: 1 / -1;
 }
 
-/* When video is centered (sticky), push transcript content below the video height */
-.breakdown-youtube-layout:has(.breakdown-col-video.is-centered) .transcript-container {
-  padding-top: 196px; /* 180px centered video height + 16px gap */
-}
 
 @media (max-width: 768px) {
   .modal-content-wide { max-width: 100%; }
