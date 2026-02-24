@@ -269,7 +269,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       const scrollAtTransition = modal.scrollTop
       // Make video sticky at top while it grows (concom.tv style)
       videoCol.style.position = 'sticky'
-      videoCol.style.top = '0px'
+      const stickyH = (modal.querySelector('.modal-sticky-top') || {offsetHeight:0}).offsetHeight
+      videoCol.style.top = stickyH + 'px'
       videoCol.style.zIndex = '10'
       videoCol.style.width = VID_W_START + 'px'
       videoCol.style.height = VID_H_START + 'px'
