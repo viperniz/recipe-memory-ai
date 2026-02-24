@@ -223,18 +223,24 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     return () => ro.disconnect()
   }, [activeTab])
 
-  // Three-phase video transition:
-  // Phase 1: Two-col, video sticky left at 40%
-  // Phase 2: Right col fades out, video centers at 320px, transcript padded
-  // Phase 3: Transcript scrolls under centered sticky video
+  // Cinematic multi-phase video transition (scroll-driven):
+  // Phase 1: Analysis (+ Notable Quotes) fades to the right
+  // Phase 2: Video slides right (follows the fade direction — no teleport)
+  // Phase 3: Video grows to responsive 16:9 (fills modal width)
+  // Phase 4: Video shrinks and slides back to original left position
+  // Phase 5: Transcript fades in below
   useEffect(() => {
     const videoCol = videoColRef.current
     const analysisCol = analysisColRef.current
     const modal = modalBodyRef.current
     const transcript = transcriptRef.current
-    if (!videoCol || !analysisCol || !modal || !transcript) return
+    const layout = layoutRef.current
+    if (!videoCol || !analysisCol || !modal || !transcript || !layout) return
 
-    // Sentinel at bottom of analysis col
+    // Skip animation on mobile — single-column layout handles it
+    if (window.innerWidth <= 768) return
+
+    // Sentinel at bottom of analysis col (trigger point near Notable Quotes)
     let sentinel = analysisCol.querySelector('.breakdown-analysis-sentinel')
     if (!sentinel) {
       sentinel = document.createElement('div')
@@ -246,19 +252,18 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     const STICKY_TOP = parseInt(
       getComputedStyle(modal).getPropertyValue('--sticky-top-h')
     ) || 226
-    const VIDEO_H_SMALL = videoCol.offsetHeight
-    const TRIGGER_LINE = STICKY_TOP + VIDEO_H_SMALL
-    const VIDEO_CENTERED_H = 180 // 320px wide Ã 16:9
+    const VIDEO_H = videoCol.offsetHeight
+    const TRIGGER_LINE = STICKY_TOP + VIDEO_H
 
-    let state = 'two-col' // 'two-col' | 'centered'
-    // No wheel handler needed - modal scrolls naturally
+    let state = 'two-col' // 'two-col' | 'transitioning'
+    let scrollDriverFn = null
+    let scrollAtTransition = 0
+    let rafId = null
+    let animSpacer = null
+    let onScrollBound = null
 
-    // ── concom-style scroll-driven scale animation ──────────────────────────
-    const VID_W_START = 320
-    const VID_H_START = 180
-    const SCROLL_ZONE = 800
-
-    let scrollDriver = null
+    // Responsive scroll zone — adapts to viewport height
+    const TOTAL_ZONE = Math.min(1400, Math.max(800, window.innerHeight * 1.5))
 
     function getModalInnerWidth() {
       return modal.clientWidth - 32
@@ -268,65 +273,141 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2
     }
 
-            function startScrollDriver() {
-      if (scrollDriver) return
-      const scrollAtTransition = modal.scrollTop
-      videoCol.style.position = 'relative'
-      videoCol.style.width = VID_W_START + 'px'
-      videoCol.style.height = VID_H_START + 'px'
-      videoCol.style.margin = '0 auto 0 auto'
-      scrollDriver = () => {
-        if (state !== 'centered') return
-        const rawProgress = Math.min(1, Math.max(0,
-          (modal.scrollTop - scrollAtTransition) / SCROLL_ZONE
-        ))
-        const progress = easeInOut(rawProgress)
-        const fullW = getModalInnerWidth()
-        const fullH = fullW * 9 / 16
-        const w = VID_W_START + (fullW - VID_W_START) * progress
-        const h = VID_H_START + (fullH - VID_H_START) * progress
-        videoCol.style.width = Math.round(w) + 'px'
-        videoCol.style.height = Math.round(h) + 'px'
-        videoCol.style.borderRadius = Math.round(12 * (1 - rawProgress)) + 'px'
-        if (rawProgress >= 1) {
-          videoCol.style.margin = ''
-        }
-      }
-      modal.addEventListener('scroll', scrollDriver, { passive: true })
-      scrollDriver()
+    function lerp(a, b, t) {
+      return a + (b - a) * t
     }
 
-    function stopScrollDriver() {
-      if (scrollDriver) {
-        modal.removeEventListener('scroll', scrollDriver)
-        scrollDriver = null
+    function clamp01(v) {
+      return Math.min(1, Math.max(0, v))
+    }
+
+    function zP(progress, start, end) {
+      return clamp01((progress - start) / (end - start))
+    }
+
+    function startTransition() {
+      if (scrollDriverFn) return
+      scrollAtTransition = modal.scrollTop
+      const startW = videoCol.offsetWidth
+
+      // Spacer extends analysis column so grid row stays tall
+      // (keeps sticky video visible during the entire animation)
+      animSpacer = document.createElement('div')
+      animSpacer.className = 'video-anim-spacer'
+      animSpacer.style.cssText = `height:${TOTAL_ZONE + 400}px;pointer-events:none;`
+      analysisCol.appendChild(animSpacer)
+
+      // Allow video to visually overflow its 40% grid cell
+      layout.style.overflow = 'visible'
+      // Prevent horizontal scrollbar during overflow
+      modal.style.overflowX = 'hidden'
+
+      // Disable CSS transitions — scroll drives everything
+      analysisCol.style.transition = 'none'
+      transcript.style.transition = 'none'
+
+      // Transcript starts hidden, pushed down
+      transcript.style.opacity = '0'
+      transcript.style.transform = 'translateY(50px)'
+
+      scrollDriverFn = () => {
+        if (state !== 'transitioning') return
+        const raw = clamp01((modal.scrollTop - scrollAtTransition) / TOTAL_ZONE)
+        const fullW = getModalInnerWidth()
+
+        // ── Phase 1 (0 → 0.15): Analysis fades to the right ──
+        const fadeP = easeInOut(zP(raw, 0, 0.15))
+        analysisCol.style.opacity = String(1 - fadeP)
+        analysisCol.style.transform = `translateX(${60 * fadeP}px)`
+        analysisCol.style.pointerEvents = fadeP > 0.1 ? 'none' : ''
+
+        // ── Compute video width + translateX across phases ──
+        let w = startW, tx = 0, radius = 10
+
+        if (raw <= 0.30) {
+          // Phase 2 (0.05 → 0.30): Video slides right
+          const p = easeInOut(zP(raw, 0.05, 0.30))
+          tx = (fullW - startW) * 0.55 * p
+        } else if (raw <= 0.60) {
+          // Phase 3 (0.30 → 0.60): Video grows to responsive 16:9
+          const p = easeInOut(zP(raw, 0.30, 0.60))
+          const peakTX = (fullW - startW) * 0.55
+          w = lerp(startW, fullW, p)
+          // As width grows, pull translateX back so video fills from left edge
+          tx = lerp(peakTX, 0, p)
+          radius = lerp(10, 0, p)
+        } else if (raw <= 0.85) {
+          // Phase 4 (0.60 → 0.85): Video shrinks back to original left position
+          const p = easeInOut(zP(raw, 0.60, 0.85))
+          w = lerp(fullW, startW, p)
+          tx = 0
+          radius = lerp(0, 10, p)
+        } else {
+          // Settled at original position
+          w = startW
+          tx = 0
+          radius = 10
+        }
+
+        videoCol.style.width = Math.round(w) + 'px'
+        videoCol.style.transform = `translateX(${Math.round(tx)}px)`
+        videoCol.style.borderRadius = Math.round(radius) + 'px'
+        videoCol.style.zIndex = '10'
+
+        // ── Phase 5 (0.80 → 1.0): Transcript fades in ──
+        const tP = easeInOut(zP(raw, 0.80, 1.0))
+        transcript.style.opacity = String(tP)
+        transcript.style.transform = `translateY(${50 * (1 - tP)}px)`
       }
-      videoCol.style.position = ''
+
+      onScrollBound = () => {
+        if (rafId) cancelAnimationFrame(rafId)
+        rafId = requestAnimationFrame(scrollDriverFn)
+      }
+      modal.addEventListener('scroll', onScrollBound, { passive: true })
+      scrollDriverFn() // render initial frame
+    }
+
+    function stopTransition() {
+      if (onScrollBound) {
+        modal.removeEventListener('scroll', onScrollBound)
+        onScrollBound = null
+      }
+      scrollDriverFn = null
+      if (rafId) {
+        cancelAnimationFrame(rafId)
+        rafId = null
+      }
+      if (animSpacer) {
+        animSpacer.remove()
+        animSpacer = null
+      }
+      // Reset all inline styles
+      layout.style.overflow = ''
+      modal.style.overflowX = ''
       videoCol.style.width = ''
-      videoCol.style.height = ''
-      videoCol.style.margin = ''
+      videoCol.style.transform = ''
       videoCol.style.borderRadius = ''
+      videoCol.style.zIndex = ''
+      analysisCol.style.opacity = ''
+      analysisCol.style.transform = ''
+      analysisCol.style.transition = ''
+      analysisCol.style.pointerEvents = ''
+      transcript.style.opacity = ''
+      transcript.style.transform = ''
+      transcript.style.transition = ''
     }
 
     function expand() {
       if (state !== 'two-col') return
-      state = 'centered'
-      videoCol.classList.add('is-centered')
-      analysisCol.classList.add('is-exiting')
-      const layout = videoCol.closest('.breakdown-youtube-layout')
-      if (layout) layout.classList.add('is-video-centered')
-      startScrollDriver()
+      state = 'transitioning'
+      startTransition()
     }
 
     function collapse() {
-      if (state !== 'centered') return
+      if (state !== 'transitioning') return
       state = 'two-col'
-      videoCol.classList.remove('is-centered')
-      analysisCol.classList.remove('is-exiting')
-      const layout = videoCol.closest('.breakdown-youtube-layout')
-      if (layout) layout.classList.remove('is-video-centered')
-      transcript.style.marginTop = ''
-      stopScrollDriver()
+      stopTransition()
     }
 
     const observer = new IntersectionObserver(
@@ -337,7 +418,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
         if (isPast && state === 'two-col') {
           expand()
-        } else if (!isPast && state === 'centered') {
+        } else if (!isPast && state === 'transitioning') {
           collapse()
         }
       },
@@ -349,12 +430,12 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     )
     observer.observe(sentinel)
 
-    // Fallback: also check transition on scroll for fast scrolling
+    // Fallback: check on scroll for fast scrolling
     const scrollFallback = () => {
       const sentPos = sentinel.getBoundingClientRect().top - modal.getBoundingClientRect().top
       if (sentPos < TRIGGER_LINE && state === 'two-col') {
         expand()
-      } else if (sentPos >= TRIGGER_LINE && state === 'centered') {
+      } else if (sentPos >= TRIGGER_LINE && state === 'transitioning') {
         collapse()
       }
     }
@@ -364,8 +445,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       observer.disconnect()
       modal.removeEventListener('scroll', scrollFallback)
       sentinel.remove()
-      stopScrollDriver()
-      collapse()
+      stopTransition()
     }
   }, [activeTab, content?.id])
 

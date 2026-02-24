@@ -10607,16 +10607,19 @@ button.timestamp-link {
 }
 
 /* ============================================================
-   Breakdown — YouTube Grid + Three-Phase Video Transition
+   Breakdown — YouTube Grid + Cinematic Multi-Phase Transition
+   Video slides right → grows to 16:9 → slides back left.
+   All phases are scroll-driven via JS inline styles.
    ============================================================ */
 .breakdown-youtube-layout {
   display: grid;
   grid-template-columns: 40% 1fr;
   grid-template-rows: auto auto;
   gap: 24px;
+  overflow: visible; /* allow video to overflow its grid cell during animation */
 }
 
-/* Phase 1: video sticky at top-left, 40% wide */
+/* Video: sticky at top-left, 40% wide (base state) */
 .breakdown-col-video {
   grid-area: 1 / 1;
   position: sticky;
@@ -10626,50 +10629,23 @@ button.timestamp-link {
   z-index: 5;
   border-radius: 10px;
   overflow: hidden;
+  will-change: transform, width;
 }
 
-/* Phase 2+3: centered, comfortable fixed width */
-.breakdown-col-video.is-centered {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  width: 320px;
-  height: 180px;
-  margin: 0 auto;
-  position: relative;
-  top: auto;
-  overflow: hidden;
-  transition: border-radius 0.1s ease;
-}
-
-/* When video centered, push transcript to row 3 so video appears above it */
-.breakdown-youtube-layout.is-video-centered .breakdown-transcript-full {
-  grid-row: 3;
-}
-
-/* Right column fades out to the right on trigger */
+/* Right analysis column */
 .breakdown-col-analysis {
   grid-area: 1 / 2;
   min-width: 0;
+  /* CSS transition used when JS hasn't taken over (e.g. initial render).
+     During the scroll-driven animation, JS sets transition: none. */
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.breakdown-col-analysis.is-exiting {
-  opacity: 0;
-  transform: translateX(40px);
-  pointer-events: none;
-}
-
-/* Transcript: row 2 — stays in col 2 until video centers (avoids sticky video overlap) */
+/* Transcript: row 2 spanning right column by default */
 .breakdown-transcript-full {
-  grid-area: 2 / 2 / auto / -1;
+  grid-area: 2 / 1 / auto / -1;
   margin-top: 8px;
 }
-
-/* Once video is centered (spans full width), transcript expands to full width too */
-.breakdown-youtube-layout:has(.breakdown-col-video.is-centered) .breakdown-transcript-full {
-  grid-column: 1 / -1;
-}
-
 
 @media (max-width: 768px) {
   .modal-content-wide { max-width: 100%; }
@@ -10679,21 +10655,11 @@ button.timestamp-link {
   .breakdown-col-video {
     position: static;
     grid-area: auto;
-  }
-  .breakdown-col-video.is-centered {
-    grid-column: auto;
-    width: 100%;
-    margin: 0;
-    transition: none;
+    will-change: auto;
   }
   .breakdown-col-analysis {
     grid-area: auto;
     transition: none;
-  }
-  .breakdown-col-analysis.is-exiting {
-    opacity: 1;
-    transform: none;
-    pointer-events: auto;
   }
   .breakdown-transcript-full {
     grid-area: auto;
