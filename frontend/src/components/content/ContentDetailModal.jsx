@@ -318,6 +318,11 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       transcript.style.opacity = '0'
       transcript.style.transform = 'translateY(30px)'
 
+      // Reset transcript scroll to the very beginning
+      transcript.scrollTop = 0
+      transcript.querySelectorAll('.timeline-container, .transcript-view, .transcript-container')
+        .forEach(el => { el.scrollTop = 0 })
+
       scrollDriverFn = () => {
         if (state !== 'transitioning') return
         const raw = clamp01((modal.scrollTop - scrollAtTransition) / TOTAL_ZONE)
