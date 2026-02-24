@@ -8,7 +8,7 @@ import CreatorCard from './CreatorCard'
 import MeetingCard from './MeetingCard'
 import DeepDiveCard from './DeepDiveCard'
 import TimestampLink from './TimestampLink'
-import YouTubeEmbed from './YouTubeEmbed'h
+import YouTubeEmbed from './YouTubeEmbed'
 import { YouTubePlayerProvider } from '../../context/YouTubePlayerContext'
 
 import FlashcardPanel from './FlashcardPanel'
