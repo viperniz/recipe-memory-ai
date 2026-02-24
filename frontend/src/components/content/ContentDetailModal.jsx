@@ -26,6 +26,9 @@ import ReportConfigModal from '../modals/ReportConfigModal'
 
 import { API_BASE } from '../../lib/apiBase'
 import { trackEvent } from '../../utils/analytics'
+import { useScrollReveal } from '../../hooks/useScrollReveal'
+import { useParallax } from '../../hooks/useParallax'
+import { useTilt } from '../../hooks/useTilt'
 
 const MODE_ICONS = {
   recipe: ChefHat,
@@ -128,11 +131,11 @@ function NotesPanel({ contentId }) {
         <>
           <h4 style={{ fontSize: 13, color: '#a1a1aa', marginTop: 16, marginBottom: 8 }}>Bookmarks</h4>
           <div className="bookmark-pills">
-            {bookmarks.map(b => {
+            {bookmarks.map((b, idx) => {
               const mins = Math.floor((b.timestamp_seconds || 0) / 60)
               const secs = Math.floor((b.timestamp_seconds || 0) % 60)
               return (
-                <span key={b.id} className="bookmark-pill">
+                <span key={b.id} className="bookmark-pill" data-reveal data-reveal-delay={Math.min(idx, 6)}>
                   <BookmarkIcon className="w-3 h-3" />
                   {mins}:{secs.toString().padStart(2, '0')}
                   {b.label && ` â ${b.label}`}
@@ -385,6 +388,11 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     loadStoredGuide()
   }, [content?.id])
 
+  // Cinematic motion hooks
+  useScrollReveal(modalContentRef, [activeTab, content?.id])
+  useParallax(modalContentRef)
+  useTilt(modalContentRef, [activeTab, content?.id])
+
   if (!content) return null
 
   const mode = content.mode || 'general'
@@ -572,7 +580,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const renderGeneralContent = () => (
     <>
       {content.summary && (
-        <div className="content-detail-section">
+        <div className="content-detail-section" data-reveal>
           <h3>
             Summary
             {content.metadata?.detected_language_name && (
@@ -588,11 +596,11 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       )}
 
       {content.key_points && content.key_points.length > 0 && (
-        <div className="content-detail-section">
+        <div className="content-detail-section" data-reveal>
           <h3>Key Points</h3>
           <ul className="key-points-list">
             {content.key_points.map((kp, idx) => (
-              <li key={idx}>
+              <li key={idx} data-reveal data-tilt data-reveal-delay={Math.min(idx, 12)}>
                 {typeof kp === 'object' ? (
                   <>
                     <strong>{kp.point || kp.text || 'Point'}</strong>
@@ -614,7 +622,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       )}
 
       {content.tools_mentioned?.length > 0 && (
-        <div className="content-detail-section">
+        <div className="content-detail-section" data-reveal>
           <h3>Tools Mentioned</h3>
           <div className="tools-list">
             {content.tools_mentioned.map((tool, idx) => (
@@ -634,7 +642,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       )}
 
       {content.methods?.length > 0 && (
-        <div className="content-detail-section">
+        <div className="content-detail-section" data-reveal>
           <h3>Methods</h3>
           {content.methods.map((method, idx) => (
             <div key={idx} className="method-item">
@@ -653,7 +661,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       )}
 
       {content.entities && content.entities.length > 0 && (
-        <div className="content-detail-section">
+        <div className="content-detail-section" data-reveal>
           <h3>Entities</h3>
           <div className="entities-list">
             {content.entities.map((entity, idx) => (
@@ -666,7 +674,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       )}
 
       {content.tags && content.tags.length > 0 && (
-        <div className="content-detail-section">
+        <div className="content-detail-section" data-reveal>
           <h3>Tags</h3>
           <div className="tags-list">
             {content.tags.map((tag, idx) => (
@@ -677,14 +685,14 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       )}
 
       {content.topics && content.topics.length > 0 && (
-        <div className="content-detail-section">
+        <div className="content-detail-section" data-reveal>
           <h3>Topics</h3>
           <p>{content.topics.join(', ')}</p>
         </div>
       )}
 
       {content.action_items && content.action_items.length > 0 && (
-        <div className="content-detail-section">
+        <div className="content-detail-section" data-reveal>
           <h3>Action Items</h3>
           <ul className="action-items-list">
             {content.action_items.map((item, idx) => (
@@ -695,7 +703,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       )}
 
       {content.quotes && content.quotes.length > 0 && (
-        <div className="content-detail-section">
+        <div className="content-detail-section" data-reveal>
           <h3>Notable Quotes</h3>
           <div className="quotes-list">
             {content.quotes.map((quote, idx) => (
@@ -774,7 +782,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   if (entry.type === 'vision') {
                     const ytUrl = buildYouTubeTimestampUrl(content.source_url, entry.timestamp)
                     return (
-                      <div key={idx} className="timeline-entry vision">
+                      <div key={idx} className="timeline-entry vision" data-reveal="left" data-reveal-delay={Math.min(idx % 6, 5)}>
                         <div className="timeline-header">
                           <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                           <span className="timeline-vision-badge">
@@ -802,7 +810,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   }
 
                   return (
-                    <div key={idx} className="timeline-entry transcript">
+                    <div key={idx} className="timeline-entry transcript" data-reveal="left" data-reveal-delay={Math.min(idx % 6, 5)}>
                       <div className="timeline-header">
                         <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                         {entry.speaker && entry.speaker !== 'Unknown' && (
@@ -824,7 +832,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                 {content.timeline.filter(e => e.type === 'vision').map((entry, idx) => {
                   const ytUrl = buildYouTubeTimestampUrl(content.source_url, entry.timestamp)
                   return (
-                    <a key={idx} href={ytUrl || '#'} target="_blank" rel="noopener noreferrer" className="visual-grid-item">
+                    <a key={idx} href={ytUrl || '#'} target="_blank" rel="noopener noreferrer" className="visual-grid-item" data-reveal="scale" data-tilt data-reveal-delay={Math.min(idx, 8)}>
                       {entry.thumbnail ? (
                         <img src={entry.thumbnail} alt="" className="visual-grid-thumb" loading="lazy" />
                       ) : (
@@ -978,7 +986,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
         {/* Prerequisites */}
         {generatedGuide.prerequisites?.length > 0 && (
-          <div className="guide-section">
+          <div className="guide-section" data-reveal>
             <h4>Prerequisites</h4>
             {generatedGuide.prerequisites.map((prereq, idx) => (
               <div key={idx} className="prereq-item">
@@ -1014,7 +1022,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
         {/* Environment Setup */}
         {generatedGuide.environment_setup?.length > 0 && (
-          <div className="guide-section">
+          <div className="guide-section" data-reveal>
             <h4>Environment Setup</h4>
             {generatedGuide.environment_setup.map((setup, idx) => (
               <div key={idx} className="setup-item">
@@ -1037,10 +1045,10 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         )}
 
         {/* Steps */}
-        <div className="guide-section">
+        <div className="guide-section" data-reveal>
           <h4>Steps</h4>
           {generatedGuide.steps?.map((step, idx) => (
-            <div key={idx} className="guide-step">
+            <div key={idx} className="guide-step" data-reveal data-reveal-delay={Math.min(idx, 6)}>
               <div className="step-header">
                 <span className="step-number">{step.step_number}</span>
                 <span className="step-title">{step.title}</span>
@@ -1103,7 +1111,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
         {/* Verification */}
         {generatedGuide.verification && (
-          <div className="guide-section">
+          <div className="guide-section" data-reveal>
             <h4>Verification</h4>
             <p>{generatedGuide.verification.description}</p>
             {generatedGuide.verification.commands?.map((cmd, idx) => (
@@ -1127,7 +1135,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
         {/* Next Steps */}
         {generatedGuide.next_steps?.length > 0 && (
-          <div className="guide-section">
+          <div className="guide-section" data-reveal>
             <h4>Next Steps</h4>
             <ul>
               {generatedGuide.next_steps.map((step, idx) => (
@@ -1139,7 +1147,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
         {/* Resources */}
         {generatedGuide.resources?.length > 0 && (
-          <div className="guide-section">
+          <div className="guide-section" data-reveal>
             <h4>Resources</h4>
             <ul className="resources-list">
               {generatedGuide.resources.map((res, idx) => (
