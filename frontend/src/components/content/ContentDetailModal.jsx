@@ -250,23 +250,36 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     // No wheel handler needed - modal scrolls naturally
 
     // ── concom-style scroll-driven scale animation ──────────────────────────
-    const SCALE_MIN = 0.38
-    const SCALE_MAX = 0.95
-    const SCROLL_ZONE = 600
+    const VID_W_START = 320
+    const VID_H_START = 180
+    const SCROLL_ZONE = 800
 
     let scrollDriver = null
+
+    function getModalInnerWidth() {
+      return modal.clientWidth - 32
+    }
+
+    function easeInOut(p) {
+      return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2
+    }
 
     function startScrollDriver() {
       if (scrollDriver) return
       const scrollAtTransition = modal.scrollTop
       scrollDriver = () => {
         if (state !== 'centered') return
-        const progress = Math.min(1, Math.max(0,
+        const rawProgress = Math.min(1, Math.max(0,
           (modal.scrollTop - scrollAtTransition) / SCROLL_ZONE
         ))
-        const scale = SCALE_MIN + (SCALE_MAX - SCALE_MIN) * progress
-        videoCol.style.transform = `scale(${scale.toFixed(3)})`
-        videoCol.style.borderRadius = `${Math.round(12 * (1 - progress))}px`
+        const progress = easeInOut(rawProgress)
+        const fullW = getModalInnerWidth()
+        const fullH = fullW * 9 / 16
+        const w = VID_W_START + (fullW - VID_W_START) * progress
+        const h = VID_H_START + (fullH - VID_H_START) * progress
+        videoCol.style.width = `${Math.round(w)}px`
+        videoCol.style.height = `${Math.round(h)}px`
+        videoCol.style.borderRadius = `${Math.round(12 * (1 - rawProgress))}px`
       }
       modal.addEventListener('scroll', scrollDriver, { passive: true })
       scrollDriver()
@@ -277,7 +290,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         modal.removeEventListener('scroll', scrollDriver)
         scrollDriver = null
       }
-      videoCol.style.transform = ''
+      videoCol.style.width = ''
+      videoCol.style.height = ''
       videoCol.style.borderRadius = ''
     }
 
