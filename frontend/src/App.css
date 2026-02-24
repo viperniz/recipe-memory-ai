@@ -10641,9 +10641,9 @@ button.timestamp-link {
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-/* Transcript: row 2 spanning right column by default */
+/* Transcript: row 2, right column (aligned with analysis side) */
 .breakdown-transcript-full {
-  grid-area: 2 / 1 / auto / -1;
+  grid-area: 2 / 2 / auto / -1;
   margin-top: 8px;
 }
 
