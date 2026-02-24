@@ -10511,13 +10511,19 @@ button.timestamp-link {
 /* Phase 2+3: centered, comfortable fixed width */
 .breakdown-col-video.is-centered {
   grid-column: 1 / -1;
-  width: 320px;   /* JS overrides with inline style as video grows */
-  height: 180px;  /* JS overrides with inline style as video grows */
+  grid-row: 2;
+  width: 320px;
+  height: 180px;
   margin: 0 auto;
-  position: relative; /* non-sticky, scrolls with content */
+  position: relative;
   top: auto;
   overflow: hidden;
   transition: border-radius 0.1s ease;
+}
+
+/* When video centered, push transcript to row 3 so video appears above it */
+.breakdown-youtube-layout.is-video-centered .breakdown-transcript-full {
+  grid-row: 3;
 }
 
 /* Right column fades out to the right on trigger */
