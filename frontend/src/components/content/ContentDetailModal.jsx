@@ -135,7 +135,7 @@ function NotesPanel({ contentId }) {
                 <span key={b.id} className="bookmark-pill">
                   <BookmarkIcon className="w-3 h-3" />
                   {mins}:{secs.toString().padStart(2, '0')}
-                  {b.label && ` — ${b.label}`}
+                  {b.label && ` â ${b.label}`}
                   <button className="bookmark-remove" onClick={() => handleDeleteBookmark(b.id)}>
                     <X className="w-3 h-3" />
                   </button>
@@ -244,10 +244,10 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     ) || 226
     const VIDEO_H_SMALL = videoCol.offsetHeight
     const TRIGGER_LINE = STICKY_TOP + VIDEO_H_SMALL
-    const VIDEO_CENTERED_H = 180 // 320px wide × 16:9
+    const VIDEO_CENTERED_H = 180 // 320px wide Ã 16:9
 
     let state = 'two-col' // 'two-col' | 'centered'
-    let wheelHandler = null
+    // No wheel handler needed - modal scrolls naturally
 
     function expand() {
       if (state !== 'two-col') return
@@ -258,35 +258,18 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
       // setTimeout(0) runs after React's scroll restoration so video is positioned
       setTimeout(() => {
-        // Size transcript to fill remaining modal height below video
+        // Push transcript below the sticky video if they overlap
         const modalRect = modal.getBoundingClientRect()
         const videoRect = videoCol.getBoundingClientRect()
         const transcriptRect = transcript.getBoundingClientRect()
 
-        // Push transcript below the sticky video if they overlap
         const videoBottom = videoRect.bottom - modalRect.top
         const transcriptTop = transcriptRect.top - modalRect.top
         const overlap = videoBottom - transcriptTop
         if (overlap > 0) {
           transcript.style.marginTop = `${overlap}px`
         }
-
-        // Recalculate after margin adjustment
-        const transcriptTopAdjusted = transcriptTop + (overlap > 0 ? overlap : 0)
-        const availableH = modal.clientHeight - transcriptTopAdjusted - 16
-        transcript.style.height = `${Math.max(200, availableH)}px`
-        transcript.style.overflowY = 'scroll'
-        transcript.style.flexShrink = '0'
-
-        // Stop the modal from scrolling — its scrollbar now belongs to transcript
-        modal.style.overflow = 'hidden'
-
-        // Forward wheel events on the modal to scroll inside the transcript
-        wheelHandler = (e) => {
-          e.preventDefault()
-          transcript.scrollTop += e.deltaY
-        }
-        modal.addEventListener('wheel', wheelHandler, { passive: false })
+        // transcript expands naturally — modal scrollbar controls all scrolling
       }, 0)
     }
 
@@ -295,15 +278,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       state = 'two-col'
       videoCol.classList.remove('is-centered')
       analysisCol.classList.remove('is-exiting')
-      transcript.style.height = ''
-      transcript.style.overflowY = ''
-      transcript.style.flexShrink = ''
       transcript.style.marginTop = ''
-      modal.style.overflow = ''
-      if (wheelHandler) {
-        modal.removeEventListener('wheel', wheelHandler)
-        wheelHandler = null
-      }
     }
 
     const observer = new IntersectionObserver(
@@ -546,7 +521,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             {content.metadata?.detected_language_name && (
               <Badge variant="outline" className="ml-2" style={{ verticalAlign: 'middle', fontSize: 11 }}>
                 {content.metadata.translated_to_name
-                  ? `${content.metadata.detected_language_name} → ${content.metadata.translated_to_name}`
+                  ? `${content.metadata.detected_language_name} â ${content.metadata.translated_to_name}`
                   : content.metadata.detected_language_name}
               </Badge>
             )}
@@ -1235,7 +1210,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             </div>
           </div>
 
-          {/* Tab switcher — always visible, with tier gate badges */}
+          {/* Tab switcher â always visible, with tier gate badges */}
           <div className="content-tabs">
             <button
               className={`content-tab ${activeTab === 'content' ? 'active' : ''}`}
@@ -1327,7 +1302,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                     <YouTubeEmbed sourceUrl={content.source_url} />
                   </div>
                   <div ref={analysisColRef} className="breakdown-col-analysis">
-                    <div className="ai-disclaimer-label" title="AI-generated analysis — may contain errors. Use the chat bubble for precise answers.">
+                    <div className="ai-disclaimer-label" title="AI-generated analysis â may contain errors. Use the chat bubble for precise answers.">
                       <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
                     </div>
                     {modeContent || renderGeneralContent()}
@@ -1338,7 +1313,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                 </div>
               ) : (
                 <>
-                  <div className="ai-disclaimer-label" title="AI-generated analysis — may contain errors. Use the chat bubble for precise answers.">
+                  <div className="ai-disclaimer-label" title="AI-generated analysis â may contain errors. Use the chat bubble for precise answers.">
                     <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
                   </div>
                   {modeContent || renderGeneralContent()}
