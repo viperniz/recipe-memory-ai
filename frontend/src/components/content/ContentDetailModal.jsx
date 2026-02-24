@@ -264,9 +264,15 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2
     }
 
-    function startScrollDriver() {
+        function startScrollDriver() {
       if (scrollDriver) return
       const scrollAtTransition = modal.scrollTop
+      // Make video sticky at top while it grows (concom.tv style)
+      videoCol.style.position = 'sticky'
+      videoCol.style.top = '0px'
+      videoCol.style.zIndex = '10'
+      videoCol.style.width = VID_W_START + 'px'
+      videoCol.style.height = VID_H_START + 'px'
       scrollDriver = () => {
         if (state !== 'centered') return
         const rawProgress = Math.min(1, Math.max(0,
@@ -277,9 +283,14 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         const fullH = fullW * 9 / 16
         const w = VID_W_START + (fullW - VID_W_START) * progress
         const h = VID_H_START + (fullH - VID_H_START) * progress
-        videoCol.style.width = `${Math.round(w)}px`
-        videoCol.style.height = `${Math.round(h)}px`
-        videoCol.style.borderRadius = `${Math.round(12 * (1 - rawProgress))}px`
+        videoCol.style.width = Math.round(w) + 'px'
+        videoCol.style.height = Math.round(h) + 'px'
+        videoCol.style.borderRadius = Math.round(12 * (1 - rawProgress)) + 'px'
+        if (rawProgress >= 1) {
+          videoCol.style.position = 'relative'
+          videoCol.style.top = ''
+          videoCol.style.zIndex = ''
+        }
       }
       modal.addEventListener('scroll', scrollDriver, { passive: true })
       scrollDriver()
@@ -290,6 +301,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         modal.removeEventListener('scroll', scrollDriver)
         scrollDriver = null
       }
+      videoCol.style.position = ''
+      videoCol.style.top = ''
+      videoCol.style.zIndex = ''
       videoCol.style.width = ''
       videoCol.style.height = ''
       videoCol.style.borderRadius = ''
