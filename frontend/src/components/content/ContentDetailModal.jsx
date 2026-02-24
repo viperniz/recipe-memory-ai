@@ -260,7 +260,13 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       setTimeout(() => {
         modal.scrollTop = savedScroll
 
-        transcript.style.paddingBottom = `${VIDEO_CENTERED_H}px`
+        // Make transcript a fixed-height scrollable box
+              const modalRect = modal.getBoundingClientRect()
+              const transcriptRect = transcript.getBoundingClientRect()
+              const transcriptTop = transcriptRect.top - modalRect.top
+              const availableH = modal.clientHeight - transcriptTop - 24
+              transcript.style.height = `${Math.max(200, availableH)}px`
+              transcript.style.overflowY = 'auto'
       }, 0)
     }
 
@@ -269,7 +275,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       state = 'two-col'
       videoCol.classList.remove('is-centered')
       analysisCol.classList.remove('is-exiting')
-            transcript.style.paddingBottom = ''
+                    transcript.style.height = ''
+            transcript.style.overflowY = ''
     }
 
     const observer = new IntersectionObserver(
