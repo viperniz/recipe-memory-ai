@@ -307,12 +307,14 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       transcript.style.transition = 'none'
 
       // Transcript: move into row 1 (same tall row as spacer) and make sticky
-      // so it appears just below the tab bar when it fades in
+      // so it appears just below the tab bar when it fades in.
+      // Use visibility:hidden to guarantee nothing peeks through.
       transcript.style.gridRow = '1'
       transcript.style.gridColumn = '2'
       transcript.style.alignSelf = 'start'
       transcript.style.position = 'sticky'
       transcript.style.top = '0'
+      transcript.style.visibility = 'hidden'
       transcript.style.opacity = '0'
       transcript.style.transform = 'translateY(30px)'
 
@@ -360,8 +362,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         videoCol.style.borderRadius = Math.round(radius) + 'px'
         videoCol.style.zIndex = '10'
 
-        // ── Phase 5 (0.60 → 0.75): Transcript fades in with video return ──
-        const tP = easeInOut(zP(raw, 0.60, 0.75))
+        // ── Phase 5 (0.76 → 0.92): Transcript fades in AFTER video is back ──
+        const tP = easeInOut(zP(raw, 0.76, 0.92))
+        transcript.style.visibility = tP > 0 ? 'visible' : 'hidden'
         transcript.style.opacity = String(tP)
         transcript.style.transform = `translateY(${30 * (1 - tP)}px)`
       }
@@ -399,6 +402,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       analysisCol.style.transform = ''
       analysisCol.style.transition = ''
       analysisCol.style.pointerEvents = ''
+      transcript.style.visibility = ''
       transcript.style.opacity = ''
       transcript.style.transform = ''
       transcript.style.transition = ''
