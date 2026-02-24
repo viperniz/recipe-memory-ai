@@ -166,6 +166,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [showTagDropdown, setShowTagDropdown] = useState(false)
   const stickyTopRef = useRef(null)
   const modalContentRef = useRef(null)
+  const modalBodyRef = useRef(null)
   const videoColRef = useRef(null)
   const analysisColRef = useRef(null)
   const layoutRef = useRef(null)
@@ -211,10 +212,10 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   // Measure sticky header height so video sticky offset clears it
   useEffect(() => {
     const el = stickyTopRef.current
-    const modal = modalContentRef.current
-    if (!el || !modal) return
+    const body = modalBodyRef.current
+    if (!el || !body) return
     const update = () => {
-      modal.style.setProperty('--sticky-top-h', `${el.offsetHeight}px`)
+      body.style.setProperty('--sticky-top-h', `${el.offsetHeight}px`)
     }
     update()
     const ro = new ResizeObserver(update)
@@ -229,7 +230,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   useEffect(() => {
     const videoCol = videoColRef.current
     const analysisCol = analysisColRef.current
-    const modal = modalContentRef.current
+    const modal = modalBodyRef.current
     const transcript = transcriptRef.current
     if (!videoCol || !analysisCol || !modal || !transcript) return
 
@@ -389,9 +390,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   }, [content?.id])
 
   // Cinematic motion hooks
-  useScrollReveal(modalContentRef, [activeTab, content?.id])
-  useParallax(modalContentRef)
-  useTilt(modalContentRef, [activeTab, content?.id])
+  useScrollReveal(modalBodyRef, [activeTab, content?.id])
+  useParallax(modalBodyRef)
+  useTilt(modalBodyRef, [activeTab, content?.id])
 
   if (!content) return null
 
@@ -1333,7 +1334,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
           </div>
         </div>
 
-        <div className="modal-body">
+        <div ref={modalBodyRef} className="modal-body">
           {isLoading ? (
             <div className="loading-state">Loading...</div>
           ) : activeTab === 'guide' && generatedGuide ? (
