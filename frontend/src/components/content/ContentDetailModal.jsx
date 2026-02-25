@@ -838,7 +838,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
           {timelineView === 'timeline' && (
             <div className="content-detail-section">
-              <h3>Transcript & Visual Timeline</h3>
+              <h3>Transcript & Visual Timeline <span style={{fontSize:11,color:'#888'}}>dbg: idx={playingIdx} state={playerRef.current.getPlayerState ? playerRef.current.getPlayerState() : '?'}</span></h3>
               <div className="timeline-container">
                 {content.timeline.map((entry, idx) => {
                   const mins = Math.floor(entry.timestamp / 60)
