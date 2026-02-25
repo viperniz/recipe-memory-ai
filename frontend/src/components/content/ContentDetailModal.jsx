@@ -156,6 +156,62 @@ function VideoPlaybackController({ playing, onShowVideo }) {
 }
 
 /**
+ * SectionPlaybackTracker — lives inside YouTubePlayerProvider,
+ * polls player time to keep playingIdx in sync with the active timeline section,
+ * resets playingIdx on pause/end, and exposes seekTo/pauseVideo to the parent via ref.
+ */
+function SectionPlaybackTracker({ timeline, setPlayingIdx, seekingRef, playerActionsRef }) {
+  const ytCtx = useYouTubePlayer()
+  const playerState = ytCtx?.playerState ?? YT_STATE.UNSTARTED
+
+  // Expose player actions to parent via ref (updated every render)
+  playerActionsRef.current = {
+    seekTo: (s) => ytCtx?.seekTo(s),
+    pauseVideo: () => ytCtx?.pauseVideo(),
+  }
+
+  // Reset playingIdx when video pauses or ends externally
+  useEffect(() => {
+    if (playerState === YT_STATE.PLAYING) {
+      seekingRef.current = false
+    }
+    if ((playerState === YT_STATE.PAUSED || playerState === YT_STATE.ENDED) && !seekingRef.current) {
+      setPlayingIdx(-1)
+    }
+  }, [playerState, setPlayingIdx, seekingRef])
+
+  // Poll to sync playingIdx with current playback position
+  const getTimeRef = useRef(null)
+  const timelineRef = useRef(null)
+  getTimeRef.current = ytCtx?.getCurrentTime
+  timelineRef.current = timeline
+
+  useEffect(() => {
+    if (playerState !== YT_STATE.PLAYING) return
+    if (!getTimeRef.current || !timelineRef.current?.length) return
+
+    let cancelled = false
+    const sync = () => {
+      if (cancelled) return
+      const t = getTimeRef.current()
+      const tl = timelineRef.current
+      let best = -1
+      for (let i = 0; i < tl.length; i++) {
+        if (tl[i].timestamp != null && tl[i].timestamp <= t) {
+          best = i
+        }
+      }
+      if (best >= 0) setPlayingIdx(best)
+      if (!cancelled) setTimeout(sync, 300)
+    }
+    sync()
+    return () => { cancelled = true }
+  }, [playerState, setPlayingIdx])
+
+  return null
+}
+
+/**
  * Inline Notes panel: free-form notes with auto-save + bookmark pills
  */
 function NotesPanel({ contentId }) {
@@ -291,65 +347,21 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const transcriptRef = useRef(null)
   const navigate = useNavigate()
   const { token } = useAuth()
-  const ytCtx = useYouTubePlayer()
+  const playerRef = useRef({ seekTo: () => {}, pauseVideo: () => {} })
 
-  // Reset playingIdx when video pauses or ends externally
-  // Skip if we're in the middle of a seek (player briefly goes PAUSED during seek)
-  const playerState = ytCtx?.playerState ?? YT_STATE.UNSTARTED
-  useEffect(() => {
-    if (playerState === YT_STATE.PLAYING) {
-      seekingRef.current = false
-    }
-    if ((playerState === YT_STATE.PAUSED || playerState === YT_STATE.ENDED) && !seekingRef.current) {
-      setPlayingIdx(-1)
-    }
-  }, [playerState])
-
-  // Handle per-section play/pause
+  // Handle per-section play/pause (uses playerRef to call into the provider)
   const handleSectionPlay = useCallback((idx, timestampSeconds) => {
     if (playingIdx === idx) {
-      // Pause
       seekingRef.current = false
-      if (ytCtx) ytCtx.pauseVideo()
+      playerRef.current.pauseVideo()
       setPlayingIdx(-1)
     } else {
-      // Show video if hidden, seek & play
       seekingRef.current = true
       if (!showVideo) setShowVideo(true)
-      if (ytCtx) ytCtx.seekTo(timestampSeconds)
+      playerRef.current.seekTo(timestampSeconds)
       setPlayingIdx(idx)
     }
-  }, [playingIdx, ytCtx, showVideo])
-
-  // Directly poll to keep playingIdx in sync with current playback position
-  // Uses content.timeline indices so they match the button indices exactly
-  // Use refs so the polling interval doesn't restart on every render
-  const getTimeRef = useRef(null)
-  const timelineRef = useRef(null)
-  getTimeRef.current = ytCtx?.getCurrentTime
-  timelineRef.current = content.timeline
-
-  useEffect(() => {
-    if (playerState !== YT_STATE.PLAYING) return
-    if (!getTimeRef.current || !timelineRef.current?.length) return
-
-    let cancelled = false
-    const sync = () => {
-      if (cancelled) return
-      const t = getTimeRef.current()
-      const tl = timelineRef.current
-      let best = -1
-      for (let i = 0; i < tl.length; i++) {
-        if (tl[i].timestamp != null && tl[i].timestamp <= t) {
-          best = i
-        }
-      }
-      if (best >= 0) setPlayingIdx(best)
-      if (!cancelled) setTimeout(sync, 300)
-    }
-    sync()
-    return () => { cancelled = true }
-  }, [playerState])
+  }, [playingIdx, showVideo])
 
   // Fetch subscription for feature access checks
   useEffect(() => {
@@ -1295,6 +1307,12 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         setShowVideo(true)
       }
     }} />}
+    {isYouTube && <SectionPlaybackTracker
+      timeline={content.timeline}
+      setPlayingIdx={setPlayingIdx}
+      seekingRef={seekingRef}
+      playerActionsRef={playerRef}
+    />}
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalContentRef} className={`modal-content modal-content-large${isYouTube && activeTab === 'content' ? ' modal-content-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
         {/* Sticky top: header + tabs (#2) */}
