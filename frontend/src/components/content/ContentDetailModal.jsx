@@ -403,8 +403,14 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       transcript.querySelectorAll('.timeline-container, .transcript-view, .transcript-container')
         .forEach(el => { el.scrollTop = 0 })
 
-      // Scroll modal to show transcript from the very top
-      modal.scrollTop = layout.offsetTop
+      // Remove max-height on internal containers so transcript flows naturally
+      transcript.querySelectorAll('.timeline-container, .transcript-view')
+        .forEach(el => { el.style.maxHeight = 'none'; el.style.overflow = 'visible' })
+
+      // Push transcript down with marginTop so it appears at the user's
+      // current viewport position — NO scroll jump, transcript starts from beginning
+      const offset = Math.max(0, modal.scrollTop - layout.offsetTop)
+      transcript.style.marginTop = offset + 'px'
 
       // Fade in transcript
       transcript.style.visibility = 'visible'
@@ -447,6 +453,10 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       transcript.style.zIndex = ''
       transcript.style.gridRow = ''
       transcript.style.gridColumn = ''
+      transcript.style.marginTop = ''
+      // Restore internal container styles
+      transcript.querySelectorAll('.timeline-container, .transcript-view')
+        .forEach(el => { el.style.maxHeight = ''; el.style.overflow = '' })
     }
 
     function stopTransition() {
