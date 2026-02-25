@@ -255,14 +255,15 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     const VIDEO_H = videoCol.offsetHeight
     const TRIGGER_LINE = STICKY_TOP + VIDEO_H
 
-    let state = 'two-col' // 'two-col' | 'transitioning'
+    let state = 'two-col' // 'two-col' | 'transitioning' | 'transcript-view'
     let scrollDriverFn = null
     let scrollAtTransition = 0
     let rafId = null
     let animSpacer = null
     let onScrollBound = null
+    let phase5Done = false
 
-    // Responsive scroll zone — adapts to viewport height
+    // Responsive scroll zone
     const TOTAL_ZONE = Math.min(1400, Math.max(800, window.innerHeight * 1.5))
 
     function getModalInnerWidth() {
@@ -289,72 +290,51 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       if (scrollDriverFn) return
       scrollAtTransition = modal.scrollTop
       const startW = videoCol.offsetWidth
+      phase5Done = false
 
-      // Spacer extends analysis column so grid row stays tall
-      // (keeps sticky video visible during the entire animation)
+      // Spacer keeps video sticky during animation
       animSpacer = document.createElement('div')
       animSpacer.className = 'video-anim-spacer'
       animSpacer.style.cssText = `height:${TOTAL_ZONE + 400}px;pointer-events:none;`
       analysisCol.appendChild(animSpacer)
 
-      // Allow video to visually overflow its 40% grid cell
       layout.style.overflow = 'visible'
-      // Prevent horizontal scrollbar during overflow
       modal.style.overflowX = 'hidden'
-
-      // Disable CSS transitions — scroll drives everything
       analysisCol.style.transition = 'none'
-      transcript.style.transition = 'none'
 
-      // Transcript: absolute-positioned, tracked to viewport top each frame.
-      // Stays invisible until Phase 5.
-      layout.style.position = 'relative'
-      transcript.style.position = 'absolute'
-      transcript.style.left = analysisCol.offsetLeft + 'px'
-      transcript.style.width = analysisCol.offsetWidth + 'px'
+      // Hide transcript during animation
       transcript.style.visibility = 'hidden'
       transcript.style.opacity = '0'
-      transcript.style.zIndex = '8'
-
-      // Reset transcript scroll to the very beginning
-      transcript.scrollTop = 0
-      transcript.querySelectorAll('.timeline-container, .transcript-view, .transcript-container')
-        .forEach(el => { el.scrollTop = 0 })
 
       scrollDriverFn = () => {
         if (state !== 'transitioning') return
         const raw = clamp01((modal.scrollTop - scrollAtTransition) / TOTAL_ZONE)
         const fullW = getModalInnerWidth()
 
-        // ── Phase 1 (0 → 0.15): Analysis fades to the right ──
+        // ── Phase 1 (0 → 0.15): Analysis fades right ──
         const fadeP = easeInOut(zP(raw, 0, 0.15))
         analysisCol.style.opacity = String(1 - fadeP)
         analysisCol.style.transform = `translateX(${60 * fadeP}px)`
         analysisCol.style.pointerEvents = fadeP > 0.1 ? 'none' : ''
 
-        // ── Compute video width + translateX across phases ──
+        // ── Phases 2-4: Video slides right → grows 16:9 → returns ──
         let w = startW, tx = 0, radius = 10
 
         if (raw <= 0.30) {
-          // Phase 2 (0.05 → 0.30): Video slides right
           const p = easeInOut(zP(raw, 0.05, 0.30))
           tx = (fullW - startW) * 0.55 * p
         } else if (raw <= 0.60) {
-          // Phase 3 (0.30 → 0.60): Video grows to responsive 16:9
           const p = easeInOut(zP(raw, 0.30, 0.60))
           const peakTX = (fullW - startW) * 0.55
           w = lerp(startW, fullW, p)
-          // As width grows, pull translateX back so video fills from left edge
           tx = lerp(peakTX, 0, p)
           radius = lerp(10, 0, p)
         } else if (raw <= 0.75) {
-          // Phase 4 (0.60 → 0.75): Video shrinks back to original left position
           const p = easeInOut(zP(raw, 0.60, 0.75))
           w = lerp(fullW, startW, p)
           tx = 0
           radius = lerp(0, 10, p)
         } else {
-          // Settled at original position
           w = startW
           tx = 0
           radius = 10
@@ -365,14 +345,11 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         videoCol.style.borderRadius = Math.round(radius) + 'px'
         videoCol.style.zIndex = '10'
 
-        // ── Phase 5 (0.76 → 0.92): Transcript fades in AFTER video is back ──
-        // Position transcript at the top of the visible area each frame
-        const viewportTop = modal.scrollTop - layout.offsetTop
-        transcript.style.top = Math.round(viewportTop) + 'px'
-        const tP = easeInOut(zP(raw, 0.76, 0.92))
-        transcript.style.visibility = tP > 0 ? 'visible' : 'hidden'
-        transcript.style.opacity = String(tP)
-        transcript.style.transform = `translateY(${30 * (1 - tP)}px)`
+        // ── Phase 5: Video is back → switch to transcript view ──
+        if (raw >= 0.76 && !phase5Done) {
+          phase5Done = true
+          enterTranscriptView()
+        }
       }
 
       onScrollBound = () => {
@@ -380,26 +357,76 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         rafId = requestAnimationFrame(scrollDriverFn)
       }
       modal.addEventListener('scroll', onScrollBound, { passive: true })
-      scrollDriverFn() // render initial frame
+      scrollDriverFn()
     }
 
-    function stopTransition() {
+    // Phase 5: restructure layout so transcript replaces analysis
+    // and the user can scroll through it normally
+    function enterTranscriptView() {
+      // Stop scroll-driven animation
       if (onScrollBound) {
         modal.removeEventListener('scroll', onScrollBound)
         onScrollBound = null
       }
       scrollDriverFn = null
-      if (rafId) {
-        cancelAnimationFrame(rafId)
-        rafId = null
-      }
-      if (animSpacer) {
-        animSpacer.remove()
-        animSpacer = null
-      }
-      // Reset all inline styles
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null }
+      if (animSpacer) { animSpacer.remove(); animSpacer = null }
+
+      // Reset video to normal sticky
+      videoCol.style.width = ''
+      videoCol.style.transform = ''
+      videoCol.style.borderRadius = ''
+      videoCol.style.zIndex = ''
+
+      // Reset layout
       layout.style.overflow = ''
-      layout.style.position = ''
+      modal.style.overflowX = ''
+
+      // Hide analysis (keep in DOM so sentinel works for scroll-back)
+      analysisCol.style.opacity = '0'
+      analysisCol.style.transform = ''
+      analysisCol.style.pointerEvents = 'none'
+      analysisCol.style.transition = 'none'
+
+      // Move transcript into analysis column spot (row 1, col 2)
+      // so it flows naturally — user can scroll through it
+      transcript.style.gridRow = '1'
+      transcript.style.gridColumn = '2'
+      transcript.style.position = ''
+      transcript.style.top = ''
+      transcript.style.left = ''
+      transcript.style.width = ''
+      transcript.style.zIndex = ''
+
+      // Reset transcript internal scroll to beginning
+      transcript.scrollTop = 0
+      transcript.querySelectorAll('.timeline-container, .transcript-view, .transcript-container')
+        .forEach(el => { el.scrollTop = 0 })
+
+      // Scroll modal to show transcript from the very top
+      modal.scrollTop = layout.offsetTop
+
+      // Fade in transcript
+      transcript.style.visibility = 'visible'
+      transcript.style.opacity = '0'
+      transcript.style.transform = 'translateY(20px)'
+      transcript.style.transition = 'opacity 0.5s ease, transform 0.5s ease'
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          transcript.style.opacity = '1'
+          transcript.style.transform = 'translateY(0)'
+        })
+      })
+
+      // Disconnect sentinel observer (we use scroll position to detect back-nav)
+      observer.disconnect()
+
+      state = 'transcript-view'
+    }
+
+    function resetAllStyles() {
+      layout.style.overflow = ''
       modal.style.overflowX = ''
       videoCol.style.width = ''
       videoCol.style.transform = ''
@@ -418,6 +445,19 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       transcript.style.left = ''
       transcript.style.width = ''
       transcript.style.zIndex = ''
+      transcript.style.gridRow = ''
+      transcript.style.gridColumn = ''
+    }
+
+    function stopTransition() {
+      if (onScrollBound) {
+        modal.removeEventListener('scroll', onScrollBound)
+        onScrollBound = null
+      }
+      scrollDriverFn = null
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null }
+      if (animSpacer) { animSpacer.remove(); animSpacer = null }
+      resetAllStyles()
     }
 
     function expand() {
@@ -427,6 +467,12 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     }
 
     function collapse() {
+      if (state === 'transcript-view') {
+        resetAllStyles()
+        observer.observe(sentinel) // re-enable sentinel watching
+        state = 'two-col'
+        return
+      }
       if (state !== 'transitioning') return
       state = 'two-col'
       stopTransition()
@@ -437,7 +483,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         const sentinelTop =
           entry.boundingClientRect.top - modal.getBoundingClientRect().top
         const isPast = !entry.isIntersecting && sentinelTop < TRIGGER_LINE
-
         if (isPast && state === 'two-col') {
           expand()
         } else if (!isPast && state === 'transitioning') {
@@ -452,8 +497,15 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     )
     observer.observe(sentinel)
 
-    // Fallback: check on scroll for fast scrolling
+    // Fallback scroll check — handles fast scrolling + transcript-view back-nav
     const scrollFallback = () => {
+      if (state === 'transcript-view') {
+        // If user scrolls back above where animation started, restore two-col
+        if (modal.scrollTop <= Math.max(0, scrollAtTransition - 100)) {
+          collapse()
+        }
+        return
+      }
       const sentPos = sentinel.getBoundingClientRect().top - modal.getBoundingClientRect().top
       if (sentPos < TRIGGER_LINE && state === 'two-col') {
         expand()
@@ -468,6 +520,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       modal.removeEventListener('scroll', scrollFallback)
       sentinel.remove()
       stopTransition()
+      if (state === 'transcript-view') resetAllStyles()
     }
   }, [activeTab, content?.id])
 
