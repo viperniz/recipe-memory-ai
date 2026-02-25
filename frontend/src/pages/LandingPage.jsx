@@ -655,8 +655,11 @@ function LandingPage() {
               Get Started Free
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate('/pricing')}>
-              View Pricing
+            <Button size="lg" variant="outline" onClick={() => {
+              document.querySelector('#how-it-works')?.scrollIntoView({ behavior: 'smooth' })
+            }}>
+              <Play className="w-5 h-5 mr-2" />
+              See How It Works
             </Button>
           </div>
           <div className="landing-cta-features">
