@@ -517,9 +517,16 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     // Fallback scroll check — handles fast scrolling + transcript-view back-nav
     const scrollFallback = () => {
       if (state === 'transcript-view') {
-        // If user scrolls back above where animation started, restore two-col
-        if (modal.scrollTop <= Math.max(0, scrollAtTransition - 100)) {
-          collapse()
+        // When user scrolls up near the animation end point, re-enter
+        // transitioning state so the animation can play in reverse
+        const animEndScroll = scrollAtTransition + TOTAL_ZONE * 0.76
+        if (modal.scrollTop <= animEndScroll - 50) {
+          // Reset transcript-view styles
+          resetAllStyles()
+          // Re-enter transitioning state with animation
+          state = 'two-col'
+          observer.observe(sentinel)
+          expand()
         }
         return
       }
