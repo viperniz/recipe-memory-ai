@@ -599,14 +599,98 @@ function HomePage() {
     document.body.removeChild(a)
   }
 
+  const formatGuideExport = (data, fmt) => {
+    if (fmt === 'json') return JSON.stringify(data, null, 2)
+    const isTxt = fmt === 'txt'
+    const lines = []
+    lines.push(isTxt ? `Study Guide: ${data.title || 'Untitled'}\n\n` : `# ${data.title || 'Study Guide'}\n\n`)
+    if (data.overview) lines.push(`${data.overview}\n\n`)
+    for (const section of (data.sections || [])) {
+      lines.push(isTxt ? `${section.title || ''}\n` : `## ${section.title || ''}\n\n`)
+      for (const step of (section.steps || [])) {
+        lines.push(isTxt ? `  - ${step.instruction || ''}\n` : `- **${step.instruction || ''}**\n`)
+        if (step.detail) lines.push(isTxt ? `    ${step.detail}\n` : `  ${step.detail}\n`)
+      }
+      lines.push('\n')
+    }
+    if (data.resources) {
+      lines.push(isTxt ? 'Additional Resources\n' : '## Additional Resources\n\n')
+      for (const r of data.resources) {
+        const name = r.name || ''
+        lines.push(isTxt ? `  - ${name}: ${r.description || ''}\n` : r.url ? `- [${name}](${r.url}): ${r.description || ''}\n` : `- **${name}**: ${r.description || ''}\n`)
+      }
+    }
+    return lines.join('')
+  }
+
+  const formatFlashcardsExport = (data, fmt) => {
+    if (fmt === 'json') return JSON.stringify(data, null, 2)
+    const cards = data.cards || []
+    const isTxt = fmt === 'txt'
+    const lines = [isTxt ? `Flashcards (${cards.length} cards)\n\n` : `# Flashcards (${cards.length} cards)\n\n`]
+    cards.forEach((card, i) => {
+      const diff = card.difficulty ? (isTxt ? ` [${card.difficulty}]` : ` \`${card.difficulty}\``) : ''
+      lines.push(isTxt ? `Card ${i + 1}${diff}\n` : `### Card ${i + 1}${diff}\n\n`)
+      lines.push(isTxt ? `  Q: ${card.front || ''}\n  A: ${card.back || ''}\n\n` : `**Q:** ${card.front || ''}\n\n**A:** ${card.back || ''}\n\n---\n\n`)
+    })
+    return lines.join('')
+  }
+
+  const formatMindmapExport = (data, fmt) => {
+    if (fmt === 'json') return JSON.stringify(data, null, 2)
+    const isTxt = fmt === 'txt'
+    const lines = []
+    const walk = (node, depth) => {
+      const ts = node.timestamp ? ` [${Math.floor(node.timestamp / 60)}:${String(Math.floor(node.timestamp % 60)).padStart(2, '0')}]` : ''
+      if (isTxt) {
+        lines.push(`${'  '.repeat(depth)}${node.label || ''}${ts}\n`)
+        if (node.description) lines.push(`${'  '.repeat(depth)}  ${node.description}\n`)
+      } else {
+        const prefix = depth === 0 ? '# ' : depth === 1 ? '## ' : depth === 2 ? '### ' : '  '.repeat(depth - 3) + '- '
+        lines.push(`${prefix}${node.label || ''}${ts}\n`)
+        if (node.description) lines.push(depth <= 2 ? `${node.description}\n` : `${'  '.repeat(depth - 3)}  ${node.description}\n`)
+      }
+      lines.push('\n')
+      for (const child of (node.children || [])) walk(child, depth + 1)
+    }
+    walk(data, 0)
+    return lines.join('')
+  }
+
   const handleExport = async () => {
     setIsExporting(true)
     try {
+      // Generated content (guide/flashcards/mindmap) — export client-side
+      if (exportContentType !== 'breakdown' && exportContentIds.length) {
+        const cid = exportContentIds[0]
+        const res = await api.get(`/content/${cid}/generated/${exportContentType}`)
+        const genData = res.data.data
+        if (!genData) {
+          toast({ variant: 'destructive', title: 'Export failed', description: `No ${exportContentType} data found` })
+          return
+        }
+
+        let text
+        if (exportContentType === 'guide') text = formatGuideExport(genData, exportFormat)
+        else if (exportContentType === 'flashcards') text = formatFlashcardsExport(genData, exportFormat)
+        else if (exportContentType === 'mindmap') text = formatMindmapExport(genData, exportFormat)
+
+        const mimeType = exportFormat === 'json' ? 'application/json' : exportFormat === 'txt' ? 'text/plain' : 'text/markdown'
+        const ext = exportFormat === 'json' ? '.json' : exportFormat === 'txt' ? '.txt' : '.md'
+        const blob = new Blob([text], { type: `${mimeType};charset=utf-8` })
+        downloadBlob(blob, `${exportContentType}-${cid}${ext}`)
+
+        setShowExportModal(false)
+        trackEvent('export', { format: exportFormat, content_type: exportContentType })
+        toast({ variant: 'success', title: 'Export complete', description: `${exportContentType} downloaded as ${ext.slice(1).toUpperCase()}` })
+        return
+      }
+
+      // Standard breakdown export — via backend
       const payload = {
         content_ids: exportContentIds.length ? exportContentIds : [],
         format: exportFormat,
-        include_transcript: includeTranscript,
-        content_type: exportContentType
+        include_transcript: includeTranscript
       }
 
       if (exportFormat === 'json') {
