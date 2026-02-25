@@ -623,7 +623,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       {content.summary && (
         <div className="content-detail-section" data-reveal>
           <h3>
-            Summary
+            Summary <span style={{fontSize:11,color:'red',fontWeight:'normal'}}>DBG idx={playingIdx} st={playerRef.current.getPlayerState ? playerRef.current.getPlayerState() : '?'}</span>
             {content.metadata?.detected_language_name && (
               <Badge variant="outline" className="ml-2" style={{ verticalAlign: 'middle', fontSize: 11 }}>
                 {content.metadata.translated_to_name
