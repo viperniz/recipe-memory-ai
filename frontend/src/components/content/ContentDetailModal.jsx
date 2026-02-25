@@ -1331,6 +1331,15 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         {/* Sticky top: header + tabs (#2) */}
         <div ref={stickyTopRef} className="modal-sticky-top">
           <div className="modal-header">
+            <div className="modal-header-title">
+              <h2>{content.title || 'Untitled'}</h2>
+              {ModeIcon && (
+                <Badge variant="outline" style={{ verticalAlign: 'middle', marginLeft: 8, textTransform: 'capitalize' }}>
+                  <ModeIcon className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
+                  {mode}
+                </Badge>
+              )}
+            </div>
             <div className="modal-header-actions">
               <Button
                 size="sm"

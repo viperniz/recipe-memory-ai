@@ -2001,10 +2001,24 @@
 
 .modal-header {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   padding: 12px 24px;
   border-bottom: none;
+  gap: 12px;
+}
+
+.modal-header-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+}
+
+.modal-header-title h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .modal-header h2 {
