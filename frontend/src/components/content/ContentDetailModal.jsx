@@ -790,6 +790,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                     return (
                       <div key={idx} className="timeline-entry vision" data-sync-idx={idx} data-reveal="left" data-reveal-delay={Math.min(idx % 6, 5)}>
                         <div className="timeline-header">
+                          <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                           {isYouTube && (
                             <button
                               className={`section-play-btn${playingIdx === idx ? ' active' : ''}`}
@@ -799,7 +800,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                               {playingIdx === idx ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                             </button>
                           )}
-                          <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                           <span className="timeline-vision-badge">
                             <Eye className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
                             Visual
@@ -827,6 +827,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   return (
                     <div key={idx} className="timeline-entry transcript" data-sync-idx={idx} data-reveal="left" data-reveal-delay={Math.min(idx % 6, 5)}>
                       <div className="timeline-header">
+                        <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                         {isYouTube && (
                           <button
                             className={`section-play-btn${playingIdx === idx ? ' active' : ''}`}
@@ -836,7 +837,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                             {playingIdx === idx ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                           </button>
                         )}
-                        <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                         {entry.speaker && entry.speaker !== 'Unknown' && (
                           <span className="transcript-speaker">{entry.speaker}</span>
                         )}
@@ -885,6 +885,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   return (
                     <div key={idx} className="transcript-entry" data-sync-idx={idx}>
                       <div className="transcript-header">
+                        <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                         {isYouTube && (
                           <button
                             className={`section-play-btn${playingIdx === idx ? ' active' : ''}`}
@@ -894,7 +895,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                             {playingIdx === idx ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                           </button>
                         )}
-                        <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                         {entry.speaker && entry.speaker !== 'Unknown' && (
                           <span className="transcript-speaker">{entry.speaker}</span>
                         )}
@@ -979,6 +979,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   return (
                     <div key={idx} className="transcript-entry" data-sync-idx={idx}>
                       <div className="transcript-header">
+                        <TimestampLink timestamp={`${mins}:${secs}`} sourceUrl={content.source_url} />
                         {isYouTube && (
                           <button
                             className={`section-play-btn${playingIdx === idx ? ' active' : ''}`}
@@ -988,7 +989,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                             {playingIdx === idx ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                           </button>
                         )}
-                        <TimestampLink timestamp={`${mins}:${secs}`} sourceUrl={content.source_url} />
                         {speaker && speaker !== 'Unknown' && (
                           <span className="transcript-speaker">{speaker}</span>
                         )}
