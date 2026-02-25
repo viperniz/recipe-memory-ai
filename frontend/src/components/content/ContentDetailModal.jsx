@@ -266,6 +266,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     let animSpacer = null
     let onScrollBound = null
     let phase5Done = false
+    let zoneMultiplier = 1
 
     // Responsive scroll zone
     const TOTAL_ZONE = Math.min(1400, Math.max(800, window.innerHeight * 1.5))
@@ -312,7 +313,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
       scrollDriverFn = () => {
         if (state !== 'transitioning') return
-        const raw = clamp01((modal.scrollTop - scrollAtTransition) / TOTAL_ZONE)
+        const raw = clamp01((modal.scrollTop - scrollAtTransition) / (TOTAL_ZONE * zoneMultiplier))
         const fullW = getModalInnerWidth()
 
         // ── Phase 1 (0 → 0.15): Analysis fades right ──
@@ -483,6 +484,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
     function expand() {
       if (state !== 'two-col') return
+      zoneMultiplier = 1
       state = 'transitioning'
       startTransition()
     }
@@ -530,8 +532,15 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
           // collapsing page height and clamping scrollTop)
           const savedScroll = modal.scrollTop
 
-          // Re-enter transition — preserve original scrollAtTransition
-          // so raw progress naturally decreases as user scrolls up
+          // Scale the zone so reverse takes 2x more scrolling.
+          // Adjust scrollAtTransition so raw stays the same at savedScroll
+          // but requires more scroll distance to reach 0.
+          const REVERSE_SCALE = 2
+          const forwardDist = savedScroll - scrollAtTransition
+          scrollAtTransition = savedScroll - forwardDist * REVERSE_SCALE
+          zoneMultiplier = REVERSE_SCALE
+
+          // Re-enter transition with scaled zone
           state = 'transitioning'
           resetAllStyles()
           startTransition(true)
