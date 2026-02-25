@@ -171,10 +171,11 @@ function AIChatWidget({ onContentClick, collectionId, collectionName, selectedCo
 
   const headerInfo = getHeaderInfo()
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading || limitReached) return
+  const sendMessage = async (directMessage) => {
+    const msg = directMessage || input
+    if (!msg.trim() || isLoading || limitReached) return
 
-    const userMessage = input.trim()
+    const userMessage = msg.trim()
     setInput('')
 
     const userMsg = { role: 'user', content: userMessage, sources: [] }
@@ -404,10 +405,7 @@ function AIChatWidget({ onContentClick, collectionId, collectionName, selectedCo
                 {quickQuestions.map((q, idx) => (
                   <button
                     key={idx}
-                    onClick={() => {
-                      setInput(q)
-                      inputRef.current?.focus()
-                    }}
+                    onClick={() => sendMessage(q)}
                   >
                     {q}
                   </button>
