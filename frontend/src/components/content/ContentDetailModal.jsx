@@ -157,73 +157,19 @@ function VideoPlaybackController({ playing, onShowVideo, onSeekTimestamp }) {
 }
 
 /**
- * SectionPlaybackTracker — lives inside YouTubePlayerProvider,
- * polls player time to keep playingIdx in sync with the active timeline section,
- * resets playingIdx on pause/end, and exposes seekTo/pauseVideo to the parent via ref.
+ * PlayerBridge — lives inside YouTubePlayerProvider,
+ * exposes player methods + state to the parent via a ref.
  */
-function SectionPlaybackTracker({ timeline, showVideo, setPlayingIdx, seekingRef, playerActionsRef }) {
+function PlayerBridge({ playerActionsRef }) {
   const ytCtx = useYouTubePlayer()
 
-  // Keep latest values in refs for the interval to read
-  const ctxRef = useRef(ytCtx)
-  const timelineRef = useRef(timeline)
-  const showVideoRef = useRef(showVideo)
-  const seekingRefRef = useRef(seekingRef)
-  const setPlayingIdxRef = useRef(setPlayingIdx)
-  ctxRef.current = ytCtx
-  timelineRef.current = timeline
-  showVideoRef.current = showVideo
-  seekingRefRef.current = seekingRef
-  setPlayingIdxRef.current = setPlayingIdx
-
-  // Expose player actions to parent via ref (updated every render)
+  // Update ref every render so parent always has latest player methods
   playerActionsRef.current = {
     seekTo: (s) => ytCtx?.seekTo(s),
     pauseVideo: () => ytCtx?.pauseVideo(),
+    getCurrentTime: () => ytCtx?.getCurrentTime ? ytCtx.getCurrentTime() : 0,
+    getPlayerState: () => ytCtx?.playerState ?? YT_STATE.UNSTARTED,
   }
-
-  // Single interval: handles both polling active section and detecting pause/end
-  const wasPlayingRef = useRef(false)
-  const justStartedRef = useRef(false)
-
-  useEffect(() => {
-    const tick = () => {
-      const ctx = ctxRef.current
-      const tl = timelineRef.current
-      const state = ctx?.playerState ?? YT_STATE.UNSTARTED
-      const isPlaying = state === YT_STATE.PLAYING
-      const isPaused = state === YT_STATE.PAUSED || state === YT_STATE.ENDED
-
-      // Detect showVideo turning on → mark justStarted
-      if (showVideoRef.current && !wasPlayingRef.current && !isPlaying) {
-        justStartedRef.current = true
-      }
-
-      if (isPlaying) {
-        justStartedRef.current = false
-        wasPlayingRef.current = true
-
-        // Poll current time → find active section
-        if (ctx?.getCurrentTime && tl?.length) {
-          const t = ctx.getCurrentTime()
-          let best = -1
-          for (let i = 0; i < tl.length; i++) {
-            if (tl[i].timestamp != null && tl[i].timestamp <= t) {
-              best = i
-            }
-          }
-          if (best >= 0) setPlayingIdxRef.current(best)
-        }
-      } else if (isPaused && wasPlayingRef.current && !seekingRefRef.current.current && !justStartedRef.current) {
-        // User paused via YouTube controls
-        wasPlayingRef.current = false
-        setPlayingIdxRef.current(-1)
-      }
-    }
-
-    const id = setInterval(tick, 250)
-    return () => clearInterval(id)
-  }, []) // No deps — reads everything from refs
 
   return null
 }
@@ -391,6 +337,54 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       setPlayingIdx(idx)
     }
   }, [playingIdx, showVideo])
+
+  // Poll player state every 250ms to sync playingIdx with active section
+  // playerRef.current is updated by PlayerBridge (inside the provider)
+  const wasPlayingRef = useRef(false)
+  const justStartedRef = useRef(false)
+  const showVideoRef = useRef(showVideo)
+  const timelineDataRef = useRef(content.timeline)
+  showVideoRef.current = showVideo
+  timelineDataRef.current = content.timeline
+
+  useEffect(() => {
+    const tick = () => {
+      const p = playerRef.current
+      if (!p.getPlayerState) return
+
+      const state = p.getPlayerState()
+      const isPlaying = state === YT_STATE.PLAYING
+      const isPaused = state === YT_STATE.PAUSED || state === YT_STATE.ENDED
+
+      if (showVideoRef.current && !wasPlayingRef.current && !isPlaying) {
+        justStartedRef.current = true
+      }
+
+      if (isPlaying) {
+        justStartedRef.current = false
+        wasPlayingRef.current = true
+        seekingRef.current = false
+
+        const tl = timelineDataRef.current
+        if (tl?.length) {
+          const t = p.getCurrentTime()
+          let best = -1
+          for (let i = 0; i < tl.length; i++) {
+            if (tl[i].timestamp != null && tl[i].timestamp <= t) {
+              best = i
+            }
+          }
+          if (best >= 0) setPlayingIdx(best)
+        }
+      } else if (isPaused && wasPlayingRef.current && !seekingRef.current && !justStartedRef.current) {
+        wasPlayingRef.current = false
+        setPlayingIdx(-1)
+      }
+    }
+
+    const id = setInterval(tick, 250)
+    return () => clearInterval(id)
+  }, [])
 
   // Fetch subscription for feature access checks
   useEffect(() => {
@@ -1338,13 +1332,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         setShowVideo(true)
       }
     }} onSeekTimestamp={handleSeekTimestamp} />}
-    {isYouTube && <SectionPlaybackTracker
-      timeline={content.timeline}
-      showVideo={showVideo}
-      setPlayingIdx={setPlayingIdx}
-      seekingRef={seekingRef}
-      playerActionsRef={playerRef}
-    />}
+    {isYouTube && <PlayerBridge playerActionsRef={playerRef} />}
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalContentRef} className={`modal-content modal-content-large${isYouTube && activeTab === 'content' ? ' modal-content-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
         {/* Sticky top: header + tabs (#2) */}
