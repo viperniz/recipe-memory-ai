@@ -327,13 +327,12 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   }, [playingIdx, ytCtx, showVideo])
 
   // Keep playingIdx in sync as playback crosses section boundaries
+  // Also picks up playback started via the top play button
   const handleActiveIdxChange = useCallback((activeIdx) => {
-    setPlayingIdx(prev => {
-      // Only update if something is currently playing
-      if (prev >= 0 && activeIdx >= 0) return activeIdx
-      return prev
-    })
-  }, [])
+    if (activeIdx >= 0 && playerState === YT_STATE.PLAYING) {
+      setPlayingIdx(activeIdx)
+    }
+  }, [playerState])
 
   // Fetch subscription for feature access checks
   useEffect(() => {
