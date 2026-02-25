@@ -170,37 +170,25 @@ function SectionPlaybackTracker({ timeline, showVideo, setPlayingIdx, seekingRef
     pauseVideo: () => ytCtx?.pauseVideo(),
   }
 
-  // When video is shown (top play button), immediately set first section active
-  // The poll will correct it once the player starts
-  const prevShowVideo = useRef(false)
-  useEffect(() => {
-    if (showVideo && !prevShowVideo.current && timeline?.length) {
-      // Find section at current time (or default to 0)
-      const getTime = ytCtx?.getCurrentTime
-      const t = getTime ? getTime() : 0
-      let best = 0
-      for (let i = 0; i < timeline.length; i++) {
-        if (timeline[i].timestamp != null && timeline[i].timestamp <= t) {
-          best = i
-        }
-      }
-      setPlayingIdx(best)
-    }
-    if (!showVideo && prevShowVideo.current) {
-      setPlayingIdx(-1)
-    }
-    prevShowVideo.current = showVideo
-  }, [showVideo, timeline, setPlayingIdx, ytCtx])
+  // Track when video was just shown to avoid resetting during initial load
+  const justStartedRef = useRef(false)
+  const prevShowRef = useRef(showVideo)
+  if (showVideo && !prevShowRef.current) {
+    justStartedRef.current = true
+  }
+  prevShowRef.current = showVideo
 
-  // Reset playingIdx when video pauses or ends externally (not via top button)
+  // Reset playingIdx when user pauses via YouTube controls
   useEffect(() => {
     if (playerState === YT_STATE.PLAYING) {
       seekingRef.current = false
+      justStartedRef.current = false // loading done, now pauses are real
     }
-    if ((playerState === YT_STATE.PAUSED || playerState === YT_STATE.ENDED) && !seekingRef.current && !showVideo) {
+    if ((playerState === YT_STATE.PAUSED || playerState === YT_STATE.ENDED)
+        && !seekingRef.current && !justStartedRef.current) {
       setPlayingIdx(-1)
     }
-  }, [playerState, setPlayingIdx, seekingRef, showVideo])
+  }, [playerState, setPlayingIdx, seekingRef])
 
   // Poll to sync playingIdx with current playback position
   const getTimeRef = useRef(null)
@@ -633,6 +621,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             {isYouTube && (
               <button className={`play-video-btn${showVideo ? ' active' : ''}`} onClick={() => {
                 if (!showVideo) {
+                  setPlayingIdx(0)
                   if (activeTab !== 'content') {
                     setTabFading(true)
                     setTimeout(() => {
@@ -648,6 +637,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   }
                 } else {
                   setShowVideo(false)
+                  setPlayingIdx(-1)
                 }
               }} title={showVideo ? 'Stop video' : 'Play video'} style={{ marginLeft: 8, verticalAlign: 'middle' }}>
                 {showVideo ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
