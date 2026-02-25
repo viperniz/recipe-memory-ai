@@ -160,7 +160,7 @@ function VideoPlaybackController({ playing, onShowVideo }) {
  * polls player time to keep playingIdx in sync with the active timeline section,
  * resets playingIdx on pause/end, and exposes seekTo/pauseVideo to the parent via ref.
  */
-function SectionPlaybackTracker({ timeline, setPlayingIdx, seekingRef, playerActionsRef }) {
+function SectionPlaybackTracker({ timeline, showVideo, setPlayingIdx, seekingRef, playerActionsRef }) {
   const ytCtx = useYouTubePlayer()
   const playerState = ytCtx?.playerState ?? YT_STATE.UNSTARTED
 
@@ -170,15 +170,37 @@ function SectionPlaybackTracker({ timeline, setPlayingIdx, seekingRef, playerAct
     pauseVideo: () => ytCtx?.pauseVideo(),
   }
 
-  // Reset playingIdx when video pauses or ends externally
+  // When video is shown (top play button), immediately set first section active
+  // The poll will correct it once the player starts
+  const prevShowVideo = useRef(false)
+  useEffect(() => {
+    if (showVideo && !prevShowVideo.current && timeline?.length) {
+      // Find section at current time (or default to 0)
+      const getTime = ytCtx?.getCurrentTime
+      const t = getTime ? getTime() : 0
+      let best = 0
+      for (let i = 0; i < timeline.length; i++) {
+        if (timeline[i].timestamp != null && timeline[i].timestamp <= t) {
+          best = i
+        }
+      }
+      setPlayingIdx(best)
+    }
+    if (!showVideo && prevShowVideo.current) {
+      setPlayingIdx(-1)
+    }
+    prevShowVideo.current = showVideo
+  }, [showVideo, timeline, setPlayingIdx, ytCtx])
+
+  // Reset playingIdx when video pauses or ends externally (not via top button)
   useEffect(() => {
     if (playerState === YT_STATE.PLAYING) {
       seekingRef.current = false
     }
-    if ((playerState === YT_STATE.PAUSED || playerState === YT_STATE.ENDED) && !seekingRef.current) {
+    if ((playerState === YT_STATE.PAUSED || playerState === YT_STATE.ENDED) && !seekingRef.current && !showVideo) {
       setPlayingIdx(-1)
     }
-  }, [playerState, setPlayingIdx, seekingRef])
+  }, [playerState, setPlayingIdx, seekingRef, showVideo])
 
   // Poll to sync playingIdx with current playback position
   const getTimeRef = useRef(null)
@@ -611,7 +633,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             {isYouTube && (
               <button className={`play-video-btn${showVideo ? ' active' : ''}`} onClick={() => {
                 if (!showVideo) {
-                  if (content.timeline?.length) setPlayingIdx(0)
                   if (activeTab !== 'content') {
                     setTabFading(true)
                     setTimeout(() => {
@@ -627,7 +648,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   }
                 } else {
                   setShowVideo(false)
-                  setPlayingIdx(-1)
                 }
               }} title={showVideo ? 'Stop video' : 'Play video'} style={{ marginLeft: 8, verticalAlign: 'middle' }}>
                 {showVideo ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -1311,6 +1331,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     }} />}
     {isYouTube && <SectionPlaybackTracker
       timeline={content.timeline}
+      showVideo={showVideo}
       setPlayingIdx={setPlayingIdx}
       seekingRef={seekingRef}
       playerActionsRef={playerRef}
