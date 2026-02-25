@@ -611,6 +611,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             {isYouTube && (
               <button className={`play-video-btn${showVideo ? ' active' : ''}`} onClick={() => {
                 if (!showVideo) {
+                  if (content.timeline?.length) setPlayingIdx(0)
                   if (activeTab !== 'content') {
                     setTabFading(true)
                     setTimeout(() => {
@@ -626,6 +627,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   }
                 } else {
                   setShowVideo(false)
+                  setPlayingIdx(-1)
                 }
               }} title={showVideo ? 'Stop video' : 'Play video'} style={{ marginLeft: 8, verticalAlign: 'middle' }}>
                 {showVideo ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
