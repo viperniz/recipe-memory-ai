@@ -602,25 +602,93 @@ function HomePage() {
   const formatGuideExport = (data, fmt) => {
     if (fmt === 'json') return JSON.stringify(data, null, 2)
     const isTxt = fmt === 'txt'
-    const lines = []
-    lines.push(isTxt ? `Study Guide: ${data.title || 'Untitled'}\n\n` : `# ${data.title || 'Study Guide'}\n\n`)
-    if (data.overview) lines.push(`${data.overview}\n\n`)
-    for (const section of (data.sections || [])) {
-      lines.push(isTxt ? `${section.title || ''}\n` : `## ${section.title || ''}\n\n`)
-      for (const step of (section.steps || [])) {
-        lines.push(isTxt ? `  - ${step.instruction || ''}\n` : `- **${step.instruction || ''}**\n`)
-        if (step.detail) lines.push(isTxt ? `    ${step.detail}\n` : `  ${step.detail}\n`)
-      }
-      lines.push('\n')
+    const L = []
+    // Header
+    L.push(isTxt ? `${data.title || 'Study Guide'}\n` : `# ${data.title || 'Study Guide'}\n`)
+    if (data.difficulty || data.estimated_time) {
+      L.push(isTxt
+        ? `${data.difficulty || ''} | ${data.estimated_time || ''}\n`
+        : `*${data.difficulty || ''}* | *${data.estimated_time || ''}*\n`)
     }
-    if (data.resources) {
-      lines.push(isTxt ? 'Additional Resources\n' : '## Additional Resources\n\n')
+    if (data.description) L.push(`\n${data.description}\n`)
+    L.push('\n')
+
+    // Prerequisites
+    if (data.prerequisites?.length) {
+      L.push(isTxt ? 'Prerequisites\n\n' : '## Prerequisites\n\n')
+      for (const p of data.prerequisites) {
+        L.push(isTxt ? `${p.item || ''}\n` : `### ${p.item || ''}\n\n`)
+        if (p.description) L.push(`${isTxt ? '  ' : ''}${p.description}\n\n`)
+        if (p.install_command) L.push(isTxt ? `  Install: ${p.install_command}\n\n` : `\`\`\`\n${p.install_command}\n\`\`\`\n\n`)
+        if (p.check_command) L.push(isTxt ? `  Verify: ${p.check_command}\n\n` : `Verify: \`${p.check_command}\`\n\n`)
+      }
+    }
+
+    // Environment Setup
+    if (data.environment_setup?.length) {
+      L.push(isTxt ? 'Environment Setup\n\n' : '## Environment Setup\n\n')
+      for (const s of data.environment_setup) {
+        L.push(isTxt ? `${s.step || ''}\n` : `### ${s.step || ''}\n\n`)
+        for (const cmd of (s.commands || [])) {
+          L.push(isTxt ? `  ${cmd}\n` : `\`\`\`\n${cmd}\n\`\`\`\n\n`)
+        }
+        if (s.notes) L.push(`${isTxt ? '  ' : ''}${s.notes}\n\n`)
+      }
+    }
+
+    // Steps
+    if (data.steps?.length) {
+      L.push(isTxt ? 'Steps\n\n' : '## Steps\n\n')
+      for (const step of data.steps) {
+        const num = step.step_number || ''
+        L.push(isTxt ? `${num}. ${step.title || ''}\n` : `### ${num}. ${step.title || ''}\n\n`)
+        if (step.description) L.push(`${isTxt ? '  ' : ''}${step.description}\n\n`)
+        for (const cmd of (step.commands || [])) {
+          L.push(isTxt ? `  $ ${cmd}\n` : `\`\`\`\n${cmd}\n\`\`\`\n\n`)
+        }
+        if (step.code) {
+          const lang = step.code_language || ''
+          L.push(isTxt ? `  ${step.code}\n\n` : `\`\`\`${lang}\n${step.code}\n\`\`\`\n\n`)
+        }
+        if (step.expected_output) L.push(isTxt ? `  Expected: ${step.expected_output}\n` : `**Expected Output:** ${step.expected_output}\n\n`)
+        if (step.troubleshooting?.length) {
+          L.push(isTxt ? '  Troubleshooting:\n' : '**Troubleshooting:**\n\n')
+          for (const t of step.troubleshooting) {
+            L.push(isTxt ? `    - ${t.issue}: ${t.solution}\n` : `- **${t.issue}:** ${t.solution}\n`)
+          }
+          L.push('\n')
+        }
+      }
+    }
+
+    // Verification
+    if (data.verification) {
+      L.push(isTxt ? 'Verification\n\n' : '## Verification\n\n')
+      if (data.verification.description) L.push(`${data.verification.description}\n\n`)
+      for (const cmd of (data.verification.commands || [])) {
+        L.push(isTxt ? `  ${cmd}\n` : `\`\`\`\n${cmd}\n\`\`\`\n\n`)
+      }
+      if (data.verification.expected_result) L.push(isTxt ? `  Expected: ${data.verification.expected_result}\n\n` : `**Expected Result:** ${data.verification.expected_result}\n\n`)
+    }
+
+    // Next Steps
+    if (data.next_steps?.length) {
+      L.push(isTxt ? 'Next Steps\n\n' : '## Next Steps\n\n')
+      for (const s of data.next_steps) L.push(isTxt ? `  - ${s}\n` : `- ${s}\n`)
+      L.push('\n')
+    }
+
+    // Resources
+    if (data.resources?.length) {
+      L.push(isTxt ? 'Resources\n\n' : '## Resources\n\n')
       for (const r of data.resources) {
         const name = r.name || ''
-        lines.push(isTxt ? `  - ${name}: ${r.description || ''}\n` : r.url ? `- [${name}](${r.url}): ${r.description || ''}\n` : `- **${name}**: ${r.description || ''}\n`)
+        const desc = r.description ? ` — ${r.description}` : ''
+        L.push(isTxt ? `  - ${name}${desc}\n` : r.url ? `- [${name}](${r.url})${desc}\n` : `- **${name}**${desc}\n`)
       }
     }
-    return lines.join('')
+
+    return L.join('')
   }
 
   const formatFlashcardsExport = (data, fmt) => {
