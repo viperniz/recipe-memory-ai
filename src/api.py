@@ -673,7 +673,14 @@ async def get_preferences(
     current_user: User = Depends(get_current_active_user),
 ):
     """Get user preferences (merged with defaults)."""
-    stored = getattr(current_user, 'preferences', None) or {}
+    raw = getattr(current_user, 'preferences', None)
+    if isinstance(raw, str):
+        try:
+            stored = json.loads(raw)
+        except (json.JSONDecodeError, TypeError):
+            stored = {}
+    else:
+        stored = raw or {}
     merged = {**PREFERENCE_DEFAULTS, **stored}
     return merged
 
@@ -693,7 +700,16 @@ async def update_preferences(
     if request.theme is not None and request.theme not in valid_themes:
         raise HTTPException(status_code=400, detail="Invalid theme. Must be 'dark' or 'light'")
 
-    stored = getattr(current_user, 'preferences', None) or {}
+    raw = getattr(current_user, 'preferences', None)
+    # Handle TEXT column returning a JSON string instead of dict
+    if isinstance(raw, str):
+        try:
+            stored = json.loads(raw)
+        except (json.JSONDecodeError, TypeError):
+            stored = {}
+    else:
+        stored = raw or {}
+
     updates = request.model_dump(exclude_none=True)
     stored.update(updates)
     current_user.preferences = stored
@@ -701,6 +717,7 @@ async def update_preferences(
     from sqlalchemy.orm.attributes import flag_modified
     flag_modified(current_user, "preferences")
     db.commit()
+    db.refresh(current_user)
 
     merged = {**PREFERENCE_DEFAULTS, **stored}
     return merged
