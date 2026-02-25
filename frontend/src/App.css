@@ -10715,6 +10715,37 @@ button.timestamp-link {
   border-color: rgba(239, 68, 68, 0.4);
 }
 
+/* Per-section play/pause button in timeline entries */
+.section-play-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  padding: 0;
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.section-play-btn:hover {
+  background: rgba(139, 92, 246, 0.22);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+.section-play-btn.active {
+  color: #fff;
+  background: rgba(139, 92, 246, 0.85);
+  border-color: rgba(139, 92, 246, 0.9);
+}
+.section-play-btn.active:hover {
+  background: rgba(139, 92, 246, 1);
+  border-color: rgba(139, 92, 246, 1);
+}
+
 @media (max-width: 768px) {
   .modal-content-wide { max-width: 100%; }
   .breakdown-youtube-layout.video-active {

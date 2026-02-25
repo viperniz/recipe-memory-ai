@@ -1,5 +1,5 @@
           import React, { useState, useEffect, useRef, useCallback, useMemo, forwardRef } from 'react'
-import { X, Download, ChefHat, GraduationCap, Video, Users, BookOpen, Loader2, Copy, Check, Globe, MessageSquare, Layers, Network, CheckCircle, RotateCcw, Eye, Lock, Camera, Grid3X3, Search, StickyNote, Bookmark as BookmarkIcon, FileText, Sparkles, Play, Square } from 'lucide-react'
+import { X, Download, ChefHat, GraduationCap, Video, Users, BookOpen, Loader2, Copy, Check, Globe, MessageSquare, Layers, Network, CheckCircle, RotateCcw, Eye, Lock, Camera, Grid3X3, Search, StickyNote, Bookmark as BookmarkIcon, FileText, Sparkles, Play, Pause, Square } from 'lucide-react'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import RecipeCard from './RecipeCard'
@@ -88,8 +88,13 @@ function useTranscriptSync(entries) {
  * SyncedTranscriptWrapper — wraps the transcript section,
  * manages highlight classes and auto-scroll on active entry.
  */
-const SyncedTranscriptWrapper = forwardRef(function SyncedTranscriptWrapper({ entries, className, children, isYouTube }, ref) {
+const SyncedTranscriptWrapper = forwardRef(function SyncedTranscriptWrapper({ entries, className, children, isYouTube, onActiveIdxChange }, ref) {
   const { activeIdx, hasPlayed } = useTranscriptSync(isYouTube ? entries : null)
+
+  // Notify parent when activeIdx changes (for playingIdx sync)
+  useEffect(() => {
+    if (onActiveIdxChange) onActiveIdxChange(activeIdx)
+  }, [activeIdx, onActiveIdxChange])
   const innerRef = useRef(null)
 
   // Merge forwarded ref
@@ -280,6 +285,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [showReportModal, setShowReportModal] = useState(false)
   const [showVideo, setShowVideo] = useState(false)
   const [tabFading, setTabFading] = useState(false)
+  const [playingIdx, setPlayingIdx] = useState(-1)
   const stickyTopRef = useRef(null)
   const modalContentRef = useRef(null)
   const modalBodyRef = useRef(null)
@@ -289,6 +295,38 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const transcriptRef = useRef(null)
   const navigate = useNavigate()
   const { token } = useAuth()
+  const ytCtx = useYouTubePlayer()
+
+  // Reset playingIdx when video pauses or ends externally
+  const playerState = ytCtx?.playerState ?? YT_STATE.UNSTARTED
+  useEffect(() => {
+    if (playerState === YT_STATE.PAUSED || playerState === YT_STATE.ENDED) {
+      setPlayingIdx(-1)
+    }
+  }, [playerState])
+
+  // Handle per-section play/pause
+  const handleSectionPlay = useCallback((idx, timestampSeconds) => {
+    if (playingIdx === idx) {
+      // Pause
+      if (ytCtx) ytCtx.pauseVideo()
+      setPlayingIdx(-1)
+    } else {
+      // Show video if hidden, seek & play
+      if (!showVideo) setShowVideo(true)
+      if (ytCtx) ytCtx.seekTo(timestampSeconds)
+      setPlayingIdx(idx)
+    }
+  }, [playingIdx, ytCtx, showVideo])
+
+  // Keep playingIdx in sync as playback crosses section boundaries
+  const handleActiveIdxChange = useCallback((activeIdx) => {
+    setPlayingIdx(prev => {
+      // Only update if something is currently playing
+      if (prev >= 0 && activeIdx >= 0) return activeIdx
+      return prev
+    })
+  }, [])
 
   // Fetch subscription for feature access checks
   useEffect(() => {
@@ -752,6 +790,15 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                     return (
                       <div key={idx} className="timeline-entry vision" data-sync-idx={idx} data-reveal="left" data-reveal-delay={Math.min(idx % 6, 5)}>
                         <div className="timeline-header">
+                          {isYouTube && (
+                            <button
+                              className={`section-play-btn${playingIdx === idx ? ' active' : ''}`}
+                              onClick={(e) => { e.stopPropagation(); handleSectionPlay(idx, entry.timestamp) }}
+                              title={playingIdx === idx ? 'Pause' : 'Play from here'}
+                            >
+                              {playingIdx === idx ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                            </button>
+                          )}
                           <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                           <span className="timeline-vision-badge">
                             <Eye className="w-3 h-3" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 3 }} />
@@ -780,6 +827,15 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   return (
                     <div key={idx} className="timeline-entry transcript" data-sync-idx={idx} data-reveal="left" data-reveal-delay={Math.min(idx % 6, 5)}>
                       <div className="timeline-header">
+                        {isYouTube && (
+                          <button
+                            className={`section-play-btn${playingIdx === idx ? ' active' : ''}`}
+                            onClick={(e) => { e.stopPropagation(); handleSectionPlay(idx, entry.timestamp) }}
+                            title={playingIdx === idx ? 'Pause' : 'Play from here'}
+                          >
+                            {playingIdx === idx ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                          </button>
+                        )}
                         <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                         {entry.speaker && entry.speaker !== 'Unknown' && (
                           <span className="transcript-speaker">{entry.speaker}</span>
@@ -829,6 +885,15 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   return (
                     <div key={idx} className="transcript-entry" data-sync-idx={idx}>
                       <div className="transcript-header">
+                        {isYouTube && (
+                          <button
+                            className={`section-play-btn${playingIdx === idx ? ' active' : ''}`}
+                            onClick={(e) => { e.stopPropagation(); handleSectionPlay(idx, entry.timestamp) }}
+                            title={playingIdx === idx ? 'Pause' : 'Play from here'}
+                          >
+                            {playingIdx === idx ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                          </button>
+                        )}
                         <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                         {entry.speaker && entry.speaker !== 'Unknown' && (
                           <span className="transcript-speaker">{entry.speaker}</span>
@@ -910,9 +975,19 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                     }
                   }
 
+                  const tsSec = parseInt(mins) * 60 + parseInt(secs)
                   return (
                     <div key={idx} className="transcript-entry" data-sync-idx={idx}>
                       <div className="transcript-header">
+                        {isYouTube && (
+                          <button
+                            className={`section-play-btn${playingIdx === idx ? ' active' : ''}`}
+                            onClick={(e) => { e.stopPropagation(); handleSectionPlay(idx, tsSec) }}
+                            title={playingIdx === idx ? 'Pause' : 'Play from here'}
+                          >
+                            {playingIdx === idx ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                          </button>
+                        )}
                         <TimestampLink timestamp={`${mins}:${secs}`} sourceUrl={content.source_url} />
                         {speaker && speaker !== 'Unknown' && (
                           <span className="transcript-speaker">{speaker}</span>
@@ -1309,7 +1384,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                       <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
                     </div>
                     {modeContent || renderGeneralContent()}
-                    <SyncedTranscriptWrapper ref={transcriptRef} entries={transcriptSyncEntries} className="breakdown-transcript-full" isYouTube>
+                    <SyncedTranscriptWrapper ref={transcriptRef} entries={transcriptSyncEntries} className="breakdown-transcript-full" isYouTube onActiveIdxChange={handleActiveIdxChange}>
                       {renderTimelineSection()}
                     </SyncedTranscriptWrapper>
                   </div>
