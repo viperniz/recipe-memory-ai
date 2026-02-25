@@ -585,7 +585,7 @@ def init_db():
         ("users", "referral_code", "VARCHAR(8)", None),
         # Avatar and preferences
         ("users", "avatar_url", "VARCHAR(500)", None),
-        ("users", "preferences", "TEXT", None),
+        ("users", "preferences", "JSON", None),
     ]
     with engine.connect() as conn:
         for table, column, col_type, default in migrations:

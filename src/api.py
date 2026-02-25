@@ -654,7 +654,6 @@ async def serve_avatar(filename: str):
 # =============================================
 PREFERENCE_DEFAULTS = {
     "default_mode": "general",
-    "default_language": "auto",
     "theme": "dark",
     "email_job_complete": True,
     "email_low_credits": True,
@@ -663,7 +662,6 @@ PREFERENCE_DEFAULTS = {
 
 class PreferencesUpdateRequest(BaseModel):
     default_mode: Optional[str] = None
-    default_language: Optional[str] = None
     theme: Optional[str] = None
     email_job_complete: Optional[bool] = None
     email_low_credits: Optional[bool] = None

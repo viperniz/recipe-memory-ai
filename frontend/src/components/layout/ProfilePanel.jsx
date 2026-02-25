@@ -18,28 +18,6 @@ const CONTENT_MODES = [
   { id: 'deepdive', label: 'Deep Dive' },
 ]
 
-const LANGUAGES = [
-  { id: 'auto', label: 'Auto-detect' },
-  { id: 'en', label: 'English' },
-  { id: 'es', label: 'Spanish' },
-  { id: 'fr', label: 'French' },
-  { id: 'de', label: 'German' },
-  { id: 'pt', label: 'Portuguese' },
-  { id: 'it', label: 'Italian' },
-  { id: 'nl', label: 'Dutch' },
-  { id: 'ja', label: 'Japanese' },
-  { id: 'ko', label: 'Korean' },
-  { id: 'zh', label: 'Chinese' },
-  { id: 'ar', label: 'Arabic' },
-  { id: 'hi', label: 'Hindi' },
-  { id: 'ru', label: 'Russian' },
-  { id: 'tr', label: 'Turkish' },
-  { id: 'pl', label: 'Polish' },
-  { id: 'sv', label: 'Swedish' },
-  { id: 'da', label: 'Danish' },
-  { id: 'no', label: 'Norwegian' },
-  { id: 'fi', label: 'Finnish' },
-]
 
 function ProfilePanel({ isOpen, onClose }) {
   const { user, token, logout, updateProfile, updateAvatar } = useAuth()
@@ -57,7 +35,6 @@ function ProfilePanel({ isOpen, onClose }) {
   // Preferences state
   const [preferences, setPreferences] = useState({
     default_mode: 'general',
-    default_language: 'auto',
     theme: 'dark',
     email_job_complete: true,
     email_low_credits: true,
@@ -292,19 +269,6 @@ function ProfilePanel({ isOpen, onClose }) {
               >
                 {CONTENT_MODES.map(m => (
                   <option key={m.id} value={m.id}>{m.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="profile-form-group">
-              <label className="profile-form-label">Default Language</label>
-              <select
-                className="profile-select"
-                value={preferences.default_language}
-                onChange={(e) => handlePrefChange('default_language', e.target.value)}
-              >
-                {LANGUAGES.map(l => (
-                  <option key={l.id} value={l.id}>{l.label}</option>
                 ))}
               </select>
             </div>
