@@ -300,6 +300,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [showVideo, setShowVideo] = useState(false)
   const [tabFading, setTabFading] = useState(false)
   const [playingIdx, setPlayingIdx] = useState(-1)
+  const [dbgState, setDbgState] = useState(-1) // TEMP DEBUG
   const seekingRef = useRef(false)
   const stickyTopRef = useRef(null)
   const modalContentRef = useRef(null)
@@ -353,6 +354,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       if (!p.getPlayerState) return
 
       const state = p.getPlayerState()
+      setDbgState(state) // TEMP DEBUG
       const isPlaying = state === YT_STATE.PLAYING
       const isPaused = state === YT_STATE.PAUSED || state === YT_STATE.ENDED
 
@@ -623,7 +625,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       {content.summary && (
         <div className="content-detail-section" data-reveal>
           <h3>
-            Summary <span style={{fontSize:11,color:'red',fontWeight:'normal'}}>DBG idx={playingIdx} st={playerRef.current.getPlayerState ? playerRef.current.getPlayerState() : '?'}</span>
+            Summary <span style={{fontSize:11,color:'red',fontWeight:'normal'}}>DBG idx={playingIdx} st={dbgState} tl={content.timeline?.length || 0}</span>
             {content.metadata?.detected_language_name && (
               <Badge variant="outline" className="ml-2" style={{ verticalAlign: 'middle', fontSize: 11 }}>
                 {content.metadata.translated_to_name
