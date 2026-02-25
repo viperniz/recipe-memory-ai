@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { Button } from '../ui/button'
 import { Sparkles, Menu, X } from 'lucide-react'
+import { getLenis } from '../../hooks/useLenis'
 
 function Navbar() {
   const { isAuthenticated } = useAuth()
@@ -12,6 +13,7 @@ function Navbar() {
 
   const navLinks = [
     { label: 'Features', href: '/#features' },
+    { label: 'How It Works', href: '/#how-it-works' },
     { label: 'Pricing', href: '/#pricing' },
     { label: 'Help', href: '/#help' },
   ]
@@ -24,13 +26,22 @@ function Navbar() {
   const handleNavClick = (href) => {
     setMobileMenuOpen(false)
     if (href.startsWith('/#')) {
+      const selector = href.slice(1) // e.g. "#features"
       if (location.pathname !== '/') {
         navigate('/')
         setTimeout(() => {
-          document.querySelector(href.slice(1))?.scrollIntoView({ behavior: 'smooth' })
+          const lenis = getLenis()
+          const el = document.querySelector(selector)
+          if (el) {
+            lenis ? lenis.scrollTo(el) : el.scrollIntoView({ behavior: 'smooth' })
+          }
         }, 100)
       } else {
-        document.querySelector(href.slice(1))?.scrollIntoView({ behavior: 'smooth' })
+        const lenis = getLenis()
+        const el = document.querySelector(selector)
+        if (el) {
+          lenis ? lenis.scrollTo(el) : el.scrollIntoView({ behavior: 'smooth' })
+        }
       }
     } else {
       navigate(href)
