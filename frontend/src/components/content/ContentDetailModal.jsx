@@ -88,13 +88,8 @@ function useTranscriptSync(entries) {
  * SyncedTranscriptWrapper — wraps the transcript section,
  * manages highlight classes and auto-scroll on active entry.
  */
-const SyncedTranscriptWrapper = forwardRef(function SyncedTranscriptWrapper({ entries, className, children, isYouTube, onActiveIdxChange }, ref) {
+const SyncedTranscriptWrapper = forwardRef(function SyncedTranscriptWrapper({ entries, className, children, isYouTube }, ref) {
   const { activeIdx, hasPlayed } = useTranscriptSync(isYouTube ? entries : null)
-
-  // Notify parent when activeIdx changes (for playingIdx sync)
-  useEffect(() => {
-    if (onActiveIdxChange) onActiveIdxChange(activeIdx)
-  }, [activeIdx, onActiveIdxChange])
   const innerRef = useRef(null)
 
   // Merge forwarded ref
@@ -326,13 +321,28 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     }
   }, [playingIdx, ytCtx, showVideo])
 
-  // Keep playingIdx in sync as playback crosses section boundaries
-  // Also picks up playback started via the top play button
-  const handleActiveIdxChange = useCallback((activeIdx) => {
-    if (activeIdx >= 0 && playerState === YT_STATE.PLAYING) {
-      setPlayingIdx(activeIdx)
+  // Directly poll to keep playingIdx in sync with current playback position
+  // Uses content.timeline indices so they match the button indices exactly
+  useEffect(() => {
+    if (playerState !== YT_STATE.PLAYING || !ytCtx?.getCurrentTime) return
+    if (!content.timeline?.length) return
+
+    let cancelled = false
+    const sync = () => {
+      if (cancelled) return
+      const t = ytCtx.getCurrentTime()
+      let best = -1
+      for (let i = 0; i < content.timeline.length; i++) {
+        if (content.timeline[i].timestamp != null && content.timeline[i].timestamp <= t) {
+          best = i
+        }
+      }
+      if (best >= 0) setPlayingIdx(best)
+      if (!cancelled) setTimeout(sync, 300)
     }
-  }, [playerState])
+    sync()
+    return () => { cancelled = true }
+  }, [playerState, ytCtx, content.timeline])
 
   // Fetch subscription for feature access checks
   useEffect(() => {
@@ -1390,7 +1400,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                       <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
                     </div>
                     {modeContent || renderGeneralContent()}
-                    <SyncedTranscriptWrapper ref={transcriptRef} entries={transcriptSyncEntries} className="breakdown-transcript-full" isYouTube onActiveIdxChange={handleActiveIdxChange}>
+                    <SyncedTranscriptWrapper ref={transcriptRef} entries={transcriptSyncEntries} className="breakdown-transcript-full" isYouTube>
                       {renderTimelineSection()}
                     </SyncedTranscriptWrapper>
                   </div>
