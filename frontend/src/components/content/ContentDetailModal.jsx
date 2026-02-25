@@ -132,7 +132,7 @@ const SyncedTranscriptWrapper = forwardRef(function SyncedTranscriptWrapper({ en
  * VideoPlaybackController — lives inside YouTubePlayerProvider,
  * plays/pauses the YouTube player when `playing` prop changes.
  */
-function VideoPlaybackController({ playing, onShowVideo }) {
+function VideoPlaybackController({ playing, onShowVideo, onSeekTimestamp }) {
   const { isReady, playVideo, pauseVideo, setOnSeek } = useYouTubePlayer()
 
   useEffect(() => {
@@ -144,13 +144,14 @@ function VideoPlaybackController({ playing, onShowVideo }) {
     }
   }, [playing, isReady, playVideo, pauseVideo])
 
-  // When a timestamp is clicked, show the video
+  // When a timestamp is clicked, show the video and notify parent of seek
   useEffect(() => {
-    setOnSeek(() => {
+    setOnSeek((seconds) => {
       if (onShowVideo) onShowVideo()
+      if (onSeekTimestamp) onSeekTimestamp(seconds)
     })
     return () => setOnSeek(null)
-  }, [setOnSeek, onShowVideo])
+  }, [setOnSeek, onShowVideo, onSeekTimestamp])
 
   return null
 }
@@ -162,7 +163,18 @@ function VideoPlaybackController({ playing, onShowVideo }) {
  */
 function SectionPlaybackTracker({ timeline, showVideo, setPlayingIdx, seekingRef, playerActionsRef }) {
   const ytCtx = useYouTubePlayer()
-  const playerState = ytCtx?.playerState ?? YT_STATE.UNSTARTED
+
+  // Keep latest values in refs for the interval to read
+  const ctxRef = useRef(ytCtx)
+  const timelineRef = useRef(timeline)
+  const showVideoRef = useRef(showVideo)
+  const seekingRefRef = useRef(seekingRef)
+  const setPlayingIdxRef = useRef(setPlayingIdx)
+  ctxRef.current = ytCtx
+  timelineRef.current = timeline
+  showVideoRef.current = showVideo
+  seekingRefRef.current = seekingRef
+  setPlayingIdxRef.current = setPlayingIdx
 
   // Expose player actions to parent via ref (updated every render)
   playerActionsRef.current = {
@@ -170,53 +182,48 @@ function SectionPlaybackTracker({ timeline, showVideo, setPlayingIdx, seekingRef
     pauseVideo: () => ytCtx?.pauseVideo(),
   }
 
-  // Track when video was just shown to avoid resetting during initial load
+  // Single interval: handles both polling active section and detecting pause/end
+  const wasPlayingRef = useRef(false)
   const justStartedRef = useRef(false)
-  const prevShowRef = useRef(showVideo)
-  if (showVideo && !prevShowRef.current) {
-    justStartedRef.current = true
-  }
-  prevShowRef.current = showVideo
-
-  // Reset playingIdx when user pauses via YouTube controls
-  useEffect(() => {
-    if (playerState === YT_STATE.PLAYING) {
-      seekingRef.current = false
-      justStartedRef.current = false // loading done, now pauses are real
-    }
-    if ((playerState === YT_STATE.PAUSED || playerState === YT_STATE.ENDED)
-        && !seekingRef.current && !justStartedRef.current) {
-      setPlayingIdx(-1)
-    }
-  }, [playerState, setPlayingIdx, seekingRef])
-
-  // Poll to sync playingIdx with current playback position
-  const getTimeRef = useRef(null)
-  const timelineRef = useRef(null)
-  getTimeRef.current = ytCtx?.getCurrentTime
-  timelineRef.current = timeline
 
   useEffect(() => {
-    if (playerState !== YT_STATE.PLAYING) return
-    if (!getTimeRef.current || !timelineRef.current?.length) return
-
-    let cancelled = false
-    const sync = () => {
-      if (cancelled) return
-      const t = getTimeRef.current()
+    const tick = () => {
+      const ctx = ctxRef.current
       const tl = timelineRef.current
-      let best = -1
-      for (let i = 0; i < tl.length; i++) {
-        if (tl[i].timestamp != null && tl[i].timestamp <= t) {
-          best = i
-        }
+      const state = ctx?.playerState ?? YT_STATE.UNSTARTED
+      const isPlaying = state === YT_STATE.PLAYING
+      const isPaused = state === YT_STATE.PAUSED || state === YT_STATE.ENDED
+
+      // Detect showVideo turning on → mark justStarted
+      if (showVideoRef.current && !wasPlayingRef.current && !isPlaying) {
+        justStartedRef.current = true
       }
-      if (best >= 0) setPlayingIdx(best)
-      if (!cancelled) setTimeout(sync, 300)
+
+      if (isPlaying) {
+        justStartedRef.current = false
+        wasPlayingRef.current = true
+
+        // Poll current time → find active section
+        if (ctx?.getCurrentTime && tl?.length) {
+          const t = ctx.getCurrentTime()
+          let best = -1
+          for (let i = 0; i < tl.length; i++) {
+            if (tl[i].timestamp != null && tl[i].timestamp <= t) {
+              best = i
+            }
+          }
+          if (best >= 0) setPlayingIdxRef.current(best)
+        }
+      } else if (isPaused && wasPlayingRef.current && !seekingRefRef.current.current && !justStartedRef.current) {
+        // User paused via YouTube controls
+        wasPlayingRef.current = false
+        setPlayingIdxRef.current(-1)
+      }
     }
-    sync()
-    return () => { cancelled = true }
-  }, [playerState, setPlayingIdx])
+
+    const id = setInterval(tick, 250)
+    return () => clearInterval(id)
+  }, []) // No deps — reads everything from refs
 
   return null
 }
@@ -358,6 +365,18 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const navigate = useNavigate()
   const { token } = useAuth()
   const playerRef = useRef({ seekTo: () => {}, pauseVideo: () => {} })
+
+  // When a TimestampLink is clicked, find the matching section and set playingIdx
+  const handleSeekTimestamp = useCallback((seconds) => {
+    if (!content.timeline?.length) return
+    let best = -1
+    for (let i = 0; i < content.timeline.length; i++) {
+      if (content.timeline[i].timestamp != null && content.timeline[i].timestamp <= seconds) {
+        best = i
+      }
+    }
+    if (best >= 0) setPlayingIdx(best)
+  }, [content.timeline])
 
   // Handle per-section play/pause (uses playerRef to call into the provider)
   const handleSectionPlay = useCallback((idx, timestampSeconds) => {
@@ -1318,7 +1337,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       } else {
         setShowVideo(true)
       }
-    }} />}
+    }} onSeekTimestamp={handleSeekTimestamp} />}
     {isYouTube && <SectionPlaybackTracker
       timeline={content.timeline}
       showVideo={showVideo}
