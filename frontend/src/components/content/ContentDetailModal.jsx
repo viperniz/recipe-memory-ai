@@ -286,6 +286,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [showVideo, setShowVideo] = useState(false)
   const [tabFading, setTabFading] = useState(false)
   const [playingIdx, setPlayingIdx] = useState(-1)
+  const seekingRef = useRef(false)
   const stickyTopRef = useRef(null)
   const modalContentRef = useRef(null)
   const modalBodyRef = useRef(null)
@@ -298,9 +299,13 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const ytCtx = useYouTubePlayer()
 
   // Reset playingIdx when video pauses or ends externally
+  // Skip if we're in the middle of a seek (player briefly goes PAUSED during seek)
   const playerState = ytCtx?.playerState ?? YT_STATE.UNSTARTED
   useEffect(() => {
-    if (playerState === YT_STATE.PAUSED || playerState === YT_STATE.ENDED) {
+    if (playerState === YT_STATE.PLAYING) {
+      seekingRef.current = false
+    }
+    if ((playerState === YT_STATE.PAUSED || playerState === YT_STATE.ENDED) && !seekingRef.current) {
       setPlayingIdx(-1)
     }
   }, [playerState])
@@ -309,10 +314,12 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const handleSectionPlay = useCallback((idx, timestampSeconds) => {
     if (playingIdx === idx) {
       // Pause
+      seekingRef.current = false
       if (ytCtx) ytCtx.pauseVideo()
       setPlayingIdx(-1)
     } else {
       // Show video if hidden, seek & play
+      seekingRef.current = true
       if (!showVideo) setShowVideo(true)
       if (ytCtx) ytCtx.seekTo(timestampSeconds)
       setPlayingIdx(idx)
