@@ -731,6 +731,18 @@ function HomePage() {
       // Generated content (guide/flashcards/mindmap) — export client-side
       if (exportContentType !== 'breakdown' && exportContentIds.length) {
         const cid = exportContentIds[0]
+
+        // Guide markdown: use backend's to_markdown() (already perfect)
+        if (exportContentType === 'guide' && (exportFormat === 'markdown' || exportFormat === 'md' || exportFormat === 'obsidian')) {
+          const res = await api.post(`/content/${cid}/generate-guide`, { format: 'markdown', regenerate: false }, { responseType: 'blob' })
+          downloadBlob(res.data, `guide-${cid}.md`)
+          setShowExportModal(false)
+          trackEvent('export', { format: 'markdown', content_type: 'guide' })
+          toast({ variant: 'success', title: 'Export complete', description: 'Guide downloaded as MD' })
+          return
+        }
+
+        // Other generated content: fetch data and format client-side
         const res = await api.get(`/content/${cid}/generated/${exportContentType}`)
         const genData = res.data.data
         if (!genData) {
