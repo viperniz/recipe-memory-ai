@@ -363,6 +363,11 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     // Phase 5: restructure layout so transcript replaces analysis
     // and the user can scroll through it normally
     function enterTranscriptView() {
+      // Capture scroll position BEFORE any DOM changes
+      // (removing spacer collapses page height, browser clamps scrollTop)
+      const savedScroll = modal.scrollTop
+      const layoutTop = layout.offsetTop
+
       // Stop scroll-driven animation
       if (onScrollBound) {
         modal.removeEventListener('scroll', onScrollBound)
@@ -409,8 +414,10 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
       // Push transcript down with marginTop so it appears at the user's
       // current viewport position — NO scroll jump, transcript starts from beginning
-      const offset = Math.max(0, modal.scrollTop - layout.offsetTop)
+      const offset = Math.max(0, savedScroll - layoutTop)
       transcript.style.marginTop = offset + 'px'
+      // Restore scroll position (may have been clamped by spacer removal)
+      modal.scrollTop = savedScroll
 
       // Fade in transcript
       transcript.style.visibility = 'visible'
