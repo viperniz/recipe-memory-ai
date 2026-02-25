@@ -323,17 +323,24 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
 
   // Directly poll to keep playingIdx in sync with current playback position
   // Uses content.timeline indices so they match the button indices exactly
+  // Use refs so the polling interval doesn't restart on every render
+  const getTimeRef = useRef(null)
+  const timelineRef = useRef(null)
+  getTimeRef.current = ytCtx?.getCurrentTime
+  timelineRef.current = content.timeline
+
   useEffect(() => {
-    if (playerState !== YT_STATE.PLAYING || !ytCtx?.getCurrentTime) return
-    if (!content.timeline?.length) return
+    if (playerState !== YT_STATE.PLAYING) return
+    if (!getTimeRef.current || !timelineRef.current?.length) return
 
     let cancelled = false
     const sync = () => {
       if (cancelled) return
-      const t = ytCtx.getCurrentTime()
+      const t = getTimeRef.current()
+      const tl = timelineRef.current
       let best = -1
-      for (let i = 0; i < content.timeline.length; i++) {
-        if (content.timeline[i].timestamp != null && content.timeline[i].timestamp <= t) {
+      for (let i = 0; i < tl.length; i++) {
+        if (tl[i].timestamp != null && tl[i].timestamp <= t) {
           best = i
         }
       }
@@ -342,7 +349,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     }
     sync()
     return () => { cancelled = true }
-  }, [playerState, ytCtx, content.timeline])
+  }, [playerState])
 
   // Fetch subscription for feature access checks
   useEffect(() => {
