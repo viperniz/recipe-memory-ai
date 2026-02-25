@@ -255,6 +255,10 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     const VIDEO_H = videoCol.offsetHeight
     const TRIGGER_LINE = STICKY_TOP + VIDEO_H
 
+    // Hide transcript in two-col mode — only visible in transcript-view
+    transcript.style.visibility = 'hidden'
+    transcript.style.opacity = '0'
+
     let state = 'two-col' // 'two-col' | 'transitioning' | 'transcript-view'
     let scrollDriverFn = null
     let scrollAtTransition = 0
@@ -555,7 +559,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       modal.removeEventListener('scroll', scrollFallback)
       sentinel.remove()
       stopTransition()
-      if (state === 'transcript-view') resetAllStyles()
+      resetAllStyles()
     }
   }, [activeTab, content?.id])
 
