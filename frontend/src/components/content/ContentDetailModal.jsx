@@ -300,7 +300,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [showVideo, setShowVideo] = useState(false)
   const [tabFading, setTabFading] = useState(false)
   const [playingIdx, setPlayingIdx] = useState(-1)
-  const [dbgState, setDbgState] = useState(-1) // TEMP DEBUG
   const seekingRef = useRef(false)
   const stickyTopRef = useRef(null)
   const modalContentRef = useRef(null)
@@ -313,17 +312,37 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const { token } = useAuth()
   const playerRef = useRef({ seekTo: () => {}, pauseVideo: () => {} })
 
+  // Build sorted timestamp entries for section tracking (works for both timeline and fallback transcript)
+  const syncEntries = useMemo(() => {
+    if (content.timeline && content.timeline.length > 0) {
+      return content.timeline
+        .map((e, idx) => ({ timestamp: e.timestamp, idx }))
+        .sort((a, b) => a.timestamp - b.timestamp)
+    }
+    if (content.transcript) {
+      const entries = []
+      content.transcript.split('\n\n').forEach((paragraph, idx) => {
+        const match = paragraph.match(/^\[(\d+):(\d+)\]/)
+        if (match) {
+          entries.push({ timestamp: parseInt(match[1]) * 60 + parseInt(match[2]), idx })
+        }
+      })
+      return entries.sort((a, b) => a.timestamp - b.timestamp)
+    }
+    return []
+  }, [content.timeline, content.transcript])
+
   // When a TimestampLink is clicked, find the matching section and set playingIdx
   const handleSeekTimestamp = useCallback((seconds) => {
-    if (!content.timeline?.length) return
+    if (!syncEntries.length) return
     let best = -1
-    for (let i = 0; i < content.timeline.length; i++) {
-      if (content.timeline[i].timestamp != null && content.timeline[i].timestamp <= seconds) {
-        best = i
+    for (let i = 0; i < syncEntries.length; i++) {
+      if (syncEntries[i].timestamp <= seconds) {
+        best = syncEntries[i].idx
       }
     }
     if (best >= 0) setPlayingIdx(best)
-  }, [content.timeline])
+  }, [syncEntries])
 
   // Handle per-section play/pause (uses playerRef to call into the provider)
   const handleSectionPlay = useCallback((idx, timestampSeconds) => {
@@ -344,9 +363,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const wasPlayingRef = useRef(false)
   const justStartedRef = useRef(false)
   const showVideoRef = useRef(showVideo)
-  const timelineDataRef = useRef(content.timeline)
+  const syncEntriesRef = useRef(syncEntries)
   showVideoRef.current = showVideo
-  timelineDataRef.current = content.timeline
+  syncEntriesRef.current = syncEntries
 
   useEffect(() => {
     const tick = () => {
@@ -354,7 +373,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       if (!p.getPlayerState) return
 
       const state = p.getPlayerState()
-      setDbgState(state) // TEMP DEBUG
       const isPlaying = state === YT_STATE.PLAYING
       const isPaused = state === YT_STATE.PAUSED || state === YT_STATE.ENDED
 
@@ -367,13 +385,13 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         wasPlayingRef.current = true
         seekingRef.current = false
 
-        const tl = timelineDataRef.current
-        if (tl?.length) {
+        const entries = syncEntriesRef.current
+        if (entries?.length) {
           const t = p.getCurrentTime()
           let best = -1
-          for (let i = 0; i < tl.length; i++) {
-            if (tl[i].timestamp != null && tl[i].timestamp <= t) {
-              best = i
+          for (let i = 0; i < entries.length; i++) {
+            if (entries[i].timestamp <= t) {
+              best = entries[i].idx
             }
           }
           if (best >= 0) setPlayingIdx(best)
@@ -625,7 +643,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       {content.summary && (
         <div className="content-detail-section" data-reveal>
           <h3>
-            Summary <span style={{fontSize:11,color:'red',fontWeight:'normal'}}>DBG idx={playingIdx} st={dbgState} tl={content.timeline?.length || 0}</span>
+            Summary
             {content.metadata?.detected_language_name && (
               <Badge variant="outline" className="ml-2" style={{ verticalAlign: 'middle', fontSize: 11 }}>
                 {content.metadata.translated_to_name
@@ -636,7 +654,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             {isYouTube && (
               <button className={`play-video-btn${showVideo ? ' active' : ''}`} onClick={() => {
                 if (!showVideo) {
-                  setPlayingIdx(0)
+                  setPlayingIdx(syncEntries[0]?.idx ?? 0)
                   if (activeTab !== 'content') {
                     setTabFading(true)
                     setTimeout(() => {
@@ -1300,26 +1318,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     )
   }
 
-  // Build sorted timestamp entries for transcript sync
-  const transcriptSyncEntries = useMemo(() => {
-    if (content.timeline && content.timeline.length > 0) {
-      return content.timeline
-        .map((e, idx) => ({ timestamp: e.timestamp, idx }))
-        .sort((a, b) => a.timestamp - b.timestamp)
-    }
-    if (content.transcript) {
-      const entries = []
-      content.transcript.split('\n\n').forEach((paragraph, idx) => {
-        const match = paragraph.match(/^\[(\d+):(\d+)\]/)
-        if (match) {
-          entries.push({ timestamp: parseInt(match[1]) * 60 + parseInt(match[2]), idx })
-        }
-      })
-      return entries.sort((a, b) => a.timestamp - b.timestamp)
-    }
-    return []
-  }, [content.timeline, content.transcript])
-
   return (
     <YouTubePlayerProvider>
     {isYouTube && <VideoPlaybackController playing={showVideo} onShowVideo={() => {
@@ -1456,7 +1454,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                       <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
                     </div>
                     {modeContent || renderGeneralContent()}
-                    <SyncedTranscriptWrapper ref={transcriptRef} entries={transcriptSyncEntries} className="breakdown-transcript-full" isYouTube>
+                    <SyncedTranscriptWrapper ref={transcriptRef} entries={syncEntries} className="breakdown-transcript-full" isYouTube>
                       {renderTimelineSection()}
                     </SyncedTranscriptWrapper>
                   </div>
@@ -1467,7 +1465,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                     <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
                   </div>
                   {modeContent || renderGeneralContent()}
-                  <SyncedTranscriptWrapper entries={transcriptSyncEntries} className="breakdown-transcript-full" isYouTube={false}>
+                  <SyncedTranscriptWrapper entries={syncEntries} className="breakdown-transcript-full" isYouTube={false}>
                     {renderTimelineSection()}
                   </SyncedTranscriptWrapper>
                 </>
