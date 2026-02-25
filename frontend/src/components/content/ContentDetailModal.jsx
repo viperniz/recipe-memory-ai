@@ -297,6 +297,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false)
   const [subscription, setSubscription] = useState(null)
   const [showReportModal, setShowReportModal] = useState(false)
+  const [hasFlashcards, setHasFlashcards] = useState(false)
+  const [hasMindmap, setHasMindmap] = useState(false)
   const [showVideo, setShowVideo] = useState(false)
   const [tabFading, setTabFading] = useState(false)
   const [playingIdx, setPlayingIdx] = useState(-1)
@@ -428,15 +430,17 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     return () => ro.disconnect()
   }, [activeTab])
 
-  // Load stored guide on mount
+  // Load stored guide + check flashcards/mindmap existence on mount
   useEffect(() => {
     if (!content?.id) return
+    const authToken = localStorage.getItem('token')
+    const headers = { Authorization: `Bearer ${authToken}` }
+
     const loadStoredGuide = async () => {
       try {
-        const token = localStorage.getItem('token')
         const response = await axios.get(
           `${API_BASE}/content/${content.id}/generated/guide`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers }
         )
         if (response.data.data) {
           setGeneratedGuide(response.data.data)
@@ -445,7 +449,34 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         // Silently ignore
       }
     }
+
+    const checkFlashcards = async () => {
+      try {
+        const response = await axios.get(
+          `${API_BASE}/content/${content.id}/generated/flashcards`,
+          { headers }
+        )
+        if (response.data.data) setHasFlashcards(true)
+      } catch (err) {
+        // Silently ignore
+      }
+    }
+
+    const checkMindmap = async () => {
+      try {
+        const response = await axios.get(
+          `${API_BASE}/content/${content.id}/generated/mindmap`,
+          { headers }
+        )
+        if (response.data.data) setHasMindmap(true)
+      } catch (err) {
+        // Silently ignore
+      }
+    }
+
     loadStoredGuide()
+    checkFlashcards()
+    checkMindmap()
   }, [content?.id])
 
   // Cinematic motion hooks
@@ -594,6 +625,109 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       setIsDownloadingGuide(false)
     }
   }
+
+  const handleExportFlashcards = async () => {
+    try {
+      const authToken = localStorage.getItem('token')
+      const response = await axios.get(
+        `${API_BASE}/content/${content.id}/generated/flashcards`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      )
+      const csv = response.data.data?.anki_csv
+      if (!csv) {
+        toast({ variant: 'destructive', title: 'Export failed', description: 'No Anki CSV data found' })
+        return
+      }
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `flashcards-${content.id}.csv`
+      document.body.appendChild(a)
+      a.click()
+      URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      toast({ variant: 'success', title: 'Flashcards exported', description: 'Anki CSV file saved' })
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Export failed', description: err.message })
+    }
+  }
+
+  const handleExportMindmap = async () => {
+    try {
+      const authToken = localStorage.getItem('token')
+      const response = await axios.get(
+        `${API_BASE}/content/${content.id}/generated/mindmap`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      )
+      const tree = response.data.data
+      if (!tree) {
+        toast({ variant: 'destructive', title: 'Export failed', description: 'No mind map data found' })
+        return
+      }
+
+      const lines = []
+      const walk = (node, depth) => {
+        const prefix = depth === 0 ? '# ' : depth === 1 ? '## ' : depth === 2 ? '### ' : '  '.repeat(depth - 3) + '- '
+        let line = prefix + (node.label || 'Untitled')
+        if (node.timestamp) line += ` [${formatTimestamp(node.timestamp)}]`
+        lines.push(line)
+        if (node.description) lines.push(depth <= 2 ? node.description : '  '.repeat(depth - 3) + '  ' + node.description)
+        if (node.children) node.children.forEach(child => walk(child, depth + 1))
+      }
+      walk(tree, 0)
+
+      const md = lines.join('\n')
+      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `mindmap-${content.id}.md`
+      document.body.appendChild(a)
+      a.click()
+      URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      toast({ variant: 'success', title: 'Mind map exported', description: 'Markdown file saved' })
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Export failed', description: err.message })
+    }
+  }
+
+  const handleExport = () => {
+    switch (activeTab) {
+      case 'content':
+        onExport()
+        break
+      case 'guide':
+        if (generatedGuide) {
+          handleDownloadGuide()
+        } else {
+          toast({ title: 'Not generated yet', description: 'Please generate the study guide first' })
+        }
+        break
+      case 'flashcards':
+        if (hasFlashcards) {
+          handleExportFlashcards()
+        } else {
+          toast({ title: 'Not generated yet', description: 'Please generate flashcards first' })
+        }
+        break
+      case 'mindmap':
+        if (hasMindmap) {
+          handleExportMindmap()
+        } else {
+          toast({ title: 'Not generated yet', description: 'Please generate the mind map first' })
+        }
+        break
+      default:
+        onExport()
+    }
+  }
+
+  const exportLabel = activeTab === 'guide' ? 'Export Guide'
+    : activeTab === 'flashcards' ? 'Export Flashcards'
+    : activeTab === 'mindmap' ? 'Export Mind Map'
+    : 'Export'
 
   const copyToClipboard = (text, stepId) => {
     navigator.clipboard.writeText(text)
@@ -1350,10 +1484,10 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             <div className="modal-header-actions">
               <Button
                 size="sm"
-                onClick={onExport}
+                onClick={handleExport}
               >
                 <Download className="w-4 h-4 mr-2" />
-                Export
+                {exportLabel}
               </Button>
               <button className="modal-close" onClick={onClose}>
                 <X className="w-5 h-5" />
@@ -1391,6 +1525,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             >
               <Layers className="w-3.5 h-3.5" />
               <span className="tab-label">Flashcards</span>
+              {hasFlashcards && <CheckCircle className="w-3 h-3" style={{ color: '#22c55e' }} />}
               {!subscription?.flashcard_generation && <Lock className="w-3 h-3 text-zinc-500" />}
             </button>
             <button
@@ -1400,6 +1535,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             >
               <Network className="w-3.5 h-3.5" />
               <span className="tab-label">Mind Map</span>
+              {hasMindmap && <CheckCircle className="w-3 h-3" style={{ color: '#22c55e' }} />}
               {!subscription?.mindmap_generation && <Lock className="w-3 h-3 text-zinc-500" />}
             </button>
             <button
@@ -1439,9 +1575,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
               <p style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 12, opacity: 0.6 }}>Costs 3 credits</p>
             </div>
           ) : activeTab === 'flashcards' ? (
-            <FlashcardPanel contentId={content.id} />
+            <FlashcardPanel contentId={content.id} onGenerated={() => setHasFlashcards(true)} />
           ) : activeTab === 'mindmap' ? (
-            <MindMapPanel contentId={content.id} sourceUrl={content.source_url} />
+            <MindMapPanel contentId={content.id} sourceUrl={content.source_url} onGenerated={() => setHasMindmap(true)} />
           ) : (
             <>
               {isYouTube ? (

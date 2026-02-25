@@ -8,7 +8,7 @@ import { toast } from '../../hooks/use-toast'
 import { API_BASE } from '../../lib/apiBase'
 import { trackEvent } from '../../utils/analytics'
 
-function FlashcardPanel({ contentId }) {
+function FlashcardPanel({ contentId, onGenerated }) {
   const [cards, setCards] = useState(null)
   const [ankiCsv, setAnkiCsv] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
@@ -30,6 +30,7 @@ function FlashcardPanel({ contentId }) {
           const stored = response.data.data
           setCards(stored.cards || [])
           setAnkiCsv(stored.anki_csv || '')
+          onGenerated?.()
         }
       } catch (err) {
         // Silently ignore - user just hasn't generated yet
@@ -58,6 +59,7 @@ function FlashcardPanel({ contentId }) {
       setCurrentIndex(0)
       setFlipped(false)
       trackEvent('flashcard_generate')
+      onGenerated?.()
     } catch (err) {
       const detail = err.response?.data?.detail
       if (err.response?.status === 403 && typeof detail === 'object') {

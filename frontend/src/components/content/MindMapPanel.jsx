@@ -46,7 +46,7 @@ function MindMapNode({ node, sourceUrl, depth = 0 }) {
   )
 }
 
-function MindMapPanel({ contentId, sourceUrl }) {
+function MindMapPanel({ contentId, sourceUrl, onGenerated }) {
   const [mindmap, setMindmap] = useState(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isLoadingStored, setIsLoadingStored] = useState(true)
@@ -63,6 +63,7 @@ function MindMapPanel({ contentId, sourceUrl }) {
         )
         if (response.data.data) {
           setMindmap(response.data.data)
+          onGenerated?.()
         }
       } catch (err) {
         // Silently ignore
@@ -88,6 +89,7 @@ function MindMapPanel({ contentId, sourceUrl }) {
       )
       setMindmap(response.data.mindmap)
       trackEvent('mindmap_generate')
+      onGenerated?.()
     } catch (err) {
       const detail = err.response?.data?.detail
       if (err.response?.status === 403 && typeof detail === 'object') {
