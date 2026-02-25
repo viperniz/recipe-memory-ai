@@ -121,7 +121,9 @@ function ProfilePanel({ isOpen, onClose }) {
     try {
       await authApi.updatePreferences(token, { [key]: value })
     } catch (err) {
-      toast({ variant: 'destructive', title: 'Failed to save preference' })
+      const detail = err.response?.data?.detail || err.response?.status || err.message
+      console.error('[handlePrefChange] error:', err.response?.status, err.response?.data)
+      toast({ variant: 'destructive', title: 'Failed to save preference', description: String(detail) })
     }
   }
 
