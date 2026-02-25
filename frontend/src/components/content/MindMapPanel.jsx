@@ -138,7 +138,8 @@ function MindMapPanel({ contentId, sourceUrl }) {
       <div className="mindmap-panel">
         <div className="mindmap-generate">
           <Network className="w-10 h-10 text-purple-500 mx-auto mb-3" />
-          <p>Generate an interactive mind map from this source's key topics</p>
+          <h3 style={{ marginBottom: 8, fontSize: 18 }}>Mind Map</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 20, fontSize: 14 }}>Generate an interactive mind map from this source's key topics</p>
           <Button onClick={() => generate(false)} disabled={isGenerating}>
             {isGenerating ? (
               <>
@@ -146,9 +147,13 @@ function MindMapPanel({ contentId, sourceUrl }) {
                 Generating...
               </>
             ) : (
-              'Generate Mind Map'
+              <>
+                <Network className="w-4 h-4 mr-2" />
+                Generate Mind Map
+              </>
             )}
           </Button>
+          <p style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 12, opacity: 0.6 }}>Costs 3 credits</p>
         </div>
       </div>
     )

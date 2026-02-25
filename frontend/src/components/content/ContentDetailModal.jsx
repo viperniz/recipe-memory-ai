@@ -1,5 +1,5 @@
-          import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { X, Download, ChefHat, GraduationCap, Video, Users, BookOpen, Loader2, Copy, Check, Globe, MessageSquare, Layers, Network, CheckCircle, RotateCcw, Eye, Lock, Camera, Grid3X3, Search, StickyNote, Bookmark as BookmarkIcon, FileText, Sparkles } from 'lucide-react'
+          import React, { useState, useEffect, useRef, useCallback, useMemo, forwardRef } from 'react'
+import { X, Download, ChefHat, GraduationCap, Video, Users, BookOpen, Loader2, Copy, Check, Globe, MessageSquare, Layers, Network, CheckCircle, RotateCcw, Eye, Lock, Camera, Grid3X3, Search, StickyNote, Bookmark as BookmarkIcon, FileText, Sparkles, Play, Square } from 'lucide-react'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import RecipeCard from './RecipeCard'
@@ -9,7 +9,7 @@ import MeetingCard from './MeetingCard'
 import DeepDiveCard from './DeepDiveCard'
 import TimestampLink from './TimestampLink'
 import YouTubeEmbed from './YouTubeEmbed'
-import { YouTubePlayerProvider } from '../../context/YouTubePlayerContext'
+import { YouTubePlayerProvider, useYouTubePlayer, YT_STATE } from '../../context/YouTubePlayerContext'
 
 import FlashcardPanel from './FlashcardPanel'
 import MindMapPanel from './MindMapPanel'
@@ -20,8 +20,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { billingApi } from '../../api/billing'
 import { buildYouTubeTimestampUrl, formatTimestamp } from '../../lib/utils'
-import { useData } from '../../context/DataContext'
-import { tagsApi } from '../../api/tags'
 import ReportConfigModal from '../modals/ReportConfigModal'
 
 import { API_BASE } from '../../lib/apiBase'
@@ -37,6 +35,124 @@ const MODE_ICONS = {
   meeting: Users,
   deepdive: Search,
   web: Globe
+}
+
+/**
+ * useTranscriptSync — polls YouTube player time while playing,
+ * returns { activeIdx, hasPlayed } for transcript highlight sync.
+ */
+function useTranscriptSync(entries) {
+  const ctx = useYouTubePlayer()
+  const [activeIdx, setActiveIdx] = useState(-1)
+  const [hasPlayed, setHasPlayed] = useState(false)
+
+  const playerState = ctx?.playerState ?? YT_STATE.UNSTARTED
+  const getCurrentTime = ctx?.getCurrentTime
+
+  useEffect(() => {
+    if (playerState === YT_STATE.PLAYING && !hasPlayed) {
+      setHasPlayed(true)
+    }
+  }, [playerState, hasPlayed])
+
+  useEffect(() => {
+    if (!entries || entries.length === 0 || !getCurrentTime) return
+    if (playerState !== YT_STATE.PLAYING) return
+
+    let cancelled = false
+    const poll = () => {
+      if (cancelled) return
+      const t = getCurrentTime()
+      // Binary-ish search: find last entry whose timestamp <= t
+      let lo = 0, hi = entries.length - 1, best = -1
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1
+        if (entries[mid].timestamp <= t) {
+          best = mid
+          lo = mid + 1
+        } else {
+          hi = mid - 1
+        }
+      }
+      setActiveIdx(best)
+      if (!cancelled) setTimeout(poll, 300)
+    }
+    poll()
+    return () => { cancelled = true }
+  }, [entries, playerState, getCurrentTime])
+
+  return { activeIdx, hasPlayed }
+}
+
+/**
+ * SyncedTranscriptWrapper — wraps the transcript section,
+ * manages highlight classes and auto-scroll on active entry.
+ */
+const SyncedTranscriptWrapper = forwardRef(function SyncedTranscriptWrapper({ entries, className, children, isYouTube }, ref) {
+  const { activeIdx, hasPlayed } = useTranscriptSync(isYouTube ? entries : null)
+  const innerRef = useRef(null)
+
+  // Merge forwarded ref
+  const setRefs = useCallback((node) => {
+    innerRef.current = node
+    if (typeof ref === 'function') ref(node)
+    else if (ref) ref.current = node
+  }, [ref])
+
+  // On first play, scroll the transcript section to the top
+  useEffect(() => {
+    if (hasPlayed && innerRef.current) {
+      innerRef.current.scrollIntoView({ behavior: 'instant', block: 'start' })
+    }
+  }, [hasPlayed])
+
+  // Toggle highlight class on entries via DOM
+  useEffect(() => {
+    const container = innerRef.current
+    if (!container) return
+    const prev = container.querySelectorAll('.transcript-sync-active')
+    prev.forEach(el => el.classList.remove('transcript-sync-active'))
+    if (activeIdx >= 0) {
+      const el = container.querySelector(`[data-sync-idx="${activeIdx}"]`)
+      if (el) {
+        el.classList.add('transcript-sync-active')
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }
+  }, [activeIdx])
+
+  return (
+    <div ref={setRefs} className={className || ''}>
+      {children}
+    </div>
+  )
+})
+
+/**
+ * VideoPlaybackController — lives inside YouTubePlayerProvider,
+ * plays/pauses the YouTube player when `playing` prop changes.
+ */
+function VideoPlaybackController({ playing, onShowVideo }) {
+  const { isReady, playVideo, pauseVideo, setOnSeek } = useYouTubePlayer()
+
+  useEffect(() => {
+    if (!isReady) return
+    if (playing) {
+      playVideo()
+    } else {
+      pauseVideo()
+    }
+  }, [playing, isReady, playVideo, pauseVideo])
+
+  // When a timestamp is clicked, show the video
+  useEffect(() => {
+    setOnSeek(() => {
+      if (onShowVideo) onShowVideo()
+    })
+    return () => setOnSeek(null)
+  }, [setOnSeek, onShowVideo])
+
+  return null
 }
 
 /**
@@ -162,8 +278,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const [isGeneratingThumbnails, setIsGeneratingThumbnails] = useState(false)
   const [subscription, setSubscription] = useState(null)
   const [showReportModal, setShowReportModal] = useState(false)
-  const [contentTags, setContentTags] = useState([])
-  const [showTagDropdown, setShowTagDropdown] = useState(false)
+  const [showVideo, setShowVideo] = useState(false)
+  const [tabFading, setTabFading] = useState(false)
   const stickyTopRef = useRef(null)
   const modalContentRef = useRef(null)
   const modalBodyRef = useRef(null)
@@ -173,33 +289,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   const transcriptRef = useRef(null)
   const navigate = useNavigate()
   const { token } = useAuth()
-  const { tags: allTags, loadTags } = useData()
-
-  // Load content tags
-  useEffect(() => {
-    if (!content?.id || !token) return
-    tagsApi.getContentTags(token, content.id)
-      .then(res => setContentTags(res.tags || []))
-      .catch(() => {})
-  }, [content?.id, token])
-
-  const handleAddTag = async (tagId) => {
-    try {
-      await tagsApi.addTagsToContent(token, content.id, [tagId])
-      const res = await tagsApi.getContentTags(token, content.id)
-      setContentTags(res.tags || [])
-      loadTags()
-      setShowTagDropdown(false)
-    } catch {}
-  }
-
-  const handleRemoveTag = async (tagId) => {
-    try {
-      await tagsApi.removeTagFromContent(token, content.id, tagId)
-      setContentTags(prev => prev.filter(t => t.id !== tagId))
-      loadTags()
-    } catch {}
-  }
 
   // Fetch subscription for feature access checks
   useEffect(() => {
@@ -222,355 +311,6 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [activeTab])
-
-  // Cinematic multi-phase video transition (scroll-driven):
-  // Phase 1: Analysis (+ Notable Quotes) fades to the right
-  // Phase 2: Video slides right (follows the fade direction — no teleport)
-  // Phase 3: Video grows to responsive 16:9 (fills modal width)
-  // Phase 4: Video shrinks and slides back to original left position
-  // Phase 5: Transcript fades in below
-  useEffect(() => {
-    const videoCol = videoColRef.current
-    const analysisCol = analysisColRef.current
-    const modal = modalBodyRef.current
-    const transcript = transcriptRef.current
-    const layout = layoutRef.current
-    if (!videoCol || !analysisCol || !modal || !transcript || !layout) return
-
-    // Skip animation on mobile — single-column layout handles it
-    if (window.innerWidth <= 768) return
-
-    // Sentinel at bottom of analysis col (trigger point near Notable Quotes)
-    let sentinel = analysisCol.querySelector('.breakdown-analysis-sentinel')
-    if (!sentinel) {
-      sentinel = document.createElement('div')
-      sentinel.className = 'breakdown-analysis-sentinel'
-      sentinel.style.cssText = 'height:1px;width:100%;pointer-events:none;'
-      analysisCol.appendChild(sentinel)
-    }
-
-    const STICKY_TOP = parseInt(
-      getComputedStyle(modal).getPropertyValue('--sticky-top-h')
-    ) || 226
-    const VIDEO_H = videoCol.offsetHeight
-    const TRIGGER_LINE = STICKY_TOP + VIDEO_H
-
-    // Hide transcript in two-col mode — only visible in transcript-view
-    transcript.style.visibility = 'hidden'
-    transcript.style.opacity = '0'
-
-    let state = 'two-col' // 'two-col' | 'transitioning' | 'transcript-view'
-    let scrollDriverFn = null
-    let scrollAtTransition = 0
-    let rafId = null
-    let animSpacer = null
-    let onScrollBound = null
-    let phase5Done = false
-    let zoneMultiplier = 1
-
-    // Responsive scroll zone
-    const TOTAL_ZONE = Math.min(1400, Math.max(800, window.innerHeight * 1.5))
-
-    function getModalInnerWidth() {
-      return modal.clientWidth - 32
-    }
-
-    function easeInOut(p) {
-      return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2
-    }
-
-    function lerp(a, b, t) {
-      return a + (b - a) * t
-    }
-
-    function clamp01(v) {
-      return Math.min(1, Math.max(0, v))
-    }
-
-    function zP(progress, start, end) {
-      return clamp01((progress - start) / (end - start))
-    }
-
-    function startTransition(preserveScroll) {
-      if (scrollDriverFn) return
-      if (!preserveScroll) scrollAtTransition = modal.scrollTop
-      const startW = videoCol.offsetWidth
-      phase5Done = false
-
-      // Spacer keeps video sticky during animation
-      animSpacer = document.createElement('div')
-      animSpacer.className = 'video-anim-spacer'
-      animSpacer.style.cssText = `height:${TOTAL_ZONE + 400}px;pointer-events:none;`
-      analysisCol.appendChild(animSpacer)
-
-      layout.style.overflow = 'visible'
-      modal.style.overflowX = 'hidden'
-      analysisCol.style.transition = 'none'
-
-      // Hide transcript during animation
-      transcript.style.visibility = 'hidden'
-      transcript.style.opacity = '0'
-
-      scrollDriverFn = () => {
-        if (state !== 'transitioning') return
-        const raw = clamp01((modal.scrollTop - scrollAtTransition) / (TOTAL_ZONE * zoneMultiplier))
-        const fullW = getModalInnerWidth()
-
-        // ── Phase 1 (0 → 0.15): Analysis fades right ──
-        const fadeP = easeInOut(zP(raw, 0, 0.15))
-        analysisCol.style.opacity = String(1 - fadeP)
-        analysisCol.style.transform = `translateX(${60 * fadeP}px)`
-        analysisCol.style.pointerEvents = fadeP > 0.1 ? 'none' : ''
-
-        // ── Phases 2-4: Video slides right → grows 16:9 → returns ──
-        let w = startW, tx = 0, radius = 10
-
-        if (raw <= 0.30) {
-          const p = easeInOut(zP(raw, 0.05, 0.30))
-          tx = (fullW - startW) * 0.55 * p
-        } else if (raw <= 0.60) {
-          const p = easeInOut(zP(raw, 0.30, 0.60))
-          const peakTX = (fullW - startW) * 0.55
-          w = lerp(startW, fullW, p)
-          tx = lerp(peakTX, 0, p)
-          radius = lerp(10, 0, p)
-        } else if (raw <= 0.75) {
-          const p = easeInOut(zP(raw, 0.60, 0.75))
-          w = lerp(fullW, startW, p)
-          tx = 0
-          radius = lerp(0, 10, p)
-        } else {
-          w = startW
-          tx = 0
-          radius = 10
-        }
-
-        videoCol.style.width = Math.round(w) + 'px'
-        videoCol.style.transform = `translateX(${Math.round(tx)}px)`
-        videoCol.style.borderRadius = Math.round(radius) + 'px'
-        videoCol.style.zIndex = '10'
-
-        // ── Phase 5: Video is back → switch to transcript view ──
-        if (raw >= 0.76 && !phase5Done) {
-          phase5Done = true
-          enterTranscriptView()
-        }
-      }
-
-      onScrollBound = () => {
-        if (rafId) cancelAnimationFrame(rafId)
-        rafId = requestAnimationFrame(scrollDriverFn)
-      }
-      modal.addEventListener('scroll', onScrollBound, { passive: true })
-      scrollDriverFn()
-    }
-
-    // Phase 5: restructure layout so transcript replaces analysis
-    // and the user can scroll through it normally
-    function enterTranscriptView() {
-      // Capture scroll position BEFORE any DOM changes
-      // (removing spacer collapses page height, browser clamps scrollTop)
-      const savedScroll = modal.scrollTop
-      const layoutTop = layout.offsetTop
-
-      // Stop scroll-driven animation
-      if (onScrollBound) {
-        modal.removeEventListener('scroll', onScrollBound)
-        onScrollBound = null
-      }
-      scrollDriverFn = null
-      if (rafId) { cancelAnimationFrame(rafId); rafId = null }
-      if (animSpacer) { animSpacer.remove(); animSpacer = null }
-
-      // Reset video to normal sticky
-      videoCol.style.width = ''
-      videoCol.style.transform = ''
-      videoCol.style.borderRadius = ''
-      videoCol.style.zIndex = ''
-
-      // Reset layout
-      layout.style.overflow = ''
-      modal.style.overflowX = ''
-
-      // Hide analysis (keep in DOM so sentinel works for scroll-back)
-      analysisCol.style.opacity = '0'
-      analysisCol.style.transform = ''
-      analysisCol.style.pointerEvents = 'none'
-      analysisCol.style.transition = 'none'
-
-      // Move transcript into analysis column spot (row 1, col 2)
-      // so it flows naturally — user can scroll through it
-      transcript.style.gridRow = '1'
-      transcript.style.gridColumn = '2'
-      transcript.style.position = ''
-      transcript.style.top = ''
-      transcript.style.left = ''
-      transcript.style.width = ''
-      transcript.style.zIndex = ''
-
-      // Reset transcript internal scroll to beginning
-      transcript.scrollTop = 0
-      transcript.querySelectorAll('.timeline-container, .transcript-view, .transcript-container')
-        .forEach(el => { el.scrollTop = 0 })
-
-      // Remove max-height on internal containers so transcript flows naturally
-      transcript.querySelectorAll('.timeline-container, .transcript-view')
-        .forEach(el => { el.style.maxHeight = 'none'; el.style.overflow = 'visible' })
-
-      // Push transcript down with marginTop so it appears at the user's
-      // current viewport position — NO scroll jump, transcript starts from beginning
-      const offset = Math.max(0, savedScroll - layoutTop)
-      transcript.style.marginTop = offset + 'px'
-      // Restore scroll position (may have been clamped by spacer removal)
-      modal.scrollTop = savedScroll
-
-      // Fade in transcript
-      transcript.style.visibility = 'visible'
-      transcript.style.opacity = '0'
-      transcript.style.transform = 'translateY(20px)'
-      transcript.style.transition = 'opacity 0.5s ease, transform 0.5s ease'
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          transcript.style.opacity = '1'
-          transcript.style.transform = 'translateY(0)'
-        })
-      })
-
-      // Disconnect sentinel observer (we use scroll position to detect back-nav)
-      observer.disconnect()
-
-      state = 'transcript-view'
-    }
-
-    function resetAllStyles() {
-      layout.style.overflow = ''
-      modal.style.overflowX = ''
-      videoCol.style.width = ''
-      videoCol.style.transform = ''
-      videoCol.style.borderRadius = ''
-      videoCol.style.zIndex = ''
-      analysisCol.style.opacity = ''
-      analysisCol.style.transform = ''
-      analysisCol.style.transition = ''
-      analysisCol.style.pointerEvents = ''
-      transcript.style.visibility = ''
-      transcript.style.opacity = ''
-      transcript.style.transform = ''
-      transcript.style.transition = ''
-      transcript.style.position = ''
-      transcript.style.top = ''
-      transcript.style.left = ''
-      transcript.style.width = ''
-      transcript.style.zIndex = ''
-      transcript.style.gridRow = ''
-      transcript.style.gridColumn = ''
-      transcript.style.marginTop = ''
-      // Restore internal container styles
-      transcript.querySelectorAll('.timeline-container, .transcript-view')
-        .forEach(el => { el.style.maxHeight = ''; el.style.overflow = '' })
-    }
-
-    function stopTransition() {
-      if (onScrollBound) {
-        modal.removeEventListener('scroll', onScrollBound)
-        onScrollBound = null
-      }
-      scrollDriverFn = null
-      if (rafId) { cancelAnimationFrame(rafId); rafId = null }
-      if (animSpacer) { animSpacer.remove(); animSpacer = null }
-      resetAllStyles()
-    }
-
-    function expand() {
-      if (state !== 'two-col') return
-      zoneMultiplier = 1
-      state = 'transitioning'
-      startTransition()
-    }
-
-    function collapse() {
-      if (state === 'transcript-view') {
-        resetAllStyles()
-        observer.observe(sentinel) // re-enable sentinel watching
-        state = 'two-col'
-        return
-      }
-      if (state !== 'transitioning') return
-      state = 'two-col'
-      stopTransition()
-      observer.observe(sentinel)
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const sentinelTop =
-          entry.boundingClientRect.top - modal.getBoundingClientRect().top
-        const isPast = !entry.isIntersecting && sentinelTop < TRIGGER_LINE
-        if (isPast && state === 'two-col') {
-          expand()
-        } else if (!isPast && state === 'transitioning') {
-          collapse()
-        }
-      },
-      {
-        root: modal,
-        threshold: 0,
-        rootMargin: `-${TRIGGER_LINE}px 0px 0px 0px`
-      }
-    )
-    observer.observe(sentinel)
-
-    // Fallback scroll check — handles fast scrolling + transcript-view back-nav
-    const scrollFallback = () => {
-      if (state === 'transcript-view') {
-        // When user scrolls up near the animation end point, re-enter
-        // transitioning state so the animation can play in reverse
-        const animEndScroll = scrollAtTransition + TOTAL_ZONE * 0.76
-        if (modal.scrollTop <= animEndScroll - 50) {
-          // Save scroll before DOM changes (resetAllStyles removes marginTop,
-          // collapsing page height and clamping scrollTop)
-          const savedScroll = modal.scrollTop
-
-          // Scale the zone so reverse takes 2x more scrolling.
-          // Adjust scrollAtTransition so raw stays the same at savedScroll
-          // but requires more scroll distance to reach 0.
-          const REVERSE_SCALE = 2
-          const forwardDist = savedScroll - scrollAtTransition
-          scrollAtTransition = savedScroll - forwardDist * REVERSE_SCALE
-          zoneMultiplier = REVERSE_SCALE
-
-          // Re-enter transition with scaled zone
-          state = 'transitioning'
-          resetAllStyles()
-          startTransition(true)
-
-          // Restore scroll position (spacer now provides the height)
-          modal.scrollTop = savedScroll
-
-          // Don't re-observe sentinel yet — the observer fires immediately
-          // and can trigger collapse() before the reverse animation plays.
-          // The scrollFallback handles collapse detection during reverse.
-        }
-        return
-      }
-      const sentPos = sentinel.getBoundingClientRect().top - modal.getBoundingClientRect().top
-      if (sentPos < TRIGGER_LINE && state === 'two-col') {
-        expand()
-      } else if (sentPos >= TRIGGER_LINE && state === 'transitioning') {
-        collapse()
-      }
-    }
-    modal.addEventListener('scroll', scrollFallback, { passive: true })
-
-    return () => {
-      observer.disconnect()
-      modal.removeEventListener('scroll', scrollFallback)
-      sentinel.remove()
-      stopTransition()
-      resetAllStyles()
-    }
-  }, [activeTab, content?.id])
 
   // Load stored guide on mount
   useEffect(() => {
@@ -779,6 +519,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
   }
 
   const modeContent = renderModeContent()
+  const isYouTube = content.source_url && (content.source_url.includes('youtube.com') || content.source_url.includes('youtu.be'))
 
   // General mode content (fallback when no mode-specific card)
   const renderGeneralContent = () => (
@@ -793,6 +534,29 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   ? `${content.metadata.detected_language_name} â ${content.metadata.translated_to_name}`
                   : content.metadata.detected_language_name}
               </Badge>
+            )}
+            {isYouTube && (
+              <button className={`play-video-btn${showVideo ? ' active' : ''}`} onClick={() => {
+                if (!showVideo) {
+                  if (activeTab !== 'content') {
+                    setTabFading(true)
+                    setTimeout(() => {
+                      setActiveTab('content')
+                      setShowVideo(true)
+                      requestAnimationFrame(() => {
+                        if (transcriptRef.current) transcriptRef.current.scrollIntoView({ behavior: 'instant', block: 'start' })
+                        setTimeout(() => setTabFading(false), 50)
+                      })
+                    }, 250)
+                  } else {
+                    setShowVideo(true)
+                  }
+                } else {
+                  setShowVideo(false)
+                }
+              }} title={showVideo ? 'Stop video' : 'Play video'} style={{ marginLeft: 8, verticalAlign: 'middle' }}>
+                {showVideo ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              </button>
             )}
           </h3>
           <p>{content.summary}</p>
@@ -986,7 +750,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   if (entry.type === 'vision') {
                     const ytUrl = buildYouTubeTimestampUrl(content.source_url, entry.timestamp)
                     return (
-                      <div key={idx} className="timeline-entry vision" data-reveal="left" data-reveal-delay={Math.min(idx % 6, 5)}>
+                      <div key={idx} className="timeline-entry vision" data-sync-idx={idx} data-reveal="left" data-reveal-delay={Math.min(idx % 6, 5)}>
                         <div className="timeline-header">
                           <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                           <span className="timeline-vision-badge">
@@ -1014,7 +778,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   }
 
                   return (
-                    <div key={idx} className="timeline-entry transcript" data-reveal="left" data-reveal-delay={Math.min(idx % 6, 5)}>
+                    <div key={idx} className="timeline-entry transcript" data-sync-idx={idx} data-reveal="left" data-reveal-delay={Math.min(idx % 6, 5)}>
                       <div className="timeline-header">
                         <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                         {entry.speaker && entry.speaker !== 'Unknown' && (
@@ -1059,10 +823,11 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             <div className="content-detail-section">
               <h3>Transcript</h3>
               <div className="transcript-view">
-                {content.timeline.filter(e => e.type === 'transcript').map((entry, idx) => {
+                {content.timeline.map((entry, idx) => {
+                  if (entry.type !== 'transcript') return null
                   const tsStr = formatTimestamp(entry.timestamp)
                   return (
-                    <div key={idx} className="transcript-entry">
+                    <div key={idx} className="transcript-entry" data-sync-idx={idx}>
                       <div className="transcript-header">
                         <TimestampLink timestamp={tsStr} sourceUrl={content.source_url} />
                         {entry.speaker && entry.speaker !== 'Unknown' && (
@@ -1146,7 +911,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                   }
 
                   return (
-                    <div key={idx} className="transcript-entry">
+                    <div key={idx} className="transcript-entry" data-sync-idx={idx}>
                       <div className="transcript-header">
                         <TimestampLink timestamp={`${mins}:${secs}`} sourceUrl={content.source_url} />
                         {speaker && speaker !== 'Unknown' && (
@@ -1161,7 +926,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                 }
 
                 return (
-                  <div key={idx} className="transcript-entry">
+                  <div key={idx} className="transcript-entry" data-sync-idx={idx}>
                     <div className="transcript-text">{paragraph}</div>
                   </div>
                 )
@@ -1398,75 +1163,47 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     )
   }
 
-  const isYouTube = content.source_url && (content.source_url.includes('youtube.com') || content.source_url.includes('youtu.be'))
+  // Build sorted timestamp entries for transcript sync
+  const transcriptSyncEntries = useMemo(() => {
+    if (content.timeline && content.timeline.length > 0) {
+      return content.timeline
+        .map((e, idx) => ({ timestamp: e.timestamp, idx }))
+        .sort((a, b) => a.timestamp - b.timestamp)
+    }
+    if (content.transcript) {
+      const entries = []
+      content.transcript.split('\n\n').forEach((paragraph, idx) => {
+        const match = paragraph.match(/^\[(\d+):(\d+)\]/)
+        if (match) {
+          entries.push({ timestamp: parseInt(match[1]) * 60 + parseInt(match[2]), idx })
+        }
+      })
+      return entries.sort((a, b) => a.timestamp - b.timestamp)
+    }
+    return []
+  }, [content.timeline, content.transcript])
 
   return (
     <YouTubePlayerProvider>
+    {isYouTube && <VideoPlaybackController playing={showVideo} onShowVideo={() => {
+      if (activeTab !== 'content') {
+        setTabFading(true)
+        setTimeout(() => {
+          setActiveTab('content')
+          setShowVideo(true)
+          requestAnimationFrame(() => setTimeout(() => setTabFading(false), 50))
+        }, 250)
+      } else {
+        setShowVideo(true)
+      }
+    }} />}
     <div className="modal-overlay" onClick={onClose}>
       <div ref={modalContentRef} className={`modal-content modal-content-large${isYouTube && activeTab === 'content' ? ' modal-content-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
         {/* Sticky top: header + tabs (#2) */}
         <div ref={stickyTopRef} className="modal-sticky-top">
           <div className="modal-header">
-            {/* Two-row header (#7) */}
-            <div className="modal-header-title-group">
-              <div className="modal-header-title">
-                {ModeIcon && <ModeIcon className="w-5 h-5 mr-2 text-purple-400" />}
-                <h2>{content.title || 'Untitled'}</h2>
-              </div>
-              <div className="modal-header-tags">
-                {contentTags.map(tag => (
-                  <span key={tag.id} className="tag-pill" style={{ background: `${tag.color || '#3B82F6'}18`, color: tag.color || '#3B82F6' }}>
-                    <span className="tag-pill-dot" style={{ background: tag.color || '#3B82F6' }} />
-                    {tag.name}
-                    <button className="tag-pill-remove" onClick={(e) => { e.stopPropagation(); handleRemoveTag(tag.id) }}>
-                      <X className="w-2.5 h-2.5" />
-                    </button>
-                  </span>
-                ))}
-                <div className="tag-assign-dropdown">
-                  <button
-                    style={{ background: 'none', border: '1px dashed var(--border-default)', borderRadius: 10, padding: '2px 8px', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer' }}
-                    onClick={() => setShowTagDropdown(!showTagDropdown)}
-                  >
-                    + Tag
-                  </button>
-                  {showTagDropdown && (
-                    <div className="tag-assign-menu">
-                      {allTags.filter(t => !contentTags.some(ct => ct.id === t.id)).map(tag => (
-                        <button key={tag.id} className="tag-assign-option" onClick={() => handleAddTag(tag.id)}>
-                          <span className="tag-pill-dot" style={{ background: tag.color || '#3B82F6' }} />
-                          {tag.name}
-                        </button>
-                      ))}
-                      {allTags.filter(t => !contentTags.some(ct => ct.id === t.id)).length === 0 && (
-                        <span style={{ padding: '8px 10px', fontSize: 12, color: '#52525b' }}>No more tags</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
             <div className="modal-header-actions">
               <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleGenerateGuide()}
-                disabled={isGeneratingGuide}
-              >
-                {isGeneratingGuide ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    Generate Study Guide
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
                 size="sm"
                 onClick={onExport}
               >
@@ -1484,60 +1221,54 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
             <button
               className={`content-tab ${activeTab === 'content' ? 'active' : ''}`}
               onClick={() => { setActiveTab('content'); trackEvent('content_tab_view', { tab: 'content' }) }}
+              title="Breakdown"
             >
-              Breakdown
+              <FileText className="w-3.5 h-3.5" />
+              <span className="tab-label">Breakdown</span>
             </button>
             <button
               className={`content-tab ${activeTab === 'guide' ? 'active' : ''}`}
               onClick={() => {
                 trackEvent('content_tab_view', { tab: 'guide' })
-                if (generatedGuide) {
-                  setActiveTab('guide')
-                } else {
-                  handleGenerateGuide()
-                }
+                setActiveTab('guide')
               }}
+              title="Study Guide — 3 credits"
             >
               <BookOpen className="w-3.5 h-3.5" />
-              Study Guide
+              <span className="tab-label">Study Guide</span>
               {generatedGuide && <CheckCircle className="w-3 h-3" style={{ color: '#22c55e' }} />}
               {!subscription?.guide_generation && <Lock className="w-3 h-3 text-zinc-500" />}
             </button>
             <button
               className={`content-tab ${activeTab === 'flashcards' ? 'active' : ''}`}
               onClick={() => { setActiveTab('flashcards'); trackEvent('content_tab_view', { tab: 'flashcards' }) }}
+              title="Flashcards — 3 credits"
             >
               <Layers className="w-3.5 h-3.5" />
-              Flashcards
+              <span className="tab-label">Flashcards</span>
               {!subscription?.flashcard_generation && <Lock className="w-3 h-3 text-zinc-500" />}
             </button>
             <button
               className={`content-tab ${activeTab === 'mindmap' ? 'active' : ''}`}
               onClick={() => { setActiveTab('mindmap'); trackEvent('content_tab_view', { tab: 'mindmap' }) }}
+              title="Mind Map — 3 credits"
             >
               <Network className="w-3.5 h-3.5" />
-              Mind Map
+              <span className="tab-label">Mind Map</span>
               {!subscription?.mindmap_generation && <Lock className="w-3 h-3 text-zinc-500" />}
             </button>
             <button
-              className={`content-tab ${activeTab === 'notes' ? 'active' : ''}`}
-              onClick={() => { setActiveTab('notes'); trackEvent('content_tab_view', { tab: 'notes' }) }}
-            >
-              <StickyNote className="w-3.5 h-3.5" />
-              Notes
-            </button>
-            <button
-              className="content-tab"
+              className={`content-tab ${activeTab === 'report' ? 'active' : ''}`}
               onClick={() => setShowReportModal(true)}
-              title="Generate a report from this content"
+              title="Report"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Report
+              <span className="tab-label">Report</span>
             </button>
           </div>
         </div>
 
-        <div ref={modalBodyRef} className="modal-body">
+        <div ref={modalBodyRef} className={`modal-body${tabFading ? ' tab-fading' : ''}`}>
           {isLoading ? (
             <div className="loading-state">Loading...</div>
           ) : activeTab === 'guide' && generatedGuide ? (
@@ -1545,7 +1276,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
           ) : activeTab === 'guide' && !generatedGuide ? (
             <div className="flashcard-generate" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
               <BookOpen className="w-10 h-10 text-purple-500 mx-auto mb-3" />
-              <p>Generate a comprehensive step-by-step guide from this content</p>
+              <h3 style={{ marginBottom: 8, fontSize: 18 }}>Study Guide</h3>
+              <p style={{ color: 'var(--text-muted)', marginBottom: 20, fontSize: 14 }}>Generate a step-by-step study guide from this source to deepen your understanding</p>
               <Button onClick={() => handleGenerateGuide()} disabled={isGeneratingGuide}>
                 {isGeneratingGuide ? (
                   <>
@@ -1553,12 +1285,14 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                     Generating...
                   </>
                 ) : (
-                  'Generate Guide'
+                  <>
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Generate Study Guide
+                  </>
                 )}
               </Button>
+              <p style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 12, opacity: 0.6 }}>Costs 3 credits</p>
             </div>
-          ) : activeTab === 'notes' ? (
-            <NotesPanel contentId={content.id} />
           ) : activeTab === 'flashcards' ? (
             <FlashcardPanel contentId={content.id} />
           ) : activeTab === 'mindmap' ? (
@@ -1566,8 +1300,8 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
           ) : (
             <>
               {isYouTube ? (
-                <div ref={layoutRef} className="breakdown-youtube-layout">
-                  <div ref={videoColRef} className="breakdown-col-video">
+                <div ref={layoutRef} className={`breakdown-youtube-layout${showVideo ? ' video-active' : ''}`}>
+                  <div ref={videoColRef} className={`breakdown-col-video${showVideo ? '' : ' video-hidden'}`}>
                     <YouTubeEmbed sourceUrl={content.source_url} />
                   </div>
                   <div ref={analysisColRef} className="breakdown-col-analysis">
@@ -1575,9 +1309,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                       <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
                     </div>
                     {modeContent || renderGeneralContent()}
-                  </div>
-                  <div ref={transcriptRef} className="breakdown-transcript-full">
-                    {renderTimelineSection()}
+                    <SyncedTranscriptWrapper ref={transcriptRef} entries={transcriptSyncEntries} className="breakdown-transcript-full" isYouTube>
+                      {renderTimelineSection()}
+                    </SyncedTranscriptWrapper>
                   </div>
                 </div>
               ) : (
@@ -1586,9 +1320,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
                     <MessageSquare className="w-3 h-3" /><span>AI analysis</span>
                   </div>
                   {modeContent || renderGeneralContent()}
-                  <div className="breakdown-transcript-full">
+                  <SyncedTranscriptWrapper entries={transcriptSyncEntries} className="breakdown-transcript-full" isYouTube={false}>
                     {renderTimelineSection()}
-                  </div>
+                  </SyncedTranscriptWrapper>
                 </>
               )}
             </>

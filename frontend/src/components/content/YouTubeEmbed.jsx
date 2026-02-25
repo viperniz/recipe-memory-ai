@@ -10,7 +10,7 @@ function extractVideoId(url) {
 }
 
 function YouTubeEmbed({ sourceUrl }) {
-  const { registerPlayer, unregisterPlayer } = useYouTubePlayer()
+  const { registerPlayer, unregisterPlayer, setPlayerState } = useYouTubePlayer()
   const videoId = extractVideoId(sourceUrl)
 
   useEffect(() => {
@@ -20,6 +20,10 @@ function YouTubeEmbed({ sourceUrl }) {
   const onReady = useCallback((event) => {
     registerPlayer(event.target)
   }, [registerPlayer])
+
+  const onStateChange = useCallback((event) => {
+    setPlayerState(event.data)
+  }, [setPlayerState])
 
   if (!videoId) return null
 
@@ -40,6 +44,7 @@ function YouTubeEmbed({ sourceUrl }) {
           videoId={videoId}
           opts={opts}
           onReady={onReady}
+          onStateChange={onStateChange}
           className="youtube-embed-iframe"
           iframeClassName="youtube-embed-iframe-inner"
         />

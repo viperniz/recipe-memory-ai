@@ -2,12 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { billingApi } from '../../api/billing'
-import { X, FileText, FileJson, FileCode, Download, Loader2, Lock, Crown, Clipboard, Check } from 'lucide-react'
+import { X, FileText, FileJson, FileCode, Download, Loader2, Lock, Crown } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
-import { toast } from '../../hooks/use-toast'
-
-import { API_BASE } from '../../lib/apiBase'
 import { trackEvent } from '../../utils/analytics'
 
 const ALL_FORMATS = [
@@ -111,7 +108,7 @@ function ExportModal({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content export-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+        <div className="modal-header" style={{ justifyContent: 'space-between' }}>
           <h2>Export Content</h2>
           <button className="modal-close" onClick={onClose}>
             <X className="w-5 h-5" />
@@ -189,48 +186,23 @@ function ExportModal({
             </label>
           </div>
 
-          <div className="flex gap-2">
-            <Button
-              onClick={onExport}
-              className="flex-1"
-              disabled={isExporting || loading}
-            >
-              {isExporting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-2" />
-                  Download as {ALL_FORMATS.find(f => f.id === exportFormat)?.extension || '.txt'}
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                // Copy markdown to clipboard for Notion paste
-                try {
-                  const token = localStorage.getItem('token')
-                  const response = await fetch(`${API_BASE}/export`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ format: 'md', include_transcript: includeTranscript })
-                  })
-                  const text = await response.text()
-                  await navigator.clipboard.writeText(text)
-                  toast({ variant: 'success', title: 'Copied for Notion', description: 'Paste into Notion — formatting will be preserved' })
-                } catch (err) {
-                  toast({ variant: 'destructive', title: 'Copy failed', description: err.message })
-                }
-              }}
-              title="Copy Markdown to clipboard for pasting into Notion"
-            >
-              <Clipboard className="w-4 h-4 mr-1" />
-              Notion
-            </Button>
-          </div>
+          <Button
+            onClick={() => { trackEvent('export_download', { format: exportFormat, include_transcript: includeTranscript, item_count: itemCount }); onExport() }}
+            style={{ width: '100%' }}
+            disabled={isExporting || loading}
+          >
+            {isExporting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </>
+            )}
+          </Button>
         </div>
       </div>
     </div>
