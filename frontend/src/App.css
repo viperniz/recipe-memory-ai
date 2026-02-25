@@ -9515,7 +9515,7 @@
 .landing-breakdowns {
   display: flex;
   flex-direction: column;
-  gap: 80px;
+  gap: 56px;
 }
 
 .landing-breakdown {

@@ -27,12 +27,19 @@ export default function useLenis() {
     // Sync Lenis scroll with GSAP ScrollTrigger
     lenis.on('scroll', ScrollTrigger.update)
 
-    gsap.ticker.add((time) => {
+    const rafCallback = (time) => {
       lenis.raf(time * 1000)
-    })
+    }
+    gsap.ticker.add(rafCallback)
     gsap.ticker.lagSmoothing(0)
 
+    // Refresh ScrollTrigger after Lenis is fully ready
+    requestAnimationFrame(() => {
+      ScrollTrigger.refresh()
+    })
+
     return () => {
+      gsap.ticker.remove(rafCallback)
       lenis.destroy()
       lenisInstance = null
     }
