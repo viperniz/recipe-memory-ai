@@ -286,9 +286,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       return clamp01((progress - start) / (end - start))
     }
 
-    function startTransition() {
+    function startTransition(preserveScroll) {
       if (scrollDriverFn) return
-      scrollAtTransition = modal.scrollTop
+      if (!preserveScroll) scrollAtTransition = modal.scrollTop
       const startW = videoCol.offsetWidth
       phase5Done = false
 
@@ -521,12 +521,20 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
         // transitioning state so the animation can play in reverse
         const animEndScroll = scrollAtTransition + TOTAL_ZONE * 0.76
         if (modal.scrollTop <= animEndScroll - 50) {
-          // Reset transcript-view styles
+          // Save scroll before DOM changes (resetAllStyles removes marginTop,
+          // collapsing page height and clamping scrollTop)
+          const savedScroll = modal.scrollTop
+
+          // Re-enter transition — preserve original scrollAtTransition
+          // so raw progress naturally decreases as user scrolls up
+          state = 'transitioning'
           resetAllStyles()
-          // Re-enter transitioning state with animation
-          state = 'two-col'
+          startTransition(true)
+
+          // Restore scroll position (spacer now provides the height)
+          modal.scrollTop = savedScroll
+
           observer.observe(sentinel)
-          expand()
         }
         return
       }
