@@ -53,6 +53,13 @@ const ALL_FORMATS = [
   }
 ]
 
+const CONTENT_TYPE_LABELS = {
+  breakdown: 'Content',
+  guide: 'Study Guide',
+  flashcards: 'Flashcards',
+  mindmap: 'Mind Map'
+}
+
 function ExportModal({
   isOpen,
   onClose,
@@ -62,7 +69,8 @@ function ExportModal({
   setIncludeTranscript,
   isExporting,
   onExport,
-  itemCount
+  itemCount,
+  contentType = 'breakdown'
 }) {
   const { token } = useAuth()
   const navigate = useNavigate()
@@ -109,16 +117,18 @@ function ExportModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content export-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header" style={{ justifyContent: 'space-between' }}>
-          <h2>Export Content</h2>
+          <h2>Export {CONTENT_TYPE_LABELS[contentType] || 'Content'}</h2>
           <button className="modal-close" onClick={onClose}>
             <X className="w-5 h-5" />
           </button>
         </div>
         <div className="modal-body">
           <p className="export-desc">
-            {itemCount === 0
-              ? 'Export all items from your library'
-              : `Export ${itemCount} selected item(s)`}
+            {contentType !== 'breakdown'
+              ? `Export ${CONTENT_TYPE_LABELS[contentType] || contentType} in your preferred format`
+              : itemCount === 0
+                ? 'Export all items from your library'
+                : `Export ${itemCount} selected item(s)`}
           </p>
 
           <div className="export-formats-list">
@@ -175,16 +185,18 @@ function ExportModal({
             </div>
           )}
 
-          <div className="export-settings">
-            <label className="export-checkbox">
-              <input
-                type="checkbox"
-                checked={includeTranscript}
-                onChange={(e) => setIncludeTranscript(e.target.checked)}
-              />
-              Include full transcripts
-            </label>
-          </div>
+          {contentType === 'breakdown' && (
+            <div className="export-settings">
+              <label className="export-checkbox">
+                <input
+                  type="checkbox"
+                  checked={includeTranscript}
+                  onChange={(e) => setIncludeTranscript(e.target.checked)}
+                />
+                Include full transcripts
+              </label>
+            </div>
+          )}
 
           <Button
             onClick={() => { trackEvent('export_download', { format: exportFormat, include_transcript: includeTranscript, item_count: itemCount }); onExport() }}

@@ -626,102 +626,21 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
     }
   }
 
-  const handleExportFlashcards = async () => {
-    try {
-      const authToken = localStorage.getItem('token')
-      const response = await axios.get(
-        `${API_BASE}/content/${content.id}/generated/flashcards`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
-      )
-      const csv = response.data.data?.anki_csv
-      if (!csv) {
-        toast({ variant: 'destructive', title: 'Export failed', description: 'No Anki CSV data found' })
-        return
-      }
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `flashcards-${content.id}.csv`
-      document.body.appendChild(a)
-      a.click()
-      URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-      toast({ variant: 'success', title: 'Flashcards exported', description: 'Anki CSV file saved' })
-    } catch (err) {
-      toast({ variant: 'destructive', title: 'Export failed', description: err.message })
-    }
-  }
-
-  const handleExportMindmap = async () => {
-    try {
-      const authToken = localStorage.getItem('token')
-      const response = await axios.get(
-        `${API_BASE}/content/${content.id}/generated/mindmap`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
-      )
-      const tree = response.data.data
-      if (!tree) {
-        toast({ variant: 'destructive', title: 'Export failed', description: 'No mind map data found' })
-        return
-      }
-
-      const lines = []
-      const walk = (node, depth) => {
-        const prefix = depth === 0 ? '# ' : depth === 1 ? '## ' : depth === 2 ? '### ' : '  '.repeat(depth - 3) + '- '
-        let line = prefix + (node.label || 'Untitled')
-        if (node.timestamp) line += ` [${formatTimestamp(node.timestamp)}]`
-        lines.push(line)
-        if (node.description) lines.push(depth <= 2 ? node.description : '  '.repeat(depth - 3) + '  ' + node.description)
-        if (node.children) node.children.forEach(child => walk(child, depth + 1))
-      }
-      walk(tree, 0)
-
-      const md = lines.join('\n')
-      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `mindmap-${content.id}.md`
-      document.body.appendChild(a)
-      a.click()
-      URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-      toast({ variant: 'success', title: 'Mind map exported', description: 'Markdown file saved' })
-    } catch (err) {
-      toast({ variant: 'destructive', title: 'Export failed', description: err.message })
-    }
-  }
-
   const handleExport = () => {
-    switch (activeTab) {
-      case 'content':
-        onExport()
-        break
-      case 'guide':
-        if (generatedGuide) {
-          handleDownloadGuide()
-        } else {
-          toast({ title: 'Not generated yet', description: 'Please generate the study guide first' })
-        }
-        break
-      case 'flashcards':
-        if (hasFlashcards) {
-          handleExportFlashcards()
-        } else {
-          toast({ title: 'Not generated yet', description: 'Please generate flashcards first' })
-        }
-        break
-      case 'mindmap':
-        if (hasMindmap) {
-          handleExportMindmap()
-        } else {
-          toast({ title: 'Not generated yet', description: 'Please generate the mind map first' })
-        }
-        break
-      default:
-        onExport()
+    const ct = activeTab === 'content' ? 'breakdown' : activeTab
+    if (ct === 'guide' && !generatedGuide) {
+      toast({ title: 'Not generated yet', description: 'Please generate the study guide first' })
+      return
     }
+    if (ct === 'flashcards' && !hasFlashcards) {
+      toast({ title: 'Not generated yet', description: 'Please generate flashcards first' })
+      return
+    }
+    if (ct === 'mindmap' && !hasMindmap) {
+      toast({ title: 'Not generated yet', description: 'Please generate the mind map first' })
+      return
+    }
+    onExport(ct)
   }
 
   const exportLabel = activeTab === 'guide' ? 'Export Guide'

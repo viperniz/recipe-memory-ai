@@ -260,6 +260,7 @@ class ExportRequest(BaseModel):
     content_ids: List[str] = []
     format: str = "markdown"
     include_transcript: bool = True
+    content_type: str = "breakdown"  # "breakdown", "guide", "flashcards", "mindmap"
 
 
 class CollectionCreate(BaseModel):
@@ -1978,6 +1979,133 @@ async def backfill_all_thumbnails(
 # =============================================
 # Export Endpoints
 # =============================================
+
+def _format_timestamp(seconds) -> str:
+    """Format seconds into MM:SS"""
+    if seconds is None:
+        return ""
+    s = int(seconds)
+    return f"{s // 60}:{s % 60:02d}"
+
+
+def format_generated_export(content_type: str, data: dict, fmt: str) -> str:
+    """Format generated content (guide/flashcards/mindmap) for export."""
+    if content_type == "guide":
+        return _format_guide_export(data, fmt)
+    elif content_type == "flashcards":
+        return _format_flashcards_export(data, fmt)
+    elif content_type == "mindmap":
+        return _format_mindmap_export(data, fmt)
+    return str(data)
+
+
+def _format_guide_export(data: dict, fmt: str) -> str:
+    """Guide data is already structured with title, sections, steps etc."""
+    if fmt == "txt":
+        lines = []
+        lines.append(f"Study Guide: {data.get('title', 'Untitled')}\n\n")
+        if data.get('overview'):
+            lines.append(f"{data['overview']}\n\n")
+        for section in data.get('sections', []):
+            lines.append(f"{section.get('title', '')}\n")
+            for step in section.get('steps', []):
+                lines.append(f"  - {step.get('instruction', '')}\n")
+                if step.get('detail'):
+                    lines.append(f"    {step['detail']}\n")
+            lines.append("\n")
+        if data.get('resources'):
+            lines.append("Additional Resources\n")
+            for r in data['resources']:
+                lines.append(f"  - {r.get('name', '')}: {r.get('description', '')}\n")
+        return "".join(lines)
+    else:
+        # Markdown
+        lines = []
+        lines.append(f"# {data.get('title', 'Study Guide')}\n\n")
+        if data.get('overview'):
+            lines.append(f"{data['overview']}\n\n")
+        for section in data.get('sections', []):
+            lines.append(f"## {section.get('title', '')}\n\n")
+            for step in section.get('steps', []):
+                lines.append(f"- **{step.get('instruction', '')}**\n")
+                if step.get('detail'):
+                    lines.append(f"  {step['detail']}\n")
+            lines.append("\n")
+        if data.get('resources'):
+            lines.append("## Additional Resources\n\n")
+            for r in data['resources']:
+                url = r.get('url', '')
+                name = r.get('name', '')
+                if url:
+                    lines.append(f"- [{name}]({url}): {r.get('description', '')}\n")
+                else:
+                    lines.append(f"- **{name}**: {r.get('description', '')}\n")
+        return "".join(lines)
+
+
+def _format_flashcards_export(data: dict, fmt: str) -> str:
+    """Flashcards data has cards[] and anki_csv."""
+    if fmt == "csv":
+        return data.get('anki_csv', '')
+    cards = data.get('cards', [])
+    if fmt == "txt":
+        lines = [f"Flashcards ({len(cards)} cards)\n\n"]
+        for i, card in enumerate(cards, 1):
+            lines.append(f"Card {i}\n")
+            lines.append(f"  Q: {card.get('front', '')}\n")
+            lines.append(f"  A: {card.get('back', '')}\n")
+            if card.get('difficulty'):
+                lines.append(f"  Difficulty: {card['difficulty']}\n")
+            lines.append("\n")
+        return "".join(lines)
+    else:
+        # Markdown
+        lines = [f"# Flashcards ({len(cards)} cards)\n\n"]
+        for i, card in enumerate(cards, 1):
+            diff = f" `{card['difficulty']}`" if card.get('difficulty') else ""
+            lines.append(f"### Card {i}{diff}\n\n")
+            lines.append(f"**Q:** {card.get('front', '')}\n\n")
+            lines.append(f"**A:** {card.get('back', '')}\n\n---\n\n")
+        return "".join(lines)
+
+
+def _format_mindmap_export(data: dict, fmt: str) -> str:
+    """Mindmap data is a tree with label, description, timestamp, children."""
+    lines = []
+
+    def walk(node, depth):
+        if fmt == "txt":
+            indent = "  " * depth
+            ts = f" [{_format_timestamp(node.get('timestamp'))}]" if node.get('timestamp') else ""
+            lines.append(f"{indent}{node.get('label', '')}{ts}\n")
+            if node.get('description'):
+                lines.append(f"{indent}  {node['description']}\n")
+        else:
+            # Markdown
+            ts = f" [{_format_timestamp(node.get('timestamp'))}]" if node.get('timestamp') else ""
+            if depth == 0:
+                lines.append(f"# {node.get('label', '')}{ts}\n")
+            elif depth == 1:
+                lines.append(f"## {node.get('label', '')}{ts}\n")
+            elif depth == 2:
+                lines.append(f"### {node.get('label', '')}{ts}\n")
+            else:
+                indent = "  " * (depth - 3)
+                lines.append(f"{indent}- {node.get('label', '')}{ts}\n")
+            if node.get('description'):
+                if depth <= 2:
+                    lines.append(f"{node['description']}\n")
+                else:
+                    indent = "  " * (depth - 3)
+                    lines.append(f"{indent}  {node['description']}\n")
+        lines.append("\n")
+        for child in node.get('children', []):
+            walk(child, depth + 1)
+
+    walk(data, 0)
+    return "".join(lines)
+
+
 def generate_markdown(contents: List[dict], include_transcript: bool) -> str:
     """Generate Markdown export"""
     lines = ["# Video Memory AI Export\n\n"]
@@ -2160,6 +2288,31 @@ async def export_content(
         BillingService.deduct_credits(db, current_user.id, cost, "export_premium",
                                       description=f"Export as {request.format}")
 
+    # --- Generated content export (guide, flashcards, mindmap) ---
+    if request.content_type in ("guide", "flashcards", "mindmap") and request.content_ids:
+        cid = request.content_ids[0]
+        row = db.query(GeneratedContent).filter_by(
+            user_id=current_user.id, content_id=cid, content_type=request.content_type
+        ).first()
+        if not row or not row.data:
+            raise HTTPException(status_code=400, detail=f"No {request.content_type} generated yet for this content")
+
+        gen_data = row.data
+        export_text = format_generated_export(request.content_type, gen_data, request.format)
+
+        if request.format == "json":
+            return {"data": gen_data, "count": 1}
+
+        media = "text/markdown; charset=utf-8" if request.format != "txt" else "text/plain; charset=utf-8"
+        ext = ".txt" if request.format == "txt" else ".md"
+        if request.format == "csv":
+            media = "text/csv; charset=utf-8"
+            ext = ".csv"
+        fname = f"{request.content_type}-{cid}{ext}"
+        return Response(content=export_text, media_type=media,
+                        headers={"Content-Disposition": f"attachment; filename={fname}"})
+
+    # --- Standard breakdown export ---
     ai = get_app(current_user.id, db)
 
     if request.content_ids:

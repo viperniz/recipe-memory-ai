@@ -230,6 +230,7 @@ function HomePage() {
   const closeConfirm = () => setConfirmState(s => ({ ...s, isOpen: false, onConfirm: null }))
   const [exportFormat, setExportFormat] = useState('markdown')
   const [exportContentIds, setExportContentIds] = useState([])
+  const [exportContentType, setExportContentType] = useState('breakdown')
   const [isExporting, setIsExporting] = useState(false)
   const [includeTranscript, setIncludeTranscript] = useState(true)
 
@@ -604,7 +605,8 @@ function HomePage() {
       const payload = {
         content_ids: exportContentIds.length ? exportContentIds : [],
         format: exportFormat,
-        include_transcript: includeTranscript
+        include_transcript: includeTranscript,
+        content_type: exportContentType
       }
 
       if (exportFormat === 'json') {
@@ -792,6 +794,7 @@ function HomePage() {
             }}
             onExportAll={() => {
               setExportContentIds([])
+              setExportContentType('breakdown')
               setShowExportModal(true)
             }}
             jobs={jobs}
@@ -890,8 +893,9 @@ function HomePage() {
             content={selectedContent}
             isLoading={isLoadingContent}
             onClose={() => setSelectedContent(null)}
-            onExport={() => {
+            onExport={(contentType = 'breakdown') => {
               setExportContentIds([selectedContent.id])
+              setExportContentType(contentType)
               setShowExportModal(true)
             }}
           />
@@ -908,6 +912,7 @@ function HomePage() {
           isExporting={isExporting}
           onExport={handleExport}
           itemCount={exportContentIds.length || libraryContents.length}
+          contentType={exportContentType}
         />
 
         {/* New Collection Modal */}
