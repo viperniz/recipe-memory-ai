@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { MessageSquare, X, Send, Loader2, ChevronDown, Sparkles, FileText, Globe, Lock, Search, FolderOpen, Trash2 } from 'lucide-react'
+import { MessageSquare, X, Send, Loader2, ChevronDown, Sparkles, FileText, Globe, Lock, Search, FolderOpen, Trash2, HelpCircle } from 'lucide-react'
 import { billingApi } from '../../api/billing'
 import { toast } from '../../hooks/use-toast'
 
@@ -335,7 +335,10 @@ function AIChatWidget({ onContentClick, collectionId, collectionName, selectedCo
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h3>{headerInfo.title}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3>{headerInfo.title}</h3>
+                <span className="ai-chat-beta-badge">Beta</span>
+              </div>
               <span style={{ color: scopeColor }}>{headerInfo.subtitle}</span>
             </div>
           </div>
@@ -510,8 +513,17 @@ function AIChatWidget({ onContentClick, collectionId, collectionName, selectedCo
             </button>
           </div>
           <div className="ai-chat-powered">
-            {webSearch && <span style={{ color: '#67e8f9', marginRight: '8px' }}>+ Web</span>}
-            {getLimitText() || 'Answers grounded in your saved sources \u2014 not the open internet'}
+            <span>
+              {webSearch && <span style={{ color: '#67e8f9', marginRight: '8px' }}>+ Web</span>}
+              {getLimitText() || 'Answers grounded in your saved sources'}
+            </span>
+            <button
+              className="ai-chat-support-link"
+              onClick={() => window.open('mailto:support@secondmind.app?subject=Support%20Request', '_blank')}
+            >
+              <HelpCircle className="w-3 h-3" />
+              Support
+            </button>
           </div>
         </div>
       </div>
