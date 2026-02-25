@@ -493,6 +493,7 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
       if (state !== 'transitioning') return
       state = 'two-col'
       stopTransition()
+      observer.observe(sentinel)
     }
 
     const observer = new IntersectionObserver(
@@ -534,7 +535,9 @@ function ContentDetailModal({ content, isLoading, onClose, onExport }) {
           // Restore scroll position (spacer now provides the height)
           modal.scrollTop = savedScroll
 
-          observer.observe(sentinel)
+          // Don't re-observe sentinel yet — the observer fires immediately
+          // and can trigger collapse() before the reverse animation plays.
+          // The scrollFallback handles collapse detection during reverse.
         }
         return
       }
