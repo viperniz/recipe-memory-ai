@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { billingApi } from '../../api/billing'
-import { Sparkles, LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen, User as UserIcon, CreditCard } from 'lucide-react'
+import { LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen, User as UserIcon, CreditCard } from 'lucide-react'
+import BrainIcon from '../icons/BrainIcon'
 import NotificationBell from './NotificationBell'
 import { setUserProperties, setUserId } from '../../utils/analytics'
 import { API_BASE } from '../../lib/apiBase'
@@ -89,7 +90,7 @@ function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar, onShowPr
         </button>
         <div className="app-topnav-logo">
           <div className="app-topnav-logo-icon">
-            <Sparkles className="w-4 h-4" />
+            <BrainIcon className="w-4 h-4" />
           </div>
           <span>Second Mind</span>
         </div>

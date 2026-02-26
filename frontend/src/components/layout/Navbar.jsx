@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { Button } from '../ui/button'
-import { Sparkles, Menu, X } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
+import BrainIcon from '../icons/BrainIcon'
 import { getLenis } from '../../hooks/useLenis'
 
 function Navbar() {
@@ -54,7 +55,7 @@ function Navbar() {
         {/* Logo */}
         <Link to="/" className="landing-navbar-logo" onClick={() => setMobileMenuOpen(false)}>
           <div className="landing-navbar-logo-icon">
-            <Sparkles className="w-5 h-5" />
+            <BrainIcon className="w-5 h-5" animated />
           </div>
           <span>Second Mind</span>
         </Link>

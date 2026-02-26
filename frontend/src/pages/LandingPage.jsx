@@ -15,6 +15,8 @@ import {
   CheckCircle, Star, Users, BarChart3,
   MessageCircle, Send, Loader2
 } from 'lucide-react'
+import BrainIcon from '../components/icons/BrainIcon'
+import BrainVisualization from '../components/landing/BrainVisualization'
 
 import { API_BASE } from '../lib/apiBase'
 
@@ -310,18 +312,19 @@ function LandingPage() {
           <div className="landing-hero-glow landing-hero-glow-1" />
           <div className="landing-hero-glow landing-hero-glow-2" />
           <div className="landing-hero-grid" />
+          <BrainVisualization />
           <div className="landing-hero-vignette" />
         </div>
 
         <div className="landing-hero-content">
           <div className="landing-hero-badge" data-animate="up" data-animate-delay="0.2">
-            <Sparkles className="w-4 h-4" />
+            <BrainIcon className="w-4 h-4" animated />
             <span>AI-Powered Video Notes</span>
           </div>
 
           <h1 className="landing-hero-title" data-animate="up" data-animate-delay="0.1">
             You watch it once.<br />
-            <span className="text-gradient">AI remembers it forever.</span>
+            <span className="text-gradient text-gradient-glow">AI remembers it forever.</span>
           </h1>
 
           <p className="landing-hero-subtitle" data-animate="up" data-animate-delay="0.3">
@@ -796,7 +799,7 @@ function LandingPage() {
             <div className="landing-footer-v2-brand">
               <div className="landing-footer-v2-logo">
                 <div className="landing-navbar-logo-icon">
-                  <Sparkles className="w-4 h-4" />
+                  <BrainIcon className="w-4 h-4" />
                 </div>
                 <span>Second Mind</span>
               </div>
