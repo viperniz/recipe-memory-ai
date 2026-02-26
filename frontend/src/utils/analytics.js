@@ -1,5 +1,5 @@
 /**
- * Google Analytics 4 utility for Second Mind.
+ * Google Analytics 4 utility for Cortexle.
  * All functions no-op when VITE_GA_MEASUREMENT_ID is not set.
  */
 

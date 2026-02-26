@@ -9,8 +9,8 @@ import { API_BASE } from '../lib/apiBase'
 
 const FAQ_ITEMS = [
   {
-    question: 'What is Second Mind?',
-    answer: 'Second Mind is an AI-powered tool that turns YouTube videos into structured, searchable knowledge. Paste a link, and our AI extracts summaries, key insights, transcripts, and more — so you can study, research, or create content faster.'
+    question: 'What is Cortexle?',
+    answer: 'Cortexle is an AI-powered tool that turns YouTube videos into structured, searchable knowledge. Paste a link, and our AI extracts summaries, key insights, transcripts, and more — so you can study, research, or create content faster.'
   },
   {
     question: 'What video formats and sources are supported?',
@@ -218,7 +218,7 @@ function ContactBubble() {
 
 function HelpPage() {
   useEffect(() => {
-    document.title = 'Help — Second Mind'
+    document.title = 'Help — Cortexle'
   }, [])
 
   return (
@@ -227,7 +227,7 @@ function HelpPage() {
       <main id="main-content" className="legal-page">
         <div className="legal-container">
           <h1>Help & FAQ</h1>
-          <p className="legal-intro">Find answers to common questions about Second Mind.</p>
+          <p className="legal-intro">Find answers to common questions about Cortexle.</p>
 
           <div className="faq-list">
             {FAQ_ITEMS.map((item, i) => (

@@ -186,7 +186,7 @@ function LandingPage() {
   useScrollAnimations(pageRef)
 
   useEffect(() => {
-    document.title = 'Second Mind — Watch Once, Remember Everything'
+    document.title = 'Cortexle — Watch Once, Remember Everything'
   }, [])
 
   // Show Google sign-in alert and render button inside it
@@ -277,7 +277,7 @@ function LandingPage() {
         body: JSON.stringify(chatForm)
       })
     } catch {
-      window.location.href = `mailto:support@secondmind.ai?subject=${encodeURIComponent(chatForm.category)}&body=${encodeURIComponent(`From: ${chatForm.fullName} (${chatForm.email})\n\n${chatForm.body}`)}`
+      window.location.href = `mailto:support@cortexle.com?subject=${encodeURIComponent(chatForm.category)}&body=${encodeURIComponent(`From: ${chatForm.fullName} (${chatForm.email})\n\n${chatForm.body}`)}`
     }
     setChatSending(false)
     setChatSent(true)
@@ -355,11 +355,11 @@ function LandingPage() {
               <div className="landing-hero-preview-dots">
                 <span /><span /><span />
               </div>
-              <div className="landing-hero-preview-url">app.secondmind.ai</div>
+              <div className="landing-hero-preview-url">app.cortexle.com</div>
             </div>
             <div className="landing-hero-preview-body">
               <div className="landing-preview-sidebar">
-                <div className="landing-preview-logo">Second Mind</div>
+                <div className="landing-preview-logo">Cortexle</div>
                 <div className="landing-preview-nav-item active">Knowledge Base</div>
                 <div className="landing-preview-nav-item">Discover</div>
                 <div className="landing-preview-nav-item">Collections</div>
@@ -465,7 +465,7 @@ function LandingPage() {
               <span className="landing-showcase-dot" />
               <span className="landing-showcase-dot" />
               <span className="landing-showcase-dot" />
-              <div className="landing-showcase-url">app.secondmind.ai/library</div>
+              <div className="landing-showcase-url">app.cortexle.com/library</div>
             </div>
             <div className="landing-showcase-body">
               <div className="landing-showcase-sidebar">
@@ -601,7 +601,7 @@ function LandingPage() {
           <div className="landing-section-inner">
             <div className="landing-section-header" data-animate="up">
               <h2>Plans that pay for themselves in time saved</h2>
-              <p>One hour of rewatching costs more than a month of Second Mind.</p>
+              <p>One hour of rewatching costs more than a month of Cortexle.</p>
             </div>
 
             <div className="landing-pricing-wrap">
@@ -801,7 +801,7 @@ function LandingPage() {
                 <div className="landing-navbar-logo-icon">
                   <BrainIcon className="w-4 h-4" />
                 </div>
-                <span>Second Mind</span>
+                <span>Cortexle</span>
               </div>
               <p>Watch once, remember everything. AI-powered video knowledge management.</p>
             </div>
@@ -823,7 +823,7 @@ function LandingPage() {
             </div>
           </div>
           <div className="landing-footer-v2-bottom">
-            <span>&copy; {new Date().getFullYear()} Second Mind. All rights reserved.</span>
+            <span>&copy; {new Date().getFullYear()} Cortexle. All rights reserved.</span>
           </div>
         </div>
       </footer>

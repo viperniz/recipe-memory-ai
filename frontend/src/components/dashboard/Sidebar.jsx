@@ -101,7 +101,7 @@ function Sidebar({
       )}
 
       <aside className={`sidebar ${isMobileOpen ? 'sidebar-mobile-open' : ''} ${collapsed ? 'sidebar-collapsed' : ''}`}>
-        <div className="sidebar-logo" title="Your second mind for research, learning & deep work">Second Mind</div>
+        <div className="sidebar-logo" title="Your Cortexle for research, learning & deep work">Cortexle</div>
 
         {/* Zone 1: Navigation */}
         <div className="sidebar-section">
@@ -256,7 +256,7 @@ function Sidebar({
             <div className="sidebar-cta-card sidebar-cta-upgrade">
               <Sparkles className="w-4 h-4 sidebar-cta-icon" />
               <div className="sidebar-cta-text">
-                <strong>Unlock your full second mind</strong>
+                <strong>Unlock your full Cortexle</strong>
                 <span>Mind maps, study guides & research-grade AI</span>
               </div>
               <button

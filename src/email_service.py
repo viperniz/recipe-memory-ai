@@ -71,13 +71,13 @@ def send_team_invite_email(to_email: str, team_name: str, inviter_name: str, inv
         resend.Emails.send({
             "from": FROM_EMAIL,
             "to": [to_email],
-            "subject": f"You've been invited to join {team_name} on Second Mind",
+            "subject": f"You've been invited to join {team_name} on Cortexle",
             "html": f"""
             <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
                 <h2 style="color: #18181b;">You're invited!</h2>
                 <p style="color: #3f3f46;">
                     <strong>{inviter_name}</strong> has invited you to join
-                    <strong>{team_name}</strong> on Second Mind.
+                    <strong>{team_name}</strong> on Cortexle.
                 </p>
                 <p style="color: #3f3f46;">
                     Join the team to collaborate on shared research, videos, and knowledge.
@@ -149,12 +149,12 @@ def send_welcome_email(email: str, name: str) -> bool:
         resend.Emails.send({
             "from": FROM_EMAIL,
             "to": [email],
-            "subject": "Welcome to Second Mind!",
+            "subject": "Welcome to Cortexle!",
             "html": f"""
             <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
                 <h2 style="color: #18181b;">Welcome, {display_name}!</h2>
                 <p style="color: #3f3f46;">
-                    Thanks for joining <strong>Second Mind</strong> — your AI-powered research assistant.
+                    Thanks for joining <strong>Cortexle</strong> — your AI-powered research assistant.
                 </p>
                 <h3 style="color: #18181b; font-size: 16px;">Quick start</h3>
                 <ol style="color: #3f3f46; padding-left: 20px;">
@@ -237,7 +237,7 @@ def send_low_credit_warning(email: str, name: str, remaining: int, tier: str) ->
         resend.Emails.send({
             "from": FROM_EMAIL,
             "to": [email],
-            "subject": "Your Second Mind credits are running low",
+            "subject": "Your Cortexle credits are running low",
             "html": f"""
             <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
                 <h2 style="color: #18181b;">Credits running low</h2>

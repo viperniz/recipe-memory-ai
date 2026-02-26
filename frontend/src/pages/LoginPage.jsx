@@ -30,7 +30,7 @@ function LoginPage() {
   const googleBtnRef = useRef(null)
 
   useEffect(() => {
-    document.title = 'Log In — Second Mind'
+    document.title = 'Log In — Cortexle'
   }, [])
 
   useEffect(() => {

@@ -92,7 +92,7 @@ function AppNavbar({ user, onLogout, sidebarCollapsed, onToggleSidebar, onShowPr
           <div className="app-topnav-logo-icon">
             <BrainIcon className="w-4 h-4" />
           </div>
-          <span>Second Mind</span>
+          <span>Cortexle</span>
         </div>
       </div>
 

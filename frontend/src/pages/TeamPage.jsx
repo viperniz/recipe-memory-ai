@@ -39,7 +39,7 @@ function TeamPage() {
   const [newTeamDesc, setNewTeamDesc] = useState('')
 
   useEffect(() => {
-    document.title = 'Team — Second Mind'
+    document.title = 'Team — Cortexle'
   }, [])
 
   const loadTeams = useCallback(async () => {

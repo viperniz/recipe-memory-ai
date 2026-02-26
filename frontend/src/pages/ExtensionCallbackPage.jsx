@@ -6,7 +6,7 @@ function ExtensionCallbackPage() {
       const [sent, setSent] = useState(false)
 
     useEffect(() => {
-              document.title = 'Extension Connected — Second Mind'
+              document.title = 'Extension Connected — Cortexle'
     }, [])
 
     useEffect(() => {
@@ -44,13 +44,13 @@ function ExtensionCallbackPage() {
                                                               <h1>{sent ? 'Connected!' : 'Connecting...'}</h1>
                                                               <p>
                                                                 {sent
-                                                                                          ? 'Your extension is now connected to Second Mind. You can close this tab.'
+                                                                                          ? 'Your extension is now connected to Cortexle. You can close this tab.'
                                                                                           : 'Sending credentials to extension...'}
                                                               </p>
                                           </div>
                             {sent && (
                                     <p style={{ marginTop: '1rem', color: 'var(--color-text-muted)' }}>
-                                                            Go to any YouTube video and click "Save to Second Mind" to get started.
+                                                            Go to any YouTube video and click "Save to Cortexle" to get started.
                                     </p>
                                           )}
                           </div>

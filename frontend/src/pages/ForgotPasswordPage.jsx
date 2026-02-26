@@ -21,7 +21,7 @@ function ForgotPasswordPage() {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    document.title = 'Reset Password — Second Mind'
+    document.title = 'Reset Password — Cortexle'
   }, [])
 
   const {

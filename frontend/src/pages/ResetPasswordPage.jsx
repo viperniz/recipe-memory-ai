@@ -28,7 +28,7 @@ function ResetPasswordPage() {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    document.title = 'Set New Password — Second Mind'
+    document.title = 'Set New Password — Cortexle'
   }, [])
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)

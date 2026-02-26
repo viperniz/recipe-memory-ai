@@ -36,7 +36,7 @@ function RegisterPage() {
   const referralCode = searchParams.get('ref') || null
 
   useEffect(() => {
-    document.title = 'Create Account — Second Mind'
+    document.title = 'Create Account — Cortexle'
   }, [])
 
   useEffect(() => {

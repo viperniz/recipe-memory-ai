@@ -57,7 +57,7 @@ function Navbar() {
           <div className="landing-navbar-logo-icon">
             <BrainIcon className="w-5 h-5" animated />
           </div>
-          <span>Second Mind</span>
+          <span>Cortexle</span>
         </Link>
 
         {/* Desktop nav links */}

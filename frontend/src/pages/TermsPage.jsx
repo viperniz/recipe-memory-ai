@@ -3,7 +3,7 @@ import Navbar from '../components/layout/Navbar'
 
 function TermsPage() {
   useEffect(() => {
-    document.title = 'Terms of Service — Second Mind'
+    document.title = 'Terms of Service — Cortexle'
   }, [])
 
   return (
@@ -16,7 +16,7 @@ function TermsPage() {
 
           <section>
             <h2>1. Service Description</h2>
-            <p>Second Mind ("Service") is a web application that processes video content using artificial intelligence to extract structured notes, summaries, transcripts, and other derivative content. The Service is provided by Second Mind ("we", "us", "our").</p>
+            <p>Cortexle ("Service") is a web application that processes video content using artificial intelligence to extract structured notes, summaries, transcripts, and other derivative content. The Service is provided by Cortexle ("we", "us", "our").</p>
           </section>
 
           <section>
@@ -73,7 +73,7 @@ function TermsPage() {
 
           <section>
             <h2>11. Contact</h2>
-            <p>For questions about these terms, contact us at <a href="mailto:support@secondmind.ai">support@secondmind.ai</a>.</p>
+            <p>For questions about these terms, contact us at <a href="mailto:support@cortexle.com">support@cortexle.com</a>.</p>
           </section>
         </div>
       </main>

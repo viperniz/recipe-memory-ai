@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 function NotFoundPage() {
   useEffect(() => {
-    document.title = 'Page Not Found — Second Mind'
+    document.title = 'Page Not Found — Cortexle'
   }, [])
 
   return (

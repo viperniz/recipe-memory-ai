@@ -3,7 +3,7 @@ import Navbar from '../components/layout/Navbar'
 
 function PrivacyPage() {
   useEffect(() => {
-    document.title = 'Privacy Policy — Second Mind'
+    document.title = 'Privacy Policy — Cortexle'
   }, [])
 
   return (
@@ -16,7 +16,7 @@ function PrivacyPage() {
 
           <section>
             <h2>1. Introduction</h2>
-            <p>Second Mind ("we", "us", "our") is committed to protecting your privacy. This policy describes how we collect, use, and share your personal information when you use our Service.</p>
+            <p>Cortexle ("we", "us", "our") is committed to protecting your privacy. This policy describes how we collect, use, and share your personal information when you use our Service.</p>
           </section>
 
           <section>
@@ -69,7 +69,7 @@ function PrivacyPage() {
               <li><strong>Portability:</strong> Export your data in a machine-readable format</li>
               <li><strong>Objection:</strong> Opt out of certain data processing</li>
             </ul>
-            <p>To exercise these rights, contact us at <a href="mailto:support@secondmind.ai">support@secondmind.ai</a>.</p>
+            <p>To exercise these rights, contact us at <a href="mailto:support@cortexle.com">support@cortexle.com</a>.</p>
           </section>
 
           <section>
@@ -79,7 +79,7 @@ function PrivacyPage() {
 
           <section>
             <h2>9. CCPA (California Users)</h2>
-            <p>California residents have the right to know what personal information is collected, request its deletion, and opt out of its sale. We do not sell personal information. For CCPA requests, contact <a href="mailto:support@secondmind.ai">support@secondmind.ai</a>.</p>
+            <p>California residents have the right to know what personal information is collected, request its deletion, and opt out of its sale. We do not sell personal information. For CCPA requests, contact <a href="mailto:support@cortexle.com">support@cortexle.com</a>.</p>
           </section>
 
           <section>
@@ -94,7 +94,7 @@ function PrivacyPage() {
 
           <section>
             <h2>12. Contact</h2>
-            <p>For questions about this policy or your data, contact us at <a href="mailto:support@secondmind.ai">support@secondmind.ai</a>.</p>
+            <p>For questions about this policy or your data, contact us at <a href="mailto:support@cortexle.com">support@cortexle.com</a>.</p>
           </section>
         </div>
       </main>

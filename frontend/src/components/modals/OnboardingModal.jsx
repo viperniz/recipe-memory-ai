@@ -5,9 +5,9 @@ import { Button } from '../ui/button'
 const STEPS = [
   {
     id: 'welcome',
-    title: 'Welcome to Second Mind!',
+    title: 'Welcome to Cortexle!',
     subtitle: 'Your AI-powered research companion',
-    description: 'Turn any video, lecture, or article into searchable knowledge. Second Mind watches, reads, and remembers — so you can focus on what matters.',
+    description: 'Turn any video, lecture, or article into searchable knowledge. Cortexle watches, reads, and remembers — so you can focus on what matters.',
   },
   {
     id: 'how-it-works',

@@ -150,20 +150,20 @@ function AIChatWidget({ onContentClick, collectionId, collectionName, selectedCo
   const getHeaderInfo = () => {
     if (selectedContent) {
       return {
-        title: 'Second Mind',
+        title: 'Cortexle',
         subtitle: selectedContent.title || 'This source',
         scope: 'content'
       }
     }
     if (collectionId) {
       return {
-        title: 'Second Mind',
+        title: 'Cortexle',
         subtitle: collectionName || 'This collection',
         scope: 'collection'
       }
     }
     return {
-      title: 'Second Mind',
+      title: 'Cortexle',
       subtitle: 'Searches across everything you\'ve saved',
       scope: 'global'
     }
@@ -320,7 +320,7 @@ function AIChatWidget({ onContentClick, collectionId, collectionName, selectedCo
       <button
         className={`ai-chat-fab ${isOpen ? 'hidden' : ''}`}
         onClick={() => setIsOpen(true)}
-        aria-label="Open Second Mind"
+        aria-label="Open Cortexle"
         style={headerInfo.scope !== 'global' ? { background: `linear-gradient(135deg, ${scopeColor}, #8b5cf6)` } : undefined}
       >
         <Sparkles className="w-6 h-6" />

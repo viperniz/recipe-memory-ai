@@ -52,7 +52,7 @@ const COMPARISON_SECTIONS = [
 
 const TIER_TAGLINE = {
   starter: 'For the curious mind getting serious about learning.',
-  pro: 'The full second mind. For researchers, developers & students who refuse to lose an insight.',
+  pro: 'The full Cortexle. For researchers, developers & students who refuse to lose an insight.',
   team: 'Shared knowledge for teams that learn together.',
 }
 
@@ -66,7 +66,7 @@ function PricingPage() {
   const [currentTier, setCurrentTier] = useState('free')
 
   useEffect(() => {
-    document.title = 'Pricing — Second Mind'
+    document.title = 'Pricing — Cortexle'
   }, [])
 
   useEffect(() => {
@@ -175,7 +175,7 @@ function PricingPage() {
       <nav className="pricing-topbar">
         <Link to="/" className="pricing-topbar-logo">
           <Sparkles className="w-5 h-5" />
-          <span>Second Mind</span>
+          <span>Cortexle</span>
         </Link>
         <button
           className="pricing-topbar-close"
@@ -379,7 +379,7 @@ function PricingPage() {
           </div>
 
           <div className="pricing-footer">
-            <p className="pricing-footer-tagline">You do the thinking. Your second mind remembers everything else.</p>
+            <p className="pricing-footer-tagline">You do the thinking. Your Cortexle remembers everything else.</p>
             <p className="pricing-footer-fine">7-day free trial on all plans. 50% off your first month. Cancel anytime.</p>
           </div>
         </div>

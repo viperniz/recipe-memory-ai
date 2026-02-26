@@ -156,7 +156,7 @@ function HomePage() {
   const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
-    document.title = 'Dashboard — Second Mind'
+    document.title = 'Dashboard — Cortexle'
   }, [])
 
   // Show onboarding for new users with empty libraries
