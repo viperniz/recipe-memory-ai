@@ -1,6 +1,6 @@
 {
       "rewrites": [
           { "source": "/api/:path*", "destination": "https://recipe-memory-api.onrender.com/api/:path*" },
-              { "source": "/(.*)", "destination": "/coming-soon.html" }
+              { "source": "/(.*)", "destination": "/index.html" }
                 ]
                 }
