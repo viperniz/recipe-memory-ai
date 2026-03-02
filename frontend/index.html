@@ -79,72 +79,74 @@ function mkBrain(seg){
 
 var bg=mkBrain(80);
 
-// Brain rim glow shader
+// Brain - translucent dark blue with rim glow
+// depthWrite:false so nodes inside can show through
 var brainMat=new THREE.ShaderMaterial({
   uniforms:{
     rimCol:{value:new THREE.Color(0x4488ff)},
-    rimPow:{value:2.8},rimInt:{value:2.6},
+    rimPow:{value:2.8},rimInt:{value:2.5},
     innerCol:{value:new THREE.Color(0x010814)}
   },
   vertexShader:'varying vec3 vN;varying vec3 vV;varying vec3 wP;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.0);vV=normalize(-mv.xyz);wP=(modelMatrix*vec4(position,1.0)).xyz;gl_Position=projectionMatrix*mv;}',
-  fragmentShader:'uniform vec3 rimCol;uniform float rimPow;uniform float rimInt;uniform vec3 innerCol;varying vec3 vN;varying vec3 vV;varying vec3 wP;void main(){float f=1.0-clamp(dot(vN,vV),0.0,1.0);float rim=pow(f,rimPow)*rimInt;vec3 rc=mix(rimCol,vec3(0.5,0.2,0.9),clamp(-wP.x*0.2+0.35,0.0,0.8));vec3 col=mix(innerCol,rc,clamp(rim,0.0,1.0));col+=vec3(0.006,0.015,0.06)*0.5;gl_FragColor=vec4(col,0.78+rim*0.22);}',
-  transparent:true,side:THREE.FrontSide
+  fragmentShader:'uniform vec3 rimCol;uniform float rimPow;uniform float rimInt;uniform vec3 innerCol;varying vec3 vN;varying vec3 vV;varying vec3 wP;void main(){float f=1.0-clamp(dot(vN,vV),0.0,1.0);float rim=pow(f,rimPow)*rimInt;vec3 rc=mix(rimCol,vec3(0.5,0.2,0.9),clamp(-wP.x*0.2+0.35,0.0,0.8));vec3 col=mix(innerCol,rc,clamp(rim,0.0,1.0));col+=vec3(0.005,0.012,0.05)*0.5;gl_FragColor=vec4(col,0.65+rim*0.35);}',
+  transparent:true,side:THREE.DoubleSide,depthWrite:false
 });
 var bMesh=new THREE.Mesh(bg,brainMat);
-
-// Dark inner cap
-var innerMesh=new THREE.Mesh(bg,new THREE.MeshBasicMaterial({color:0x010510,transparent:false,side:THREE.BackSide}));
+bMesh.renderOrder=0;
 
 // Subtle wire
-var wMesh=new THREE.Mesh(mkBrain(22),new THREE.MeshBasicMaterial({color:0x2244aa,wireframe:true,transparent:true,opacity:0.05}));
+var wMesh=new THREE.Mesh(mkBrain(20),new THREE.MeshBasicMaterial({color:0x2244aa,wireframe:true,transparent:true,opacity:0.05,depthWrite:false}));
+wMesh.renderOrder=0;
 
 var bg2=new THREE.Group();
-bg2.add(innerMesh);bg2.add(bMesh);bg2.add(wMesh);
+bg2.add(bMesh);bg2.add(wMesh);
 scene.add(bg2);
 
-// Neural nodes - INSIDE the volume (not just surface) so they distribute across face
-// Use random points within the brain ellipsoid volume
-var nd=[];var nGrp=new THREE.Group();bg2.add(nGrp);
+// Neural nodes inside volume - rendered on top (renderOrder=1)
+var nd=[];
+var nGrp=new THREE.Group();
+nGrp.renderOrder=1;
+bg2.add(nGrp);
+
 var nc=0;
 while(nc<200){
-  // Random point in ellipsoid: x/1.38, y/1.02, z/0.80 within unit sphere
   var u=Math.random()*2-1,v=Math.random()*2-1,w=Math.random()*2-1;
-  // Reject if outside unit sphere  
   if(u*u+v*v+w*w>1.0)continue;
-  // Scale to brain proportions
-  var nx=u*1.32,ny=v*0.98,nz=w*0.76;
-  // Apply same inferior flattening
+  var nx=u*1.3,ny=v*0.95,nz=w*0.74;
   if(ny<-0.12){ny+=(-ny-0.12)*0.35;}
   var isO=Math.random()<0.22;
-  var nr=isO?(Math.random()*0.018+0.013):(Math.random()*0.012+0.007);
+  var nr=isO?(Math.random()*0.02+0.015):(Math.random()*0.014+0.009);
   var nm=new THREE.Mesh(
     new THREE.SphereGeometry(nr,8,5),
-    new THREE.MeshBasicMaterial({color:isO?0xff9922:0xaaccff,transparent:true,opacity:isO?0.92:0.75})
+    new THREE.MeshBasicMaterial({color:isO?0xff9922:0xaaddff,transparent:true,opacity:isO?0.95:0.85,depthTest:false})
   );
   nm.position.set(nx,ny,nz);
+  nm.renderOrder=1;
   nGrp.add(nm);
   nd.push({m:nm,o:isO,ph:Math.random()*Math.PI*2,nx:nx,ny:ny,nz:nz});
   nc++;
 }
 
-// Lines between nearby nodes
-var lGrp=new THREE.Group();bg2.add(lGrp);
-var mO=new THREE.LineBasicMaterial({color:0xffcc11,transparent:true,opacity:0.65});
-var mB=new THREE.LineBasicMaterial({color:0x3355bb,transparent:true,opacity:0.45});
-var mM=new THREE.LineBasicMaterial({color:0xff8811,transparent:true,opacity:0.52});
+// Lines - rendered on top too
+var lGrp=new THREE.Group();lGrp.renderOrder=1;bg2.add(lGrp);
+var mO=new THREE.LineBasicMaterial({color:0xffcc11,transparent:true,opacity:0.72,depthTest:false});
+var mB=new THREE.LineBasicMaterial({color:0x4466cc,transparent:true,opacity:0.52,depthTest:false});
+var mM=new THREE.LineBasicMaterial({color:0xff8811,transparent:true,opacity:0.6,depthTest:false});
 for(var i=0;i<nd.length;i++){
   for(var j=i+1;j<nd.length;j++){
     var a=nd[i],b=nd[j];
     var dx=a.nx-b.nx,dy=a.ny-b.ny,dz=a.nz-b.nz;
     var dd=Math.sqrt(dx*dx+dy*dy+dz*dz);
-    if(dd<0.5&&Math.random()<0.48){
+    if(dd<0.5&&Math.random()<0.46){
       var lg=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a.nx,a.ny,a.nz),new THREE.Vector3(b.nx,b.ny,b.nz)]);
-      lGrp.add(new THREE.Line(lg,(a.o&&b.o)?mO:(a.o||b.o)?mM:mB));
+      var line=new THREE.Line(lg,(a.o&&b.o)?mO:(a.o||b.o)?mM:mB);
+      line.renderOrder=1;
+      lGrp.add(line);
     }
   }
 }
 
-// Hotspots
+// Hotspots - on surface
 var features=[
   {id:'aiq', name:'AI Q&A',          px:-1.05,py: 0.28,pz: 0.42, tY:-0.65,tX: 0.12},
   {id:'vid', name:'Video Processing', px:-0.02,py: 1.02,pz: 0.22, tY: 0.0, tX:-0.68},
@@ -153,11 +155,19 @@ var features=[
   {id:'note',name:'Smart Notes',      px: 0.62,py:-0.56,pz: 0.18, tY: 0.52,tX: 0.46},
   {id:'ext', name:'Chrome Extension', px: 0.02,py:-0.87,pz:-0.04, tY: 0.0, tX: 0.64}
 ];
-var hsGrp=new THREE.Group();bg2.add(hsGrp);var hsMeshes=[];
+var hsGrp=new THREE.Group();hsGrp.renderOrder=2;bg2.add(hsGrp);var hsMeshes=[];
 features.forEach(function(f){
-  var hm=new THREE.Mesh(new THREE.SphereGeometry(0.058,14,10),new THREE.MeshBasicMaterial({color:0x4af0fc,transparent:true,opacity:0.95}));
-  hm.position.set(f.px,f.py,f.pz);hm.userData={f:f};
-  hm.add(new THREE.Mesh(new THREE.RingGeometry(0.074,0.105,24),new THREE.MeshBasicMaterial({color:0x4af0fc,transparent:true,opacity:0.38,side:THREE.DoubleSide})));
+  var hm=new THREE.Mesh(
+    new THREE.SphereGeometry(0.062,14,10),
+    new THREE.MeshBasicMaterial({color:0x4af0fc,transparent:true,opacity:0.95,depthTest:false})
+  );
+  hm.position.set(f.px,f.py,f.pz);hm.userData={f:f};hm.renderOrder=2;
+  var ring=new THREE.Mesh(
+    new THREE.RingGeometry(0.078,0.11,24),
+    new THREE.MeshBasicMaterial({color:0x4af0fc,transparent:true,opacity:0.38,side:THREE.DoubleSide,depthTest:false})
+  );
+  ring.renderOrder=2;
+  hm.add(ring);
   hsGrp.add(hm);hsMeshes.push(hm);
 });
 
@@ -194,8 +204,8 @@ function animate(){
   nd.forEach(function(n){
     var p=0.72+Math.sin(t*2.8+n.ph)*0.28;
     n.m.scale.setScalar(p);
-    if(n.o){n.m.material.color.setRGB(1,0.4+Math.sin(t*3+n.ph)*0.15,0.05);n.m.material.opacity=0.8+p*0.2;}
-    else{n.m.material.opacity=0.5+p*0.42;}
+    if(n.o){n.m.material.color.setRGB(1,0.4+Math.sin(t*3+n.ph)*0.15,0.05);n.m.material.opacity=0.82+p*0.18;}
+    else{n.m.material.opacity=0.55+p*0.4;}
   });
   hsMeshes.forEach(function(hs,i){
     var f=features[i];var isA=actF&&actF.id===f.id;
