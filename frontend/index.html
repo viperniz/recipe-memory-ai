@@ -4,7 +4,7 @@
 body{background:#06061a;color:#fff;font-family:'Segoe UI',sans-serif;overflow:hidden;width:100vw;height:100vh}
 #main{position:absolute;inset:0;display:flex;align-items:center}
 
-/* Globe container — left ~48% */
+/* Globe container — left */
 #globe-wrap{position:relative;width:min(50vw,480px);height:100vh;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 #globe-canvas{display:block;cursor:grab;position:absolute;inset:0}
 #globe-canvas:active{cursor:grabbing}
@@ -17,69 +17,70 @@ body{background:#06061a;color:#fff;font-family:'Segoe UI',sans-serif;overflow:hi
 .icon-node.active svg{stroke:#fff}
 .icon-label{position:absolute;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:rgba(100,160,240,0.6);white-space:nowrap;pointer-events:none;z-index:11}
 
-/* Right panel */
-#right-panel{flex:1;height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 32px 52px 16px;position:relative;overflow:hidden;z-index:5}
+/* Right panel — stack: branding top, feature middle, email bottom */
+#right-panel{flex:1;height:100vh;display:flex;flex-direction:column;justify-content:space-between;padding:32px 36px 36px 16px;position:relative;overflow:hidden;z-index:5}
 
-/* Feature display — vertically centered in right panel */
-#feature-display{position:absolute;top:50%;left:16px;right:32px;transform:translateY(-50%);margin-top:40px}
+/* TOP of right panel: Branding + countdown */
+#branding{display:flex;flex-direction:column;align-items:flex-start;gap:6px;z-index:20}
+#logo-txt{font-size:10px;letter-spacing:8px;color:#6688ee;text-transform:uppercase;opacity:.7}
+#site-title{font-size:clamp(20px,2.8vw,36px);font-weight:300;letter-spacing:6px;text-transform:uppercase;background:linear-gradient(90deg,#5588ff,#bb77ff,#55aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#countdown{display:flex;gap:20px;margin-top:4px}
+.cd-block{display:flex;flex-direction:column;align-items:center;gap:2px}
+.cd-num{font-size:22px;font-weight:200;color:#99bbee;letter-spacing:2px}
+.cd-label{font-size:7px;letter-spacing:3px;color:#445599;text-transform:uppercase}
+
+/* MIDDLE of right panel: Feature name (over wave) */
+#feature-display{flex:1;display:flex;flex-direction:column;justify-content:center}
 #feature-name{font-size:clamp(20px,3vw,46px);font-weight:200;letter-spacing:clamp(4px,1.2vw,12px);text-transform:uppercase;opacity:0;transition:opacity 0.5s ease;color:#ddeeff;white-space:nowrap;text-shadow:0 0 40px rgba(100,160,255,0.35)}
 #feature-desc{font-size:clamp(10px,1vw,13px);letter-spacing:2.5px;color:rgba(100,150,220,0.65);opacity:0;transition:opacity 0.55s ease 0.08s;text-transform:uppercase;margin-top:6px}
 #feature-name.vis{opacity:1}
 #feature-desc.vis{opacity:0.65}
 
-/* Branding — top RIGHT above wave */
-#branding{position:absolute;top:28px;right:0;width:55%;display:flex;flex-direction:column;align-items:center;z-index:20;pointer-events:none;padding-right:32px}
-#logo-txt{font-size:10px;letter-spacing:8px;color:#6688ee;text-transform:uppercase;opacity:.7;margin-bottom:4px}
-#site-title{font-size:clamp(18px,2.4vw,32px);font-weight:300;letter-spacing:6px;text-transform:uppercase;background:linear-gradient(90deg,#5588ff,#bb77ff,#55aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px}
-#countdown{display:flex;gap:18px}
-.cd-block{display:flex;flex-direction:column;align-items:center;gap:2px}
-.cd-num{font-size:20px;font-weight:200;color:#99bbee;letter-spacing:2px}
-.cd-label{font-size:7px;letter-spacing:3px;color:#445599;text-transform:uppercase}
-
-/* Bottom email only — centered */
-#bottom-ui{position:absolute;bottom:26px;left:0;right:0;display:flex;justify-content:center;z-index:20}
-#email-row{display:flex;gap:0;width:min(340px,66vw)}
-#email-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(80,120,240,0.26);border-right:none;color:#fff;padding:9px 14px;font-size:12px;outline:none;letter-spacing:1px}
+/* BOTTOM of right panel: Email signup */
+#email-row{display:flex;gap:0;width:min(360px,100%)}
+#email-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(80,120,240,0.26);border-right:none;color:#fff;padding:10px 14px;font-size:12px;outline:none;letter-spacing:1px}
 #email-input::placeholder{color:#334477}
-#email-btn{background:linear-gradient(135deg,#2244bb,#5522aa);border:none;color:#fff;padding:9px 16px;font-size:10px;letter-spacing:2px;cursor:pointer;text-transform:uppercase}
+#email-btn{background:linear-gradient(135deg,#2244bb,#5522aa);border:none;color:#fff;padding:10px 18px;font-size:10px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;white-space:nowrap}
+#email-btn:hover{opacity:.85}
 </style>
 </head>
 <body>
-
-<!-- Branding top-right -->
-<div id="branding">
-  <div id="logo-txt">Cortexle</div>
-  <div id="site-title">Coming Soon</div>
-  <div id="countdown">
-    <div class="cd-block"><span class="cd-num" id="cd-d">00</span><span class="cd-label">Days</span></div>
-    <div class="cd-block"><span class="cd-num" id="cd-h">00</span><span class="cd-label">Hours</span></div>
-    <div class="cd-block"><span class="cd-num" id="cd-m">00</span><span class="cd-label">Mins</span></div>
-    <div class="cd-block"><span class="cd-num" id="cd-s">00</span><span class="cd-label">Secs</span></div>
-  </div>
-</div>
 
 <div id="main">
   <div id="globe-wrap">
     <canvas id="globe-canvas"></canvas>
   </div>
   <div id="right-panel">
+
+    <!-- TOP: Cortexle / Coming Soon / Countdown -->
+    <div id="branding">
+      <div id="logo-txt">Cortexle</div>
+      <div id="site-title">Coming Soon</div>
+      <div id="countdown">
+        <div class="cd-block"><span class="cd-num" id="cd-d">00</span><span class="cd-label">Days</span></div>
+        <div class="cd-block"><span class="cd-num" id="cd-h">00</span><span class="cd-label">Hours</span></div>
+        <div class="cd-block"><span class="cd-num" id="cd-m">00</span><span class="cd-label">Mins</span></div>
+        <div class="cd-block"><span class="cd-num" id="cd-s">00</span><span class="cd-label">Secs</span></div>
+      </div>
+    </div>
+
+    <!-- MIDDLE: Feature name fades in over wave -->
     <div id="feature-display">
       <div id="feature-name"></div>
       <div id="feature-desc"></div>
     </div>
+
+    <!-- BOTTOM: Email signup -->
+    <div id="email-row">
+      <input id="email-input" type="email" placeholder="Enter your email for early access"/>
+      <button id="email-btn">Notify Me</button>
+    </div>
+
   </div>
 </div>
 
-<!-- Wave canvas behind everything -->
+<!-- Wave canvas -->
 <canvas id="wave-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:2"></canvas>
-
-<!-- Email only at bottom -->
-<div id="bottom-ui">
-  <div id="email-row">
-    <input id="email-input" type="email" placeholder="Enter your email for early access"/>
-    <button id="email-btn">Notify Me</button>
-  </div>
-</div>
 
 <script>
 const launch=new Date('2025-09-01T00:00:00Z');
@@ -88,12 +89,12 @@ updateCD();setInterval(updateCD,1000);
 document.getElementById('email-btn').addEventListener('click',()=>{const v=document.getElementById('email-input').value;if(v&&v.includes('@')){document.getElementById('email-btn').textContent='Done ✓';}});
 
 const features=[
-  {name:'AI Q&A',        desc:'Instant answers from your videos',  icon:'brain'},
-  {name:'Video Processing',   desc:'Frame-by-frame intelligence',        icon:'video'},
-  {name:'Transcription',      desc:'Speech to searchable text',          icon:'mic'},
-  {name:'Semantic Search',    desc:'Find anything by meaning',           icon:'search'},
-  {name:'Smart Notes',        desc:'Auto-generated insights',            icon:'notes'},
-  {name:'Chrome Extension',   desc:'Works anywhere in your browser',     icon:'chrome'},
+  {name:'AI Q&A',       desc:'Instant answers from your videos', icon:'brain'},
+  {name:'Video Processing',  desc:'Frame-by-frame intelligence',       icon:'video'},
+  {name:'Transcription',     desc:'Speech to searchable text',         icon:'mic'},
+  {name:'Semantic Search',   desc:'Find anything by meaning',          icon:'search'},
+  {name:'Smart Notes',       desc:'Auto-generated insights',           icon:'notes'},
+  {name:'Chrome Extension',  desc:'Works anywhere in your browser',    icon:'chrome'},
 ];
 const svgIcons={
   brain:'<circle cx="12" cy="12" r="3"/><path d="M6.6 8.4A6 6 0 0 1 18 12a6 6 0 0 1-11.4 3.6"/><path d="M12 6v2M12 16v2M6 12H4M20 12h-2"/>',
@@ -104,16 +105,13 @@ const svgIcons={
   chrome:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="21.17" y1="8" x2="12" y2="8"/><line x1="3.95" y1="6.06" x2="8.54" y2="14"/><line x1="10.88" y1="21.94" x2="15.46" y2="14"/>',
 };
 
-// ── Icon positions: evenly spread around the left arc of the globe ──
-// Angles chosen so icons sit around left/top/bottom arc with good spacing
-// Using angles: left side 150–330 degrees spread evenly = 36° apart
 const iconDefs=[
-  {feat:0, angleDeg:155, rf:1.68},  // Semantic Search — top-left
-  {feat:1, angleDeg:195, rf:1.65},  // AI Q&A — left-upper
-  {feat:2, angleDeg:235, rf:1.62},  // Video Processing — left
-  {feat:3, angleDeg:270, rf:1.65},  // Transcription — bottom-left
-  {feat:4, angleDeg:308, rf:1.62},  // Smart Notes — bottom
-  {feat:5, angleDeg:118, rf:1.65},  // Chrome Extension — top
+  {feat:3,angleDeg:155,rf:1.68}, // Semantic Search — top
+  {feat:2,angleDeg:195,rf:1.65}, // Transcription — upper-left
+  {feat:4,angleDeg:118,rf:1.62}, // Smart Notes — upper-right
+  {feat:1,angleDeg:235,rf:1.62}, // Video Processing — left
+  {feat:0,angleDeg:270,rf:1.65}, // AI Q&A — lower-left
+  {feat:5,angleDeg:308,rf:1.62}, // Chrome Extension — bottom
 ];
 
 import('https://unpkg.com/three@0.160.0/build/three.module.js').then(THREE=>{
@@ -157,7 +155,6 @@ let activeIdx=-1;
 const nameEl=document.getElementById('feature-name');
 const descEl=document.getElementById('feature-desc');
 const iconEls=[],labelEls=[];
-
 function selectFeature(idx){
   if(activeIdx===idx){iconEls[idx].classList.remove('active');activeIdx=-1;nameEl.classList.remove('vis');descEl.classList.remove('vis');return;}
   if(activeIdx>=0) iconEls[activeIdx].classList.remove('active');
@@ -170,15 +167,12 @@ function selectFeature(idx){
     nameEl.classList.add('vis');descEl.classList.add('vis');
   },280);
 }
-
 iconDefs.forEach((def,idx)=>{
-  const el=document.createElement('div');
-  el.className='icon-node';
+  const el=document.createElement('div');el.className='icon-node';
   el.innerHTML='<svg viewBox="0 0 24 24">'+svgIcons[features[def.feat].icon]+'</svg>';
   el.addEventListener('click',()=>selectFeature(idx));
   gWrap.appendChild(el);iconEls.push(el);
-  const lbl=document.createElement('div');
-  lbl.className='icon-label';
+  const lbl=document.createElement('div');lbl.className='icon-label';
   lbl.textContent=features[def.feat].name.toUpperCase();
   gWrap.appendChild(lbl);labelEls.push(lbl);
 });
@@ -192,53 +186,36 @@ function posIcons(){
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('width',W);svg.setAttribute('height',H);
   svg.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:5';
-
   iconDefs.forEach((def,idx)=>{
     const rad=def.angleDeg*Math.PI/180;
     const iconR=globeR*def.rf;
-    // Raw position
     let ix=cx+Math.cos(rad)*iconR;
     let iy=cy+Math.sin(rad)*iconR;
-    // Clamp inside globe-wrap with margin
     const mg=52;
     ix=Math.max(mg,Math.min(W-mg,ix));
-    iy=Math.max(mg+30,Math.min(H-mg-30,iy));
-
-    iconEls[idx].style.left=(ix-23)+'px';
-    iconEls[idx].style.top=(iy-23)+'px';
-
-    // Label: place to right of icon if icon is on left side, left if right side
-    const lbl=labelEls[idx];
-    const lW=lbl.offsetWidth||80;
-    if(ix<cx){lbl.style.left=(ix+28)+'px';}
-    else{lbl.style.left=(ix-23-lW-4)+'px';}
+    iy=Math.max(mg+20,Math.min(H-mg-20,iy));
+    iconEls[idx].style.left=(ix-23)+'px';iconEls[idx].style.top=(iy-23)+'px';
+    const lbl=labelEls[idx];const lW=lbl.offsetWidth||80;
+    if(ix<cx){lbl.style.left=(ix+28)+'px';}else{lbl.style.left=(ix-23-lW-4)+'px';}
     lbl.style.top=(iy+16)+'px';
-
-    // Connector line from globe edge to icon
-    const ex=cx+Math.cos(rad)*globeR*0.97;
-    const ey=cy+Math.sin(rad)*globeR*0.97;
+    const ex=cx+Math.cos(rad)*globeR*0.97;const ey=cy+Math.sin(rad)*globeR*0.97;
     const line=document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1',ex);line.setAttribute('y1',ey);
-    line.setAttribute('x2',ix);line.setAttribute('y2',iy);
-    line.setAttribute('stroke','rgba(70,140,255,0.3)');
-    line.setAttribute('stroke-width','1.2');
-    line.setAttribute('stroke-dasharray','5 3');
+    line.setAttribute('x1',ex);line.setAttribute('y1',ey);line.setAttribute('x2',ix);line.setAttribute('y2',iy);
+    line.setAttribute('stroke','rgba(70,140,255,0.3)');line.setAttribute('stroke-width','1.2');line.setAttribute('stroke-dasharray','5 3');
     svg.appendChild(line);
     const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    dot.setAttribute('cx',ex);dot.setAttribute('cy',ey);
-    dot.setAttribute('r','3.5');dot.setAttribute('fill','rgba(80,170,255,0.62)');
+    dot.setAttribute('cx',ex);dot.setAttribute('cy',ey);dot.setAttribute('r','3.5');dot.setAttribute('fill','rgba(80,170,255,0.62)');
     svg.appendChild(dot);
   });
   gWrap.appendChild(svg);connSVG=svg;
 }
 posIcons();
-
 let tt=0;
 function animG(){requestAnimationFrame(animG);tt+=.016;if(!drag){rY+=.0008;}brain.rotation.y=rY;brain.rotation.x=rX;renderer.render(scene,camera);}
 animG();
 });
 
-// ── Wave canvas ────────────────────────────────────────────────
+// ── Wave canvas ──────────────────────────────────────────────
 const wc=document.getElementById('wave-canvas');
 const wCtx=wc.getContext('2d');
 function rsW(){wc.width=window.innerWidth;wc.height=window.innerHeight;}
@@ -250,8 +227,7 @@ function animWave(){
   const W=wc.width,H=wc.height;
   const gW=document.getElementById('globe-wrap').offsetWidth;
   const sX=gW*0.74;
-  const cY=H*0.54; // slightly below center to leave room for title above
-
+  const cY=H*0.54;
   const waves=[
     {amp:58,freq:1.6,ph:0,    col:[130,55,230],w:2.2,op:0.28},
     {amp:42,freq:2.1,ph:0.9,  col:[160,80,255],w:1.6,op:0.22},
@@ -265,24 +241,15 @@ function animWave(){
     {amp:44,freq:1.9,ph:4.0,  col:[120,60,220],w:1.8,op:0.19},
   ];
   waves.forEach(w=>{
-    wCtx.beginPath();
-    const [r,g,b]=w.col;
-    wCtx.strokeStyle='rgba('+r+','+g+','+b+','+w.op+')';
-    wCtx.lineWidth=w.w;
-    const pts=140;
-    for(let i=0;i<=pts;i++){
-      const t=i/pts;const x=sX+t*(W-sX-10);
-      const sp=Math.pow(t*(1-t)*4,0.7);
-      const y=cY+(Math.sin(t*Math.PI*w.freq*1.2+wt+w.ph)*w.amp+Math.sin(t*Math.PI*w.freq*.5+wt*.8+w.ph)*w.amp*.3)*sp;
-      if(i===0) wCtx.moveTo(x,y); else wCtx.lineTo(x,y);
-    }wCtx.stroke();
+    wCtx.beginPath();const[r,g,b]=w.col;
+    wCtx.strokeStyle='rgba('+r+','+g+','+b+','+w.op+')';wCtx.lineWidth=w.w;
+    for(let i=0;i<=140;i++){const t=i/140;const x=sX+t*(W-sX-10);const sp=Math.pow(t*(1-t)*4,0.7);const y=cY+(Math.sin(t*Math.PI*w.freq*1.2+wt+w.ph)*w.amp+Math.sin(t*Math.PI*w.freq*.5+wt*.8+w.ph)*w.amp*.3)*sp;if(i===0) wCtx.moveTo(x,y);else wCtx.lineTo(x,y);}
+    wCtx.stroke();
   });
   wCtx.beginPath();wCtx.strokeStyle='rgba(180,100,255,0.55)';wCtx.lineWidth=1.8;
-  for(let i=0;i<=120;i++){const t=i/120;const x=sX+t*(W-sX-10);const sp=Math.pow(t*(1-t)*4,0.7);const y=cY+Math.sin(t*Math.PI*2.2+wt*1.1)*30*sp;if(i===0) wCtx.moveTo(x,y); else wCtx.lineTo(x,y);}
-  wCtx.stroke();
+  for(let i=0;i<=120;i++){const t=i/120;const x=sX+t*(W-sX-10);const sp=Math.pow(t*(1-t)*4,0.7);const y=cY+Math.sin(t*Math.PI*2.2+wt*1.1)*30*sp;if(i===0) wCtx.moveTo(x,y);else wCtx.lineTo(x,y);}wCtx.stroke();
   wCtx.beginPath();wCtx.strokeStyle='rgba(220,160,255,0.32)';wCtx.lineWidth=1.2;
-  for(let i=0;i<=120;i++){const t=i/120;const x=sX+t*(W-sX-10);const sp=Math.pow(t*(1-t)*4,0.6);const y=cY+Math.sin(t*Math.PI*3.1+wt*1.4)*17*sp;if(i===0) wCtx.moveTo(x,y); else wCtx.lineTo(x,y);}
-  wCtx.stroke();
+  for(let i=0;i<=120;i++){const t=i/120;const x=sX+t*(W-sX-10);const sp=Math.pow(t*(1-t)*4,0.6);const y=cY+Math.sin(t*Math.PI*3.1+wt*1.4)*17*sp;if(i===0) wCtx.moveTo(x,y);else wCtx.lineTo(x,y);}wCtx.stroke();
 }
 animWave();
 </script></body></html>
