@@ -8,30 +8,30 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:'Helvetica Neue',Arial,sans-serif}
 #main{display:flex;width:100vw;height:100vh;position:relative}
-#globe-wrap{width:52vw;height:100vh;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative}
+#globe-wrap{width:48vw;height:100vh;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
 #globe-canvas{display:block;cursor:grab;position:absolute;inset:0}
 #globe-canvas:active{cursor:grabbing}
-.icon-node{position:absolute;width:46px;height:46px;border-radius:50%;background:rgba(15,28,80,0.82);border:1.5px solid rgba(80,150,255,0.55);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.28s ease;z-index:10;backdrop-filter:blur(6px);box-shadow:0 0 14px rgba(60,120,255,0.18)}
+.icon-node{position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(15,28,80,0.82);border:1.5px solid rgba(80,150,255,0.55);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.28s ease;z-index:10;backdrop-filter:blur(6px);box-shadow:0 0 14px rgba(60,120,255,0.18)}
 .icon-node:hover{border-color:rgba(120,180,255,0.9);box-shadow:0 0 24px rgba(80,140,255,0.45);background:rgba(20,40,120,0.9)}
 .icon-node.active{border-color:#66aaff;box-shadow:0 0 32px rgba(80,160,255,0.65);background:rgba(20,50,140,0.95)}
-.icon-node svg{width:20px;height:20px;stroke:#88aaee;stroke-width:1.6;fill:none;transition:stroke 0.28s}
+.icon-node svg{width:19px;height:19px;stroke:#88aaee;stroke-width:1.6;fill:none;transition:stroke 0.28s}
 .icon-node:hover svg,.icon-node.active svg{stroke:#aaccff}
 .node-label{position:absolute;font-size:8px;letter-spacing:2.5px;color:rgba(100,150,220,0.7);text-transform:uppercase;white-space:nowrap;pointer-events:none;text-shadow:0 0 8px rgba(60,120,200,0.5)}
 #connectors-svg{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:visible}
 #right-panel{flex:1;height:100vh;position:relative;overflow:hidden;z-index:5}
-#branding{position:absolute;top:28%;left:16px;right:36px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;z-index:20}
+#branding{position:absolute;top:26%;left:16px;right:36px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;z-index:20}
 #logo-txt{font-size:10px;letter-spacing:8px;color:#6688ee;text-transform:uppercase;opacity:.7}
-#site-title{font-size:clamp(20px,2.8vw,36px);font-weight:300;letter-spacing:6px;text-transform:uppercase;background:linear-gradient(90deg,#5588ff,#bb77ff,#55aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-#countdown{display:flex;gap:20px;margin-top:4px}
+#site-title{font-size:clamp(18px,2.6vw,34px);font-weight:300;letter-spacing:6px;text-transform:uppercase;background:linear-gradient(90deg,#5588ff,#bb77ff,#55aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#countdown{display:flex;gap:18px;margin-top:4px}
 .cd-block{display:flex;flex-direction:column;align-items:center;gap:2px}
-.cd-num{font-size:22px;font-weight:200;color:#99bbee;letter-spacing:2px}
+.cd-num{font-size:20px;font-weight:200;color:#99bbee;letter-spacing:2px}
 .cd-label{font-size:7px;letter-spacing:3px;color:#445599;text-transform:uppercase}
 #feature-display{position:absolute;top:50%;left:16px;right:0;transform:translateY(-50%);display:flex;flex-direction:column;justify-content:center;z-index:20;pointer-events:none}
-#feature-name{font-size:clamp(20px,3vw,46px);font-weight:200;letter-spacing:clamp(4px,1.2vw,12px);text-transform:uppercase;opacity:0;transition:opacity 0.5s ease;color:#ddeeff;white-space:nowrap;text-shadow:0 0 40px rgba(100,160,255,0.35)}
-#feature-desc{font-size:clamp(10px,1vw,13px);letter-spacing:2.5px;color:rgba(100,150,220,0.65);opacity:0;transition:opacity 0.55s ease 0.08s;text-transform:uppercase;margin-top:6px}
+#feature-name{font-size:clamp(18px,2.8vw,44px);font-weight:200;letter-spacing:clamp(4px,1.2vw,12px);text-transform:uppercase;opacity:0;transition:opacity 0.5s ease;color:#ddeeff;white-space:nowrap;text-shadow:0 0 40px rgba(100,160,255,0.35)}
+#feature-desc{font-size:clamp(10px,1vw,12px);letter-spacing:2.5px;color:rgba(100,150,220,0.65);opacity:0;transition:opacity 0.55s ease 0.08s;text-transform:uppercase;margin-top:6px}
 #feature-name.vis{opacity:1}
 #feature-desc.vis{opacity:0.65}
-#email-row{position:absolute;top:78%;left:16px;display:flex;gap:0;width:min(360px,90%);z-index:20}
+#email-row{position:absolute;top:78%;left:16px;display:flex;gap:0;width:min(340px,88%);z-index:20}
 #email-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(80,120,240,0.26);border-right:none;color:#fff;padding:10px 14px;font-size:12px;outline:none;letter-spacing:1px}
 #email-input::placeholder{color:#334477}
 #email-btn{background:linear-gradient(135deg,#2244bb,#5522aa);border:none;color:#fff;padding:10px 18px;font-size:10px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;white-space:nowrap}
@@ -187,18 +187,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
   const nodeEls=[];
   features.forEach((f,i)=>{
     const cx=wrap.offsetWidth/2,cy2=wrap.offsetHeight/2;
-    const r=wrap.offsetWidth*0.48,re=wrap.offsetWidth*0.26;
+    const r=wrap.offsetWidth*0.44,re=wrap.offsetWidth*0.24;
     const a=(f.angleDeg-90)*Math.PI/180;
     const px=cx+r*Math.cos(a),py=cy2+r*Math.sin(a);
     const ex=cx+re*Math.cos(a),ey=cy2+re*Math.sin(a);
     const node=document.createElement('div');
     node.className='icon-node';
-    node.style.left=(px-23)+'px';node.style.top=(py-23)+'px';
+    node.style.left=(px-22)+'px';node.style.top=(py-22)+'px';
     node.innerHTML='<svg viewBox="0 0 24 24">'+ICONS[f.icon]+'</svg>';
     const lbl=document.createElement('div');
     lbl.className='node-label';
     const isLeft=px<wrap.offsetWidth*0.5;
-    lbl.style.left=isLeft?(px-23-8)+'px':(px+23+8)+'px';
+    lbl.style.left=isLeft?(px-22-8)+'px':(px+22+8)+'px';
     lbl.style.top=(py-6)+'px';
     lbl.style.transform=isLeft?'translateX(-100%)':'none';
     lbl.textContent=f.name;
