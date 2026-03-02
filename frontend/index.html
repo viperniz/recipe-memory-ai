@@ -8,333 +8,326 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden}
 body{background:#000;color:#fff;font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center}
-#header{text-align:center;padding:20px 20px 0;z-index:10;position:relative;flex-shrink:0}
+#hdr{text-align:center;padding:18px 20px 0;z-index:10;flex-shrink:0}
 .logo{font-size:2.4rem;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.tagline{font-size:0.85rem;color:#4a6080;margin-top:4px;letter-spacing:2px;text-transform:uppercase}
-#canvas-wrap{flex:1;width:100%;position:relative;min-height:0}
-#three-canvas{width:100%!important;height:100%!important;display:block;cursor:grab}
-#three-canvas:active{cursor:grabbing}
-#label{position:absolute;left:50%;top:18%;transform:translateX(-50%);background:rgba(0,5,20,0.92);border:1px solid rgba(74,240,252,0.7);border-radius:10px;padding:10px 22px;font-size:0.95rem;font-weight:700;color:#4af0fc;letter-spacing:2px;text-transform:uppercase;pointer-events:none;opacity:0;transition:opacity 0.4s;box-shadow:0 0 24px rgba(74,240,252,0.3);white-space:nowrap}
-#label.show{opacity:1}
-#drag-tip{position:absolute;bottom:4px;width:100%;text-align:center;color:rgba(255,255,255,0.2);font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;pointer-events:none}
-#bottom{text-align:center;padding:10px 20px 16px;width:100%;max-width:560px;flex-shrink:0;z-index:10;position:relative}
-.cd{display:flex;justify-content:center;gap:16px;margin-bottom:12px;align-items:center}
-.cdu{text-align:center}
-.cdn{font-size:1.9rem;font-weight:700;color:#60a5fa;display:block;line-height:1}
-.cdl{font-size:0.55rem;color:#334155;text-transform:uppercase;letter-spacing:2px;margin-top:3px}
-.sep{color:#1a2f4a;font-size:1.6rem;padding-bottom:12px}
-.email-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
-.email-row input{padding:10px 14px;border-radius:8px;border:1px solid rgba(74,240,252,0.2);background:rgba(255,255,255,0.04);color:#fff;font-size:0.85rem;width:220px;outline:none}
-.email-row input:focus{border-color:rgba(74,240,252,0.6)}
-.email-row button{padding:10px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#4f46e5,#0ea5e9);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;transition:opacity 0.2s}
-.email-row button:hover{opacity:0.85}
-.tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-.tag{padding:3px 10px;border-radius:20px;border:1px solid rgba(74,240,252,0.18);color:#334155;font-size:0.68rem}
+.tl{font-size:0.82rem;color:#3a5070;margin-top:3px;letter-spacing:2px;text-transform:uppercase}
+#cw{flex:1;width:100%;position:relative;min-height:0}
+#tc{width:100%!important;height:100%!important;display:block;cursor:grab}
+#tc:active{cursor:grabbing}
+#lbl{position:absolute;left:50%;top:15%;transform:translateX(-50%);background:rgba(0,4,18,0.93);border:1px solid rgba(74,240,252,0.75);border-radius:10px;padding:10px 24px;font-size:0.95rem;font-weight:700;color:#4af0fc;letter-spacing:2px;text-transform:uppercase;pointer-events:none;opacity:0;transition:opacity 0.35s;box-shadow:0 0 28px rgba(74,240,252,0.35);white-space:nowrap}
+#lbl.show{opacity:1}
+#dtip{position:absolute;bottom:4px;width:100%;text-align:center;color:rgba(255,255,255,0.18);font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;pointer-events:none}
+#bot{text-align:center;padding:10px 20px 14px;width:100%;max-width:540px;flex-shrink:0;z-index:10}
+.cd{display:flex;justify-content:center;gap:14px;margin-bottom:10px;align-items:center}
+.cdu{text-align:center}.cdn{font-size:1.85rem;font-weight:700;color:#60a5fa;display:block;line-height:1}
+.cdl{font-size:0.52rem;color:#2a3a4a;text-transform:uppercase;letter-spacing:2px;margin-top:2px}
+.sp{color:#162030;font-size:1.5rem;padding-bottom:10px}
+.er{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+.er input{padding:10px 14px;border-radius:8px;border:1px solid rgba(74,240,252,0.2);background:rgba(255,255,255,0.04);color:#fff;font-size:0.83rem;width:210px;outline:none}
+.er input:focus{border-color:rgba(74,240,252,0.6)}
+.er button{padding:10px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#4f46e5,#0ea5e9);color:#fff;font-weight:700;font-size:0.83rem;cursor:pointer}
+.er button:hover{opacity:0.85}
+.tgs{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.tg{padding:3px 9px;border-radius:20px;border:1px solid rgba(74,240,252,0.15);color:#2a3a4a;font-size:0.65rem}
 </style>
 </head>
 <body>
-<div id="header">
-  <div class="logo">CORTEXLE</div>
-  <div class="tagline">AI-Powered Video Intelligence - Coming Soon</div>
-</div>
-<div id="canvas-wrap">
-  <canvas id="three-canvas"></canvas>
-  <div id="label"></div>
-  <div id="drag-tip">Drag to rotate | Click points to explore</div>
-</div>
-<div id="bottom">
+<div id="hdr"><div class="logo">CORTEXLE</div><div class="tl">AI-Powered Video Intelligence - Coming Soon</div></div>
+<div id="cw"><canvas id="tc"></canvas><div id="lbl"></div><div id="dtip">Drag to rotate | Click glowing points to explore</div></div>
+<div id="bot">
   <div class="cd">
     <div class="cdu"><span class="cdn" id="cd-d">91</span><div class="cdl">Days</div></div>
-    <div class="sep">:</div>
+    <div class="sp">:</div>
     <div class="cdu"><span class="cdn" id="cd-h">00</span><div class="cdl">Hours</div></div>
-    <div class="sep">:</div>
+    <div class="sp">:</div>
     <div class="cdu"><span class="cdn" id="cd-m">00</span><div class="cdl">Mins</div></div>
-    <div class="sep">:</div>
+    <div class="sp">:</div>
     <div class="cdu"><span class="cdn" id="cd-s">00</span><div class="cdl">Secs</div></div>
   </div>
-  <div class="email-row">
-    <input type="email" id="emailInput" placeholder="Enter your email">
-    <button onclick="notify()">Notify Me</button>
-  </div>
-  <div class="tags">
-    <span class="tag">AI Video</span><span class="tag">Transcription</span><span class="tag">Semantic Search</span><span class="tag">Chrome Extension</span><span class="tag">Smart Notes</span>
-  </div>
+  <div class="er"><input type="email" id="ei" placeholder="Enter your email"><button onclick="notify()">Notify Me</button></div>
+  <div class="tgs"><span class="tg">AI Video</span><span class="tg">Transcription</span><span class="tg">Semantic Search</span><span class="tg">Chrome Extension</span><span class="tg">Smart Notes</span></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
 'use strict';
-var wrap=document.getElementById('canvas-wrap');
-var canvas=document.getElementById('three-canvas');
-var W=wrap.clientWidth,H=wrap.clientHeight;
+var wrap=document.getElementById('cw');
+var canvas=document.getElementById('tc');
 var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:false});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
 renderer.setClearColor(0x000000,1);
-renderer.setSize(W,H);
 var scene=new THREE.Scene();
-var camera=new THREE.PerspectiveCamera(42,W/H,0.1,100);
-camera.position.z=4.2;
-function onResize(){
+var W=wrap.clientWidth,H=wrap.clientHeight;
+var camera=new THREE.PerspectiveCamera(40,W/H,0.1,100);
+camera.position.z=4.5;
+function resize(){
   W=wrap.clientWidth;H=wrap.clientHeight;
-  renderer.setSize(W,H);
-  camera.aspect=W/H;camera.updateProjectionMatrix();
+  renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();
 }
-window.addEventListener('resize',onResize);
+resize();window.addEventListener('resize',resize);
 
-// Lights
-var amb=new THREE.AmbientLight(0x0a1a3a,3);scene.add(amb);
-var d1=new THREE.DirectionalLight(0x3366cc,4);d1.position.set(3,4,5);scene.add(d1);
-var d2=new THREE.DirectionalLight(0x6633aa,2);d2.position.set(-3,1,-2);scene.add(d2);
-var p1=new THREE.PointLight(0x2244aa,5,12);p1.position.set(-2,2,3);scene.add(p1);
-var p2=new THREE.PointLight(0x4400aa,3,10);p2.position.set(2,-2,-2);scene.add(p2);
+// Very subtle ambient only - no harsh specular
+scene.add(new THREE.AmbientLight(0x000a20,2));
+// Edge rim lights for the glowing rim effect
+var rim1=new THREE.DirectionalLight(0x2244bb,1.5);rim1.position.set(-3,0,1);scene.add(rim1);
+var rim2=new THREE.DirectionalLight(0x1133aa,1.2);rim2.position.set(3,0,-1);scene.add(rim2);
+var topL=new THREE.DirectionalLight(0x3355cc,1.0);topL.position.set(0,3,0);scene.add(topL);
 
-// Brain geometry - distorted sphere
-var brainGeo=new THREE.SphereGeometry(1,96,72);
-var pos=brainGeo.attributes.position;
-for(var i=0;i<pos.count;i++){
-  var x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
-  // Scale to brain proportions
-  x*=1.4; y*=1.05; z*=0.78;
-  // Flatten inferior surface
-  if(y<-0.2){var f=(-y-0.2)/0.8;y+=f*0.35;}
-  // Temporal lobe bulge (lower left, front)
-  if(x<-0.05&&x>-1.1&&y<0&&y>-0.8){
-    var tl=Math.exp(-Math.pow(x+0.65,2)/0.06-Math.pow(y+0.5,2)/0.08);
-    x-=tl*0.22; y-=tl*0.14; z+=tl*0.05;
+// Build brain shape using a distorted sphere
+function makeBrainShape(detail){
+  var geo=new THREE.SphereGeometry(1,detail||80,detail?Math.floor(detail*0.6):60);
+  var p=geo.attributes.position;
+  for(var i=0;i<p.count;i++){
+    var x=p.getX(i),y=p.getY(i),z=p.getZ(i);
+    // Squish to brain proportions: wider L-R, shallower front-back
+    x*=1.38; y*=1.02; z*=0.80;
+    // Flatten inferior
+    if(y<-0.15){var f=(-y-0.15)*0.4;y+=f;}
+    // Temporal lobe (left-front-inferior)
+    if(x<-0.2&&y<0.1&&y>-0.9){
+      var tl=Math.exp(-Math.pow(x+0.7,2)/0.07-Math.pow(y+0.42,2)/0.09-Math.pow(z-0.3,2)/0.1);
+      x-=tl*0.18;y-=tl*0.1;
+    }
+    // Occipital pole (right, slight)
+    if(x>0.9&&y>-0.2&&y<0.5){
+      var op=Math.exp(-Math.pow(x-1.15,2)/0.04-Math.pow(y,2)/0.22);
+      x+=op*0.09;
+    }
+    // Surface ripples (gyri/sulci convolutions)
+    var nx=Math.sin(x*8.5+y*5.5)*Math.cos(z*7+x*3)*0.024
+           +Math.sin(y*10+z*7)*Math.cos(x*6)*0.018
+           +Math.cos(x*13+z*9)*0.012;
+    x+=nx*0.85;y+=nx*0.55;z+=nx*0.45;
+    p.setXYZ(i,x,y,z);
   }
-  // Frontal pole (left, slightly forward)
-  if(x<-0.4&&y>-0.2&&y<0.5){
-    var fp=Math.exp(-Math.pow(x+0.95,2)/0.08-Math.pow(y-0.1,2)/0.4);
-    x-=fp*0.06; z+=fp*0.08;
-  }
-  // Occipital pole (right, slight protrusion)
-  if(x>0.8&&y>-0.3&&y<0.5){
-    var op=Math.exp(-Math.pow(x-1.1,2)/0.05-Math.pow(y,2)/0.25);
-    x+=op*0.1;
-  }
-  // Parietal top
-  if(y>0.6&&x>-0.5&&x<0.7){
-    var pp=Math.exp(-Math.pow(y-0.85,2)/0.08-Math.pow(x-0.1,2)/0.35);
-    y+=pp*0.1;
-  }
-  // Surface convolutions
-  var conv=Math.sin(x*9+y*6)*Math.cos(z*7+x*4)*0.022
-          +Math.sin(y*11+z*8)*Math.cos(x*7)*0.016
-          +Math.cos(x*14+z*9)*0.011;
-  x+=conv*0.9; y+=conv*0.6; z+=conv*0.5;
-  pos.setXYZ(i,x,y,z);
+  geo.computeVertexNormals();
+  return geo;
 }
-brainGeo.computeVertexNormals();
 
-// Brain mesh - translucent deep blue
+var brainGeo=makeBrainShape(80);
+
+// Main brain - very dark translucent blue (shows depth, dark interior like reference)
 var brainMat=new THREE.MeshPhongMaterial({
-  color:0x080e28,emissive:0x0a1840,emissiveIntensity:0.5,
-  specular:0x3366dd,shininess:80,transparent:true,opacity:0.92
+  color:0x020818,
+  emissive:0x020818,
+  emissiveIntensity:1,
+  specular:0x112244,
+  shininess:15,
+  transparent:true,
+  opacity:0.82,
+  side:THREE.FrontSide
 });
 var brainMesh=new THREE.Mesh(brainGeo,brainMat);
 
-// Glow shell (outer, back side for rim glow)
-var glowGeo=new THREE.SphereGeometry(1.04,32,24);
-var gp=glowGeo.attributes.position;
-for(var i=0;i<gp.count;i++){
-  var gx=gp.getX(i),gy=gp.getY(i),gz=gp.getZ(i);
-  gx*=1.4;gy*=1.05;gz*=0.78;
-  if(gy<-0.2){var gf=(-gy-0.2)/0.8;gy+=gf*0.35;}
-  gp.setXYZ(i,gx,gy,gz);
-}
-glowGeo.computeVertexNormals();
-var glowMat=new THREE.MeshBasicMaterial({color:0x4488ff,transparent:true,opacity:0.07,side:THREE.BackSide});
-var glowMesh=new THREE.Mesh(glowGeo,glowMat);
+// Back face - for depth illusion  
+var backMat=new THREE.MeshPhongMaterial({
+  color:0x010610,emissive:0x010610,emissiveIntensity:1,
+  transparent:true,opacity:0.5,side:THREE.BackSide
+});
+var backMesh=new THREE.Mesh(brainGeo,backMat);
 
-// Rim outline (slightly larger, wireframe-ish edges)
-var rimGeo=new THREE.SphereGeometry(1.01,32,24);
-var rp=rimGeo.attributes.position;
-for(var i=0;i<rp.count;i++){
-  var rx=rp.getX(i),ry=rp.getY(i),rz=rp.getZ(i);
-  rx*=1.4;ry*=1.05;rz*=0.78;
-  if(ry<-0.2){var rf=(-ry-0.2)/0.8;ry+=rf*0.35;}
-  rp.setXYZ(i,rx,ry,rz);
-}
-rimGeo.computeVertexNormals();
-var rimMat=new THREE.MeshBasicMaterial({color:0x88bbff,transparent:true,opacity:0.25,wireframe:true});
+// Glowing rim shell (the key visual - bright blue rim)
+var rimGeo=makeBrainShape(32);
+var rimMat=new THREE.ShaderMaterial({
+  uniforms:{rimColor:{value:new THREE.Color(0x3399ff)},rimPower:{value:3.5},rimIntensity:{value:1.2}},
+  vertexShader:
+    'varying vec3 vNormal;varying vec3 vViewDir;'+
+    'void main(){'+
+    '  vNormal=normalize(normalMatrix*normal);'+
+    '  vec4 mvPos=modelViewMatrix*vec4(position,1.0);'+
+    '  vViewDir=normalize(-mvPos.xyz);'+
+    '  gl_Position=projectionMatrix*mvPos;'+
+    '}',
+  fragmentShader:
+    'uniform vec3 rimColor;uniform float rimPower;uniform float rimIntensity;'+
+    'varying vec3 vNormal;varying vec3 vViewDir;'+
+    'void main(){'+
+    '  float rim=1.0-max(dot(vNormal,vViewDir),0.0);'+
+    '  rim=pow(rim,rimPower);'+
+    '  gl_FragColor=vec4(rimColor*rim*rimIntensity,rim*0.9);'+
+    '}',
+  transparent:true,side:THREE.FrontSide,blending:THREE.AdditiveBlending,depthWrite:false
+});
 var rimMesh=new THREE.Mesh(rimGeo,rimMat);
 
-// Brain group (all brain objects rotate together)
+// Wire overlay (faint)
+var wireGeo=makeBrainShape(18);
+var wireMat=new THREE.MeshBasicMaterial({color:0x2244aa,wireframe:true,transparent:true,opacity:0.07});
+var wireMesh=new THREE.Mesh(wireGeo,wireMat);
+
 var brainGroup=new THREE.Group();
+brainGroup.add(backMesh);
 brainGroup.add(brainMesh);
-brainGroup.add(glowMesh);
 brainGroup.add(rimMesh);
+brainGroup.add(wireMesh);
 scene.add(brainGroup);
 
-// Neural nodes on surface
+// === Neural network nodes on brain surface ===
 var nodeData=[];
 var nGrp=new THREE.Group();
 brainGroup.add(nGrp);
 
-var brainV=brainGeo.attributes.position;
-var usedIdx={};
-var nodeCount=0;
-while(nodeCount<130){
-  var vi=Math.floor(Math.random()*brainV.count);
-  if(usedIdx[vi])continue;
-  usedIdx[vi]=true;
-  var nx=brainV.getX(vi),ny=brainV.getY(vi),nz=brainV.getZ(vi);
+var bv=brainGeo.attributes.position;
+var seen={};
+var nc=0;
+while(nc<140){
+  var vi=Math.floor(Math.random()*bv.count);
+  if(seen[vi])continue;seen[vi]=true;
+  var nx=bv.getX(vi),ny=bv.getY(vi),nz=bv.getZ(vi);
   var isO=Math.random()<0.22;
-  var nr=isO?(Math.random()*0.028+0.018):(Math.random()*0.02+0.01);
-  var nm=new THREE.Mesh(
-    new THREE.SphereGeometry(nr,8,5),
-    new THREE.MeshBasicMaterial({color:isO?0xff8833:0xaaddff,transparent:true,opacity:0.88})
+  var nr=isO?(Math.random()*0.032+0.02):(Math.random()*0.022+0.01);
+  var nm2=new THREE.Mesh(
+    new THREE.SphereGeometry(nr,7,5),
+    new THREE.MeshBasicMaterial({
+      color:isO?0xff9933:0xbbddff,
+      transparent:true,opacity:isO?0.92:0.8
+    })
   );
-  nm.position.set(nx,ny,nz);
-  nGrp.add(nm);
-  nodeData.push({mesh:nm,orange:isO,phase:Math.random()*Math.PI*2});
-  nodeCount++;
+  nm2.position.set(nx,ny,nz);
+  nGrp.add(nm2);
+  nodeData.push({m:nm2,o:isO,ph:Math.random()*Math.PI*2,nx:nx,ny:ny,nz:nz});
+  nc++;
 }
 
-// Neural lines
-var linesGrp=new THREE.Group();
-brainGroup.add(linesGrp);
-var lmO=new THREE.LineBasicMaterial({color:0xffaa22,transparent:true,opacity:0.5});
-var lmB=new THREE.LineBasicMaterial({color:0x4477cc,transparent:true,opacity:0.3});
+// Lines between nearby nodes (dense web, like reference)
+var lGrp=new THREE.Group();
+brainGroup.add(lGrp);
+var lmO=new THREE.LineBasicMaterial({color:0xffaa22,transparent:true,opacity:0.55});
+var lmB=new THREE.LineBasicMaterial({color:0x3366cc,transparent:true,opacity:0.3});
+var lmY=new THREE.LineBasicMaterial({color:0xddcc00,transparent:true,opacity:0.4}); // yellow lines like reference
 for(var i=0;i<nodeData.length;i++){
   for(var j=i+1;j<nodeData.length;j++){
-    var a=nodeData[i].mesh.position,b=nodeData[j].mesh.position;
-    var dd=a.distanceTo(b);
-    if(dd<0.6&&Math.random()<0.38){
-      var lg=new THREE.BufferGeometry().setFromPoints([a.clone(),b.clone()]);
-      var lm=(nodeData[i].orange&&nodeData[j].orange)?lmO:lmB;
-      linesGrp.add(new THREE.Line(lg,lm));
+    var a=nodeData[i],b=nodeData[j];
+    var ddx=a.nx-b.nx,ddy=a.ny-b.ny,ddz=a.nz-b.nz;
+    var dd=Math.sqrt(ddx*ddx+ddy*ddy+ddz*ddz);
+    if(dd<0.62&&Math.random()<0.36){
+      var pts=[new THREE.Vector3(a.nx,a.ny,a.nz),new THREE.Vector3(b.nx,b.ny,b.nz)];
+      var lg=new THREE.BufferGeometry().setFromPoints(pts);
+      var lm2;
+      if(a.o&&b.o)lm2=lmY;
+      else if(a.o||b.o)lm2=lmO;
+      else lm2=lmB;
+      lGrp.add(new THREE.Line(lg,lm2));
     }
   }
 }
 
-// Feature hotspots - 3D positions on brain surface
+// Feature hotspots 
 var features=[
-  {id:'aiq',  name:'AI Q&A',           px:-0.9,py: 0.3,pz: 0.5, tY:-0.5,tX: 0.1},
-  {id:'vid',  name:'Video Processing', px: 0.0,py: 0.95,pz:0.3,  tY: 0.0,tX:-0.55},
-  {id:'tran', name:'Transcription',    px:-0.85,py:-0.25,pz:0.55,tY:-0.5,tX: 0.28},
-  {id:'sem',  name:'Semantic Search',  px: 0.98,py: 0.15,pz:0.1, tY: 0.65,tX:-0.1},
-  {id:'note', name:'Smart Notes',      px: 0.6,py:-0.55,pz:0.2,  tY: 0.45,tX: 0.42},
-  {id:'ext',  name:'Chrome Extension', px: 0.0,py:-0.78,pz:-0.1, tY: 0.0, tX: 0.55}
+  {id:'aiq', name:'AI Q&A',          px:-1.05,py: 0.28,pz: 0.42, tY:-0.6,tX: 0.1 },
+  {id:'vid', name:'Video Processing', px:-0.02,py: 1.00,pz: 0.22, tY: 0.0,tX:-0.65},
+  {id:'tran',name:'Transcription',    px:-0.95,py:-0.30,pz: 0.52, tY:-0.55,tX:0.32},
+  {id:'sem', name:'Semantic Search',  px: 1.05,py: 0.18,pz: 0.08, tY: 0.7,tX:-0.08},
+  {id:'note',name:'Smart Notes',      px: 0.62,py:-0.58,pz: 0.18, tY: 0.5,tX: 0.45},
+  {id:'ext', name:'Chrome Extension', px: 0.02,py:-0.82,pz:-0.08, tY: 0.0,tX: 0.6 }
 ];
 
 var hsGrp=new THREE.Group();
 brainGroup.add(hsGrp);
 var hsMeshes=[];
-features.forEach(function(f,i){
-  var hg=new THREE.SphereGeometry(0.048,12,8);
-  var hm2=new THREE.MeshBasicMaterial({color:0x4af0fc,transparent:true,opacity:0.95});
-  var hs=new THREE.Mesh(hg,hm2);
-  hs.position.set(f.px,f.py,f.pz);
-  hs.userData={feature:f,idx:i};
+
+features.forEach(function(f,idx){
+  // Main dot
+  var hm=new THREE.Mesh(
+    new THREE.SphereGeometry(0.052,12,8),
+    new THREE.MeshBasicMaterial({color:0x4af0fc,transparent:true,opacity:0.95})
+  );
+  hm.position.set(f.px,f.py,f.pz);
+  hm.userData={f:f,idx:idx};
   
-  // Pulsing ring (Billboard)
-  var rg=new THREE.RingGeometry(0.06,0.09,24);
-  var rm=new THREE.MeshBasicMaterial({color:0x4af0fc,transparent:true,opacity:0.45,side:THREE.DoubleSide});
-  var ring=new THREE.Mesh(rg,rm);
-  hs.add(ring);
+  // Outer glow ring (billboard)
+  var rg=new THREE.RingGeometry(0.065,0.095,24);
+  var rm=new THREE.MeshBasicMaterial({color:0x4af0fc,transparent:true,opacity:0.4,side:THREE.DoubleSide});
+  hm.add(new THREE.Mesh(rg,rm));
   
-  hsGrp.add(hs);
-  hsMeshes.push(hs);
+  hsGrp.add(hm);
+  hsMeshes.push(hm);
 });
 
-// Rotation state
-var rotX=0.18,rotY_=-0.35;
-var tRotX=0.18,tRotY=-0.35;
-var isDrag=false,lX=0,lY=0;
-var autoSpin=true;
-var label=document.getElementById('label');
-var activeFeat=null;
-var ckX=0,ckY=0;
+// Rotation & interaction
+var rX=0.2,rY_=-0.35,tRX=0.2,tRY=-0.35;
+var drag=false,lx=0,ly=0,ckx=0,cky=0;
+var spin=true;
+var lbl=document.getElementById('lbl');
+var actF=null;
 
-canvas.addEventListener('mousedown',function(e){
-  isDrag=true;lX=e.clientX;lY=e.clientY;
-  ckX=e.clientX;ckY=e.clientY;
-  autoSpin=false;
-},{passive:true});
+canvas.addEventListener('mousedown',function(e){drag=true;lx=e.clientX;ly=e.clientY;ckx=lx;cky=ly;spin=false;},{passive:true});
 document.addEventListener('mousemove',function(e){
-  if(!isDrag)return;
-  tRotY+=(e.clientX-lX)*0.009;
-  tRotX+=(e.clientY-lY)*0.006;
-  tRotX=Math.max(-1.1,Math.min(1.1,tRotX));
-  lX=e.clientX;lY=e.clientY;
+  if(!drag)return;
+  tRY+=(e.clientX-lx)*0.009;
+  tRX+=(e.clientY-ly)*0.006;
+  tRX=Math.max(-1.1,Math.min(1.1,tRX));
+  lx=e.clientX;ly=e.clientY;
 });
-document.addEventListener('mouseup',function(){isDrag=false;});
-canvas.addEventListener('touchstart',function(e){
-  isDrag=true;lX=e.touches[0].clientX;lY=e.touches[0].clientY;
-  ckX=lX;ckY=lY;autoSpin=false;e.preventDefault();
-},{passive:false});
+document.addEventListener('mouseup',function(){drag=false;});
+canvas.addEventListener('touchstart',function(e){drag=true;lx=e.touches[0].clientX;ly=e.touches[0].clientY;ckx=lx;cky=ly;spin=false;e.preventDefault();},{passive:false});
 document.addEventListener('touchmove',function(e){
-  if(!isDrag)return;
-  tRotY+=(e.touches[0].clientX-lX)*0.009;
-  tRotX+=(e.touches[0].clientY-lY)*0.006;
-  lX=e.touches[0].clientX;lY=e.touches[0].clientY;
-  e.preventDefault();
+  if(!drag)return;
+  tRY+=(e.touches[0].clientX-lx)*0.009;
+  tRX+=(e.touches[0].clientY-ly)*0.006;
+  lx=e.touches[0].clientX;ly=e.touches[0].clientY;e.preventDefault();
 },{passive:false});
-document.addEventListener('touchend',function(){isDrag=false;});
+document.addEventListener('touchend',function(){drag=false;});
 
 var ray=new THREE.Raycaster();
+ray.params.Points={threshold:0.1};
 var mv=new THREE.Vector2();
+
 canvas.addEventListener('click',function(e){
-  if(Math.abs(e.clientX-ckX)>8||Math.abs(e.clientY-ckY)>8)return;
+  if(Math.abs(e.clientX-ckx)>8||Math.abs(e.clientY-cky)>8)return;
   var rect=canvas.getBoundingClientRect();
   mv.x=((e.clientX-rect.left)/rect.width)*2-1;
   mv.y=-((e.clientY-rect.top)/rect.height)*2+1;
   ray.setFromCamera(mv,camera);
   var hits=ray.intersectObjects(hsMeshes,false);
   if(hits.length){
-    var hs=hits[0].object;
-    var f=hs.userData.feature;
-    if(activeFeat&&activeFeat.id===f.id){
-      activeFeat=null;label.classList.remove('show');autoSpin=true;
-    } else {
-      activeFeat=f;
-      label.textContent=f.name;
-      label.classList.add('show');
-      tRotY=f.tY;tRotX=f.tX;
+    var f=hits[0].object.userData.f;
+    if(actF&&actF.id===f.id){actF=null;lbl.classList.remove('show');spin=true;}
+    else{
+      actF=f;lbl.textContent=f.name;lbl.classList.add('show');
+      tRY=f.tY;tRX=f.tX;
     }
   } else {
-    activeFeat=null;label.classList.remove('show');
+    actF=null;lbl.classList.remove('show');
   }
 });
 
-var clock2=new THREE.Clock();
+var clk=new THREE.Clock();
 function animate(){
   requestAnimationFrame(animate);
-  var t=clock2.getElapsedTime();
-  if(autoSpin&&!isDrag)tRotY+=0.003;
-  rotX+=(tRotX-rotX)*0.07;
-  rotY_+=(tRotY-rotY_)*0.07;
-  brainGroup.rotation.x=rotX;
-  brainGroup.rotation.y=rotY_;
-  
-  // Animate nodes
+  var t=clk.getElapsedTime();
+  if(spin&&!drag)tRY+=0.0025;
+  rX+=(tRX-rX)*0.07;rY_+=(tRY-rY_)*0.07;
+  brainGroup.rotation.x=rX;brainGroup.rotation.y=rY_;
+
+  // Node animation
   nodeData.forEach(function(nd,i){
-    var p=0.65+Math.sin(t*2.8+nd.phase)*0.35;
-    nd.mesh.scale.setScalar(p);
-    if(nd.orange){
-      nd.mesh.material.color.setRGB(1,0.45+Math.sin(t*3+nd.phase)*0.15,0.05);
-      nd.mesh.material.opacity=0.7+p*0.3;
+    var p=0.65+Math.sin(t*2.8+nd.ph)*0.35;
+    nd.m.scale.setScalar(p);
+    if(nd.o){
+      var g=0.4+Math.sin(t*3+nd.ph)*0.15;
+      nd.m.material.color.setRGB(1,g,0.05);
+      nd.m.material.opacity=0.7+p*0.28;
     } else {
-      nd.mesh.material.opacity=0.45+p*0.45;
+      nd.m.material.opacity=0.45+p*0.45;
     }
   });
   
-  // Hotspot animate + billboard rings
+  // Hotspot animation
   hsMeshes.forEach(function(hs,i){
     var f=features[i];
-    var isAct=activeFeat&&activeFeat.id===f.id;
-    var p=0.75+Math.sin(t*3.5+i*1.1)*0.25;
+    var isA=actF&&actF.id===f.id;
+    var p=0.75+Math.sin(t*3.2+i*1.1)*0.25;
     hs.scale.setScalar(p);
-    hs.material.color.setHex(isAct?0xff6633:0x4af0fc);
+    hs.material.color.setHex(isA?0xff6633:0x4af0fc);
     if(hs.children[0]){
-      // Make ring face camera
-      var wq=new THREE.Quaternion();
-      brainGroup.getWorldQuaternion(wq);
-      hs.children[0].quaternion.copy(wq).invert().multiply(camera.quaternion);
+      // Billboard ring
+      var q=new THREE.Quaternion();
+      brainGroup.getWorldQuaternion(q);
+      hs.children[0].quaternion.copy(q).invert().multiply(camera.quaternion);
     }
   });
-  
+
   renderer.render(scene,camera);
 }
 animate();
@@ -348,7 +341,7 @@ function tick(){
   document.getElementById('cd-s').textContent=String(Math.floor((d%60000)/1000)).padStart(2,'0');
 }
 tick();setInterval(tick,1000);
-window.notify=function(){var e=document.getElementById('emailInput').value;if(e&&e.includes('@')){alert('Thanks! We will notify you at '+e);document.getElementById('emailInput').value='';}};
+window.notify=function(){var e=document.getElementById('ei').value;if(e&&e.includes('@')){alert('Thanks! We will notify you at '+e);document.getElementById('ei').value='';}};
 })();
 </script>
 </body>
