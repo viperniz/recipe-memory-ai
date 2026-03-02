@@ -13,7 +13,7 @@ header{width:100%;padding:18px 40px;text-align:center}
 .hero{text-align:center;padding:4px 20px 0}
 .hero h1{font-size:clamp(26px,4vw,48px);font-weight:700;line-height:1.1;margin-bottom:8px;background:linear-gradient(135deg,#fff 0%,#4fc3f7 50%,#7c4dff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .hero p{font-size:clamp(12px,1.5vw,16px);color:rgba(255,255,255,0.5);max-width:440px;margin:0 auto 6px}
-#bs{position:relative;width:100%;max-width:720px;height:510px;margin:0 auto}
+#bs{position:relative;width:100%;max-width:720px;height:520px;margin:0 auto}
 #bc{display:block;width:100%;height:100%;cursor:grab}
 #bc:active{cursor:grabbing}
 .fl{position:absolute;left:50%;top:9%;transform:translate(-50%,-50%);background:rgba(0,0,20,0.92);border:1px solid rgba(79,195,247,0.7);border-radius:8px;padding:7px 18px;font-size:14px;font-weight:600;color:#4fc3f7;pointer-events:none;opacity:0;transition:opacity 0.35s;white-space:nowrap;letter-spacing:0.5px;box-shadow:0 0 18px rgba(79,195,247,0.3)}
@@ -72,320 +72,300 @@ header{width:100%;padding:18px 40px;text-align:center}
 (function(){
   var sec=document.getElementById('bs'),cv=document.getElementById('bc'),fl=document.getElementById('fl');
   var DPR=Math.min(window.devicePixelRatio||1,2);
-  var W=sec.clientWidth,H=sec.clientHeight;
-  cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';
-  var ctx=cv.getContext('2d');
-  ctx.scale(DPR,DPR);
-
-  // === 3D node system with simple perspective projection ===
-  // Brain ellipsoid: rx=half-width(Z axis), ry=half-height, rz=half-depth(X axis)
-  // We view from Z+ direction by default
-  var RX=200, RY=170, RZ=130; // brain ellipsoid radii in pixels
-  var CX=W/2, CY=H/2-10;  // center
-  var FOV=600; // perspective depth
-
-  // Rotation state
-  var rotY=0, rotX=-0.08; // slight downward tilt to show 3D
-  var targetRotY=0, targetRotX=-0.08;
-  var drag=false, lastMX=0, lastMY=0, spin=true;
-
-  // Project 3D point to 2D
-  function project(px,py,pz){
-    // Apply rotY (around Y axis)
-    var cosY=Math.cos(rotY),sinY=Math.sin(rotY);
-    var rx=px*cosY+pz*sinY;
-    var ry=py;
-    var rz=-px*sinY+pz*cosY;
-    // Apply rotX (around X axis)
-    var cosX=Math.cos(rotX),sinX=Math.sin(rotX);
-    var ry2=ry*cosX-rz*sinX;
-    var rz2=ry*sinX+rz*cosX;
-    // Perspective
-    var scale=FOV/(FOV+rz2);
-    return {x:CX+rx*scale, y:CY-ry2*scale, z:rz2, scale:scale};
+  function resize(){
+    var W=sec.clientWidth,H=sec.clientHeight;
+    cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';
+    return {W:W,H:H};
   }
+  var sz=resize();
+  var W=sz.W,H=sz.H;
+  var ctx=cv.getContext('2d');ctx.scale(DPR,DPR);
 
-  // Generate surface nodes on the brain ellipsoid
-  function randNode(){
-    var u=Math.random()*2-1;
-    var t=Math.random()*Math.PI*2;
-    var s=Math.sqrt(Math.max(0,1-u*u));
-    var nx=s*Math.cos(t)*RX*(0.98+Math.random()*0.04);
-    var ny=u*RY*(0.98+Math.random()*0.04);
-    var nz=s*Math.sin(t)*RZ*(0.98+Math.random()*0.04);
-    return {x:nx,y:ny,z:nz};
-  }
+  // Brain center and scale
+  var CX=W/2-5, CY=H/2;
+  var SC=Math.min(W,H)/520; // scale factor
 
-  var oNodes=[], bNodes=[];
-  for(var i=0;i<120;i++) oNodes.push(randNode());
-  for(var i=0;i<140;i++) bNodes.push(randNode());
-
-  // Build connections (precomputed pairs)
-  var oConns=[], bConns=[], fibers=[];
-  for(var i=0;i<oNodes.length;i++) for(var j=i+1;j<oNodes.length;j++){
-    var dx=oNodes[i].x-oNodes[j].x,dy=oNodes[i].y-oNodes[j].y,dz=oNodes[i].z-oNodes[j].z;
-    var d=Math.sqrt(dx*dx+dy*dy+dz*dz);
-    if(d<120&&Math.random()<0.42) oConns.push([i,j]);
-  }
-  for(var i=0;i<bNodes.length;i++) for(var j=i+1;j<bNodes.length;j++){
-    var dx=bNodes[i].x-bNodes[j].x,dy=bNodes[i].y-bNodes[j].y,dz=bNodes[i].z-bNodes[j].z;
-    var d=Math.sqrt(dx*dx+dy*dy+dz*dz);
-    if(d<105&&Math.random()<0.26) bConns.push([i,j]);
-  }
-  // Fiber strands (short lines on surface)
-  for(var f=0;f<900;f++){
-    var n=randNode();
-    var ang=Math.random()*Math.PI*2, len=8+Math.random()*28;
-    var tx=Math.cos(ang)*len*0.5, ty=Math.sin(ang)*len*0.5;
-    fibers.push([n, {x:n.x+tx, y:n.y+ty, z:n.z+Math.random()*8-4}]);
-  }
-
-  // Feature hotspots - 3D positions on brain surface
-  // Coordinate system: X=left-right(medial-lateral), Y=up-down, Z=front(+)/back(-)
-  var features=[
-    {name:'AI Q&A',          p:{x:30,  y:80,  z:180}}, // Frontal (+Z, upper)
-    {name:'Video Processing',p:{x:10,  y:165, z:60 }}, // Parietal (top)
-    {name:'Transcription',   p:{x:125, y:-30, z:80 }}, // Temporal (side, lower)
-    {name:'Semantic Search', p:{x:20,  y:60,  z:-180}},// Occipital (-Z)
-    {name:'Smart Notes',     p:{x:20,  y:-130,z:-130}},// Cerebellum (back-bottom)
-    {name:'Chrome Extension',p:{x:10,  y:-165,z:0  }} // Brainstem (bottom)
-  ];
-
-  // Precompute target rotations for each feature
-  features.forEach(function(f){
-    // To center a feature, rotate so it faces the camera (positive Z)
-    var p=f.p;
-    f.tY=-Math.atan2(p.x,p.z); // rotate Y to bring feature's X/Z to front
-    f.tX=-Math.atan2(p.y,Math.sqrt(p.x*p.x+p.z*p.z))*0.4;
-  });
-
-  // Brain lateral silhouette path (for clipping and drawing)
-  function brainPath(ctx, cx, cy, scl){
-    // Define lateral brain outline using bezier curves
-    // This creates the classic brain side-view profile
-    var s=scl||1;
+  // === BRAIN SILHOUETTE PATH (lateral view, facing right = frontal lobe on right) ===
+  // Normalized to unit coordinates (scale with SC)
+  // Brain is centered at (0,0) in normalized space
+  // Spans roughly x:-220 to x:220, y:-220 to y:210 (in pixels at SC=1)
+  function makeBrainPath(ctx,cx,cy,s,rotY){
+    // s = scale, rotY = Y-rotation angle (compresses X by cos(rotY))
+    var cosY=Math.cos(rotY);
+    function px(x){return cx+x*s*cosY;}
+    function py(y){return cy+y*s;}
     ctx.beginPath();
-    // Starting from front-bottom (frontal base), going clockwise
-    ctx.moveTo(cx+160*s, cy+20*s);   // front-center
-    ctx.bezierCurveTo(cx+200*s,cy-40*s, cx+220*s,cy-120*s, cx+190*s,cy-170*s); // frontal upper
-    ctx.bezierCurveTo(cx+150*s,cy-210*s, cx+80*s,cy-230*s, cx+0,cy-220*s); // parietal top
-    ctx.bezierCurveTo(cx-80*s,cy-210*s, cx-160*s,cy-180*s, cx-195*s,cy-130*s); // occipital upper
-    ctx.bezierCurveTo(cx-220*s,cy-60*s, cx-200*s,cy+30*s, cx-170*s,cy+80*s); // occipital lower
-    ctx.bezierCurveTo(cx-140*s,cy+130*s, cx-100*s,cy+150*s, cx-60*s,cy+110*s); // cerebellum
-    ctx.bezierCurveTo(cx-30*s,cy+80*s, cx+10*s,cy+100*s, cx+20*s,cy+120*s); // brainstem top
-    ctx.bezierCurveTo(cx+30*s,cy+155*s, cx+20*s,cy+185*s, cx+10*s,cy+195*s); // brainstem
-    ctx.bezierCurveTo(cx+0,cy+200*s, cx-10*s,cy+195*s, cx-15*s,cy+190*s); // brainstem back
-    ctx.bezierCurveTo(cx-5*s,cy+170*s, cx-5*s,cy+150*s, cx+20*s,cy+120*s); // back to junction
-    // Actually let me simplify: just draw the main cerebrum outline
+    // Start at temporal lobe area (right side, middle)
+    // Going clockwise: up through frontal, over parietal, down occipital, through cerebellum, brainstem, back up
+    ctx.moveTo(px(175), py(25));         // temporal-frontal junction
+    // Frontal lobe: upper right
+    ctx.bezierCurveTo(px(215),py(-25), px(230),py(-90), px(210),py(-155));
+    ctx.bezierCurveTo(px(188),py(-205), px(140),py(-240), px(65),py(-245));
+    // Parietal: top of brain
+    ctx.bezierCurveTo(px(10),py(-250), px(-55),py(-238), px(-120),py(-215));
+    // Occipital: upper-back
+    ctx.bezierCurveTo(px(-180),py(-190), px(-220),py(-145), px(-225),py(-85));
+    // Occipital lower-back  
+    ctx.bezierCurveTo(px(-228),py(-20), px(-210),py(50), px(-185),py(100));
+    // Cerebellum notch area
+    ctx.bezierCurveTo(px(-165),py(140), px(-140),py(165), px(-105),py(155));
+    ctx.bezierCurveTo(px(-75),py(145), px(-55),py(125), px(-40),py(115));
+    // Brainstem area (bottom)
+    ctx.bezierCurveTo(px(-20),py(135), px(-5),py(165), px(0),py(190));
+    ctx.bezierCurveTo(px(5),py(210), px(12),py(215), px(18),py(210));
+    ctx.bezierCurveTo(px(30),py(200), px(28),py(175), px(18),py(155));
+    // Brainstem/temporal back up
+    ctx.bezierCurveTo(px(30),py(135), px(60),py(120), px(90),py(130));
+    ctx.bezierCurveTo(px(125),py(140), px(155),py(120), px(170),py(80));
+    // Temporal lobe back to start
+    ctx.bezierCurveTo(px(182),py(55), px(180),py(38), px(175),py(25));
     ctx.closePath();
   }
 
-  // SIMPLIFIED APPROACH: Draw brain as an elliptical clipping path
-  // that matches the lateral brain look, then clip nodes to it
-  function drawBrain(){
+  // Check if a point is inside the brain path
+  function makeTempCanvas(){
+    var tc=document.createElement('canvas');tc.width=Math.ceil(W*DPR);tc.height=Math.ceil(H*DPR);
+    var tx=tc.getContext('2d');tx.scale(DPR,DPR);
+    return {c:tc,x:tx};
+  }
+  var tc=makeTempCanvas();
+
+  function isInBrain(x,y,rotY){
+    tc.x.clearRect(0,0,W,H);
+    makeBrainPath(tc.x,CX,CY,SC,rotY);
+    return tc.x.isPointInPath(x,y);
+  }
+
+  // Generate nodes INSIDE the brain shape (rejection sampling at rotY=0)
+  function genNode(){
+    var attempts=0;
+    while(attempts<100){
+      // Random point in bounding box
+      var px=CX+(-200+Math.random()*400)*SC;
+      var py=CY+(-250+Math.random()*450)*SC;
+      if(isInBrain(px,py,0)){
+        // Store in brain-local coords (relative to center, normalized)
+        var lx=(px-CX)/(SC);
+        var ly=(py-CY)/(SC);
+        // Z-depth: points near center of the ellipsoid have more depth
+        var zMax=130*(1-Math.pow(lx/210,2)-Math.pow(ly/240,2));
+        var lz=(Math.random()*2-1)*Math.max(0,Math.sqrt(Math.abs(zMax)));
+        return {x:lx, y:ly, z:lz};
+      }
+      attempts++;
+    }
+    return {x:0,y:0,z:0};
+  }
+
+  var oNodes=[],bNodes=[];
+  for(var i=0;i<120;i++) oNodes.push(genNode());
+  for(var i=0;i<140;i++) bNodes.push(genNode());
+
+  // Build connections
+  var oConns=[],bConns=[],fiberData=[];
+  for(var i=0;i<oNodes.length;i++) for(var j=i+1;j<oNodes.length;j++){
+    var dx=oNodes[i].x-oNodes[j].x,dy=oNodes[i].y-oNodes[j].y;
+    var d2D=Math.sqrt(dx*dx+dy*dy);
+    if(d2D<95&&Math.random()<0.42) oConns.push([i,j]);
+  }
+  for(var i=0;i<bNodes.length;i++) for(var j=i+1;j<bNodes.length;j++){
+    var dx=bNodes[i].x-bNodes[j].x,dy=bNodes[i].y-bNodes[j].y;
+    var d2D=Math.sqrt(dx*dx+dy*dy);
+    if(d2D<80&&Math.random()<0.26) bConns.push([i,j]);
+  }
+  // Fiber strands
+  for(var f=0;f<900;f++){
+    var n=genNode();
+    var ang=Math.random()*Math.PI*2,len=5+Math.random()*22;
+    fiberData.push([n.x,n.y,n.z, n.x+Math.cos(ang)*len, n.y+Math.sin(ang)*len, n.z+Math.random()*6-3]);
+  }
+
+  // Feature hotspots (brain-local coordinates)
+  var features=[
+    {name:'AI Q&A',         lx:155, ly:-90,  lz:60 },  // Frontal lobe
+    {name:'Video Processing',lx:30,  ly:-220, lz:40 },  // Parietal (top)
+    {name:'Transcription',  lx:155, ly:40,   lz:80 },  // Temporal (side)
+    {name:'Semantic Search',lx:-175,ly:-60,  lz:50 },  // Occipital
+    {name:'Smart Notes',    lx:-120,ly:130,  lz:40 },  // Cerebellum
+    {name:'Chrome Extension',lx:10, ly:195,  lz:20 }   // Brainstem
+  ];
+  features.forEach(function(f){
+    f.tY=-Math.atan2(f.lx,f.lz+130)*0.5;
+    f.tX=-Math.atan2(f.ly,230)*0.3;
+  });
+
+  var rotY=0, rotX=0, tRotY=0, tRotX=0;
+  var drag=false, lastMX=0, lastMY=0, spin=true;
+  var lblTimer=null;
+
+  function getScreenPos(lx,ly,lz,rY,rX){
+    var cosY=Math.cos(rY),sinY=Math.sin(rY);
+    var cosX=Math.cos(rX),sinX=Math.sin(rX);
+    // Apply Y rotation (around vertical axis)
+    var rx=lx*cosY+lz*sinY;
+    var ry=ly;
+    var rz=-lx*sinY+lz*cosY;
+    // Apply X rotation (tilt up/down)
+    var ry2=ry*cosX-rz*sinX;
+    var rz2=ry*sinX+rz*cosX;
+    var scale=(600/(600+rz2));
+    return {sx:CX+rx*scale*SC, sy:CY+ry2*scale*SC, depth:rz2, scale:scale};
+  }
+
+  function draw(){
     ctx.clearRect(0,0,W,H);
 
-    // Step 1: Draw outer glow atmosphere
-    var grad=ctx.createRadialGradient(CX,CY,RX*0.5,CX,CY,RX*1.65);
-    grad.addColorStop(0,'rgba(10,30,180,0)');
-    grad.addColorStop(0.7,'rgba(10,30,180,0.08)');
-    grad.addColorStop(0.9,'rgba(20,50,200,0.18)');
-    grad.addColorStop(1,'rgba(15,40,160,0)');
+    // Outer glow
+    var grad=ctx.createRadialGradient(CX,CY,50*SC,CX,CY,320*SC);
+    grad.addColorStop(0,'rgba(8,20,140,0)');
+    grad.addColorStop(0.65,'rgba(8,22,160,0.07)');
+    grad.addColorStop(0.85,'rgba(15,35,180,0.18)');
+    grad.addColorStop(1,'rgba(10,25,140,0)');
     ctx.fillStyle=grad;
-    ctx.beginPath();
-    ctx.ellipse(CX,CY,RX*1.65,RX*1.65,0,0,Math.PI*2);
-    ctx.fill();
+    ctx.beginPath();ctx.ellipse(CX,CY,320*SC,320*SC,0,0,Math.PI*2);ctx.fill();
 
-    // Step 2: Draw brain dark interior
-    // The brain boundary is an ellipse in 2D (projection of the 3D ellipsoid at this rotation)
-    var projA=project(-RX,0,0), projB=project(RX,0,0), projC=project(0,-RY,0), projD=project(0,RY,0);
-    var projF=project(0,0,RZ), projBk=project(0,0,-RZ);
-    // The projected width and height
-    var pw=Math.abs(projB.x-projA.x)/2;
-    var ph=Math.abs(projD.y-projC.y)/2;
-    var angle=0;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(CX,CY,pw,ph,angle,0,Math.PI*2);
+    // Draw brain interior (black fill)
+    makeBrainPath(ctx,CX,CY,SC,rotY);
     ctx.fillStyle='#000000';
     ctx.fill();
-    ctx.restore();
 
-    // Step 3: Draw fibers (clipped to brain shape)
+    // Clip to brain shape for fibers, connections, nodes
     ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(CX,CY,pw*0.99,ph*0.99,angle,0,Math.PI*2);
+    makeBrainPath(ctx,CX,CY,SC,rotY);
     ctx.clip();
-    ctx.globalAlpha=0.22;
+
+    // Draw fibers
+    ctx.lineWidth=0.7/SC;
     ctx.strokeStyle='#1133bb';
-    ctx.lineWidth=0.7;
-    fibers.forEach(function(fb){
-      var p1=project(fb[0].x,fb[0].y,fb[0].z);
-      var p2=project(fb[1].x,fb[1].y,fb[1].z);
-      if(p1.z>0||p2.z>0){ // Only show front hemisphere
-        ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();
+    ctx.globalAlpha=0.20;
+    fiberData.forEach(function(fb){
+      var p1=getScreenPos(fb[0],fb[1],fb[2],rotY,rotX);
+      var p2=getScreenPos(fb[3],fb[4],fb[5],rotY,rotX);
+      if(p1.depth<80&&p2.depth<80){
+        ctx.beginPath();ctx.moveTo(p1.sx,p1.sy);ctx.lineTo(p2.sx,p2.sy);ctx.stroke();
       }
     });
-    ctx.globalAlpha=1;
 
-    // Step 4: Blue connections (clipped)
-    ctx.lineWidth=0.85;
+    // Blue connections
+    ctx.lineWidth=0.9;
     bConns.forEach(function(c){
-      var p1=project(bNodes[c[0]].x,bNodes[c[0]].y,bNodes[c[0]].z);
-      var p2=project(bNodes[c[1]].x,bNodes[c[1]].y,bNodes[c[1]].z);
-      if(p1.z>-20&&p2.z>-20){
-        ctx.globalAlpha=0.28;
-        ctx.strokeStyle='#2266ee';
-        ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();
+      var p1=getScreenPos(bNodes[c[0]].x,bNodes[c[0]].y,bNodes[c[0]].z,rotY,rotX);
+      var p2=getScreenPos(bNodes[c[1]].x,bNodes[c[1]].y,bNodes[c[1]].z,rotY,rotX);
+      if(p1.depth<80&&p2.depth<80){
+        ctx.globalAlpha=0.30;ctx.strokeStyle='#2266ee';
+        ctx.beginPath();ctx.moveTo(p1.sx,p1.sy);ctx.lineTo(p2.sx,p2.sy);ctx.stroke();
       }
     });
 
-    // Step 5: Yellow connections between orange nodes (clipped)
+    // Yellow connections
     ctx.lineWidth=1.0;
     oConns.forEach(function(c){
-      var p1=project(oNodes[c[0]].x,oNodes[c[0]].y,oNodes[c[0]].z);
-      var p2=project(oNodes[c[1]].x,oNodes[c[1]].y,oNodes[c[1]].z);
-      if(p1.z>-20&&p2.z>-20){
-        var alpha=0.45+Math.max(0,Math.min(0.25,(p1.z+p2.z)/400));
-        ctx.globalAlpha=alpha;
-        ctx.strokeStyle='#ddcc00';
-        ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();
+      var p1=getScreenPos(oNodes[c[0]].x,oNodes[c[0]].y,oNodes[c[0]].z,rotY,rotX);
+      var p2=getScreenPos(oNodes[c[1]].x,oNodes[c[1]].y,oNodes[c[1]].z,rotY,rotX);
+      if(p1.depth<80&&p2.depth<80){
+        ctx.globalAlpha=0.60;ctx.strokeStyle='#ddcc00';
+        ctx.beginPath();ctx.moveTo(p1.sx,p1.sy);ctx.lineTo(p2.sx,p2.sy);ctx.stroke();
       }
     });
 
-    // Step 6: Blue nodes
+    // Blue nodes
     bNodes.forEach(function(n){
-      var p=project(n.x,n.y,n.z);
-      if(p.z>-30){
-        var sz=2.8*p.scale*Math.max(0.6,1+p.z/RZ*0.3);
-        var a=0.5+p.z/RZ*0.4;
-        ctx.globalAlpha=Math.max(0.1,Math.min(0.9,a));
-        var g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,sz*3.5);
-        g.addColorStop(0,'rgba(255,255,255,1)');
-        g.addColorStop(0.15,'rgba(180,220,255,1)');
-        g.addColorStop(0.5,'rgba(60,130,255,0.5)');
-        g.addColorStop(1,'rgba(20,70,220,0)');
-        ctx.fillStyle=g;
-        ctx.beginPath();ctx.arc(p.x,p.y,sz*3.5,0,Math.PI*2);ctx.fill();
+      var p=getScreenPos(n.x,n.y,n.z,rotY,rotX);
+      if(p.depth<80){
+        var r=3.2*p.scale;
+        ctx.globalAlpha=Math.max(0.15,Math.min(0.85,0.5-p.depth/200));
+        var g=ctx.createRadialGradient(p.sx,p.sy,0,p.sx,p.sy,r*4);
+        g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.15,'rgba(170,215,255,1)');
+        g.addColorStop(0.4,'rgba(55,125,255,0.55)');g.addColorStop(1,'rgba(15,65,210,0)');
+        ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.sx,p.sy,r*4,0,Math.PI*2);ctx.fill();
       }
     });
 
-    // Step 7: Orange nodes
+    // Orange nodes
     oNodes.forEach(function(n){
-      var p=project(n.x,n.y,n.z);
-      if(p.z>-30){
-        var sz=3.5*p.scale*Math.max(0.6,1+p.z/RZ*0.35);
-        var a=0.55+p.z/RZ*0.4;
-        ctx.globalAlpha=Math.max(0.1,Math.min(1,a));
-        var g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,sz*3.8);
-        g.addColorStop(0,'rgba(255,255,255,1)');
-        g.addColorStop(0.1,'rgba(255,240,180,1)');
-        g.addColorStop(0.25,'rgba(255,140,30,0.95)');
-        g.addColorStop(0.55,'rgba(255,60,0,0.40)');
-        g.addColorStop(1,'rgba(200,20,0,0)');
-        ctx.fillStyle=g;
-        ctx.beginPath();ctx.arc(p.x,p.y,sz*3.8,0,Math.PI*2);ctx.fill();
+      var p=getScreenPos(n.x,n.y,n.z,rotY,rotX);
+      if(p.depth<80){
+        var r=4.2*p.scale;
+        ctx.globalAlpha=Math.max(0.15,Math.min(1,0.65-p.depth/180));
+        var g=ctx.createRadialGradient(p.sx,p.sy,0,p.sx,p.sy,r*4);
+        g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.08,'rgba(255,245,185,1)');
+        g.addColorStop(0.22,'rgba(255,145,35,0.98)');g.addColorStop(0.5,'rgba(255,60,0,0.42)');
+        g.addColorStop(1,'rgba(195,10,0,0)');
+        ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.sx,p.sy,r*4,0,Math.PI*2);ctx.fill();
       }
     });
 
     ctx.restore();
 
-    // Step 8: Brain rim glow (drawn ON TOP of nodes)
-    for(var i=6;i>=0;i--){
-      var w=pw+i*4.5, h2=ph+i*4.5;
-      var opacity=0.06+i*0.01;
-      ctx.beginPath();
-      ctx.ellipse(CX,CY,w,h2,0,0,Math.PI*2);
-      ctx.strokeStyle='rgba(60,130,255,'+opacity+')';
-      ctx.lineWidth=3.5+i*2;
+    // Brain rim glow (multiple layers outside the path)
+    for(var i=8;i>=0;i--){
+      makeBrainPath(ctx,CX,CY,SC*(1+i*0.012),rotY);
+      ctx.strokeStyle='rgba(50,120,255,'+(0.055-i*0.004)+')';
+      ctx.lineWidth=5+i*3;
       ctx.globalAlpha=1;
       ctx.stroke();
     }
     // Bright thin rim
-    ctx.beginPath();
-    ctx.ellipse(CX,CY,pw,ph,0,0,Math.PI*2);
-    ctx.strokeStyle='rgba(100,170,255,0.85)';
-    ctx.lineWidth=2;
-    ctx.globalAlpha=1;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.ellipse(CX,CY,pw+1,ph+1,0,0,Math.PI*2);
-    ctx.strokeStyle='rgba(160,210,255,0.55)';
-    ctx.lineWidth=4;
-    ctx.stroke();
+    makeBrainPath(ctx,CX,CY,SC,rotY);
+    ctx.strokeStyle='rgba(100,175,255,0.88)';ctx.lineWidth=2;ctx.stroke();
+    makeBrainPath(ctx,CX,CY,SC*1.008,rotY);
+    ctx.strokeStyle='rgba(160,215,255,0.50)';ctx.lineWidth=3.5;ctx.stroke();
 
-    // Step 9: Feature hotspot dots
+    // Feature hotspots
+    var t=Date.now()/800;
     features.forEach(function(f,i){
-      var p=project(f.p.x,f.p.y,f.p.z);
-      if(p.z>-10){
-        var sz=7*p.scale;
-        ctx.globalAlpha=0.85;
-        var g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,sz*2.5);
-        g.addColorStop(0,'rgba(255,255,255,1)');
-        g.addColorStop(0.2,'rgba(255,200,80,1)');
-        g.addColorStop(0.5,'rgba(255,100,15,0.7)');
-        g.addColorStop(1,'rgba(200,30,0,0)');
-        ctx.fillStyle=g;
-        ctx.beginPath();ctx.arc(p.x,p.y,sz*2.5,0,Math.PI*2);ctx.fill();
+      var p=getScreenPos(f.lx,f.ly,f.lz,rotY,rotX);
+      // Check if visible (in front half)
+      if(p.depth<90){
+        var r=6*p.scale;
+        ctx.globalAlpha=0.88;
+        var g=ctx.createRadialGradient(p.sx,p.sy,0,p.sx,p.sy,r*3);
+        g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.18,'rgba(255,200,80,1)');
+        g.addColorStop(0.45,'rgba(255,105,15,0.75)');g.addColorStop(1,'rgba(195,20,0,0)');
+        ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.sx,p.sy,r*3,0,Math.PI*2);ctx.fill();
         // Pulse ring
-        var t=Date.now()/800;
-        var ph2=(t+i*1.1)%(Math.PI*2);
-        var rs=(sz*1.5)*(0.8+Math.sin(ph2)*0.5);
-        ctx.globalAlpha=0.3+Math.sin(ph2)*0.35;
-        ctx.strokeStyle='#ff9933';
-        ctx.lineWidth=1.5;
-        ctx.beginPath();ctx.arc(p.x,p.y,rs,0,Math.PI*2);ctx.stroke();
+        var ph=(t+i*1.1)%(Math.PI*2);
+        var rs=r*(1.8+Math.sin(ph)*0.6);
+        ctx.globalAlpha=0.22+Math.sin(ph)*0.30;
+        ctx.strokeStyle='#ff9933';ctx.lineWidth=1.8;
+        ctx.beginPath();ctx.arc(p.sx,p.sy,rs,0,Math.PI*2);ctx.stroke();
       }
     });
     ctx.globalAlpha=1;
   }
 
-  // Animation loop
-  var animId;
   function animate(){
-    animId=requestAnimationFrame(animate);
-    if(spin) targetRotY+=0.0018;
-    rotY+=(targetRotY-rotY)*0.055;
-    rotX+=(targetRotX-rotX)*0.055;
-    drawBrain();
+    requestAnimationFrame(animate);
+    if(spin) tRotY+=0.0018;
+    rotY+=(tRotY-rotY)*0.055;
+    rotX+=(tRotX-rotX)*0.055;
+    draw();
   }
   animate();
 
-  // Interaction
-  cv.addEventListener('mousedown',function(e){
-    drag=true;spin=false;lastMX=e.clientX;lastMY=e.clientY;
-    handleClick(e.clientX,e.clientY);
-  });
-  document.addEventListener('mousemove',function(e){
-    if(!drag)return;
-    targetRotY+=(e.clientX-lastMX)*0.007;
-    targetRotX=Math.max(-0.85,Math.min(0.85,targetRotX+(e.clientY-lastMY)*0.005));
-    lastMX=e.clientX;lastMY=e.clientY;
-  });
+  cv.addEventListener('mousedown',function(e){drag=true;spin=false;lastMX=e.clientX;lastMY=e.clientY;handleClick(e.clientX,e.clientY);});
+  document.addEventListener('mousemove',function(e){if(!drag)return;tRotY+=(e.clientX-lastMX)*0.007;tRotX=Math.max(-0.8,Math.min(0.8,tRotX+(e.clientY-lastMY)*0.005));lastMX=e.clientX;lastMY=e.clientY;});
   document.addEventListener('mouseup',function(){drag=false;});
   cv.addEventListener('touchstart',function(e){e.preventDefault();drag=true;spin=false;lastMX=e.touches[0].clientX;lastMY=e.touches[0].clientY;handleClick(lastMX,lastMY);},{passive:false});
-  document.addEventListener('touchmove',function(e){if(!drag)return;targetRotY+=(e.touches[0].clientX-lastMX)*0.007;targetRotX=Math.max(-0.85,Math.min(0.85,targetRotX+(e.touches[0].clientY-lastMY)*0.005));lastMX=e.touches[0].clientX;lastMY=e.touches[0].clientY;},{passive:false});
+  document.addEventListener('touchmove',function(e){if(!drag)return;tRotY+=(e.touches[0].clientX-lastMX)*0.007;tRotX=Math.max(-0.8,Math.min(0.8,tRotX+(e.touches[0].clientY-lastMY)*0.005));lastMX=e.touches[0].clientX;lastMY=e.touches[0].clientY;},{passive:false});
   document.addEventListener('touchend',function(){drag=false;});
 
-  var lblTimer=null;
   function handleClick(mx,my){
     var rect=cv.getBoundingClientRect();
-    var sx=(mx-rect.left)*(cv.width/DPR)/rect.width;
-    var sy=(my-rect.top)*(cv.height/DPR)/rect.height;
-    var hit=null;
+    var sx=(mx-rect.left)*W/rect.width;
+    var sy=(my-rect.top)*H/rect.height;
+    var best=null,bestD=25;
     features.forEach(function(f){
-      var p=project(f.p.x,f.p.y,f.p.z);
-      if(p.z>-10){
-        var dx=sx-p.x,dy=sy-p.y;
-        if(Math.sqrt(dx*dx+dy*dy)<22&&(hit===null||p.z>hit.p.z)) hit=f;
+      var p=getScreenPos(f.lx,f.ly,f.lz,rotY,rotX);
+      if(p.depth<90){
+        var d=Math.sqrt(Math.pow(sx-p.sx,2)+Math.pow(sy-p.sy,2));
+        if(d<bestD){bestD=d;best=f;}
       }
     });
-    if(hit){
-      targetRotY=hit.tY;
-      targetRotX=hit.tX;
+    if(best){
+      tRotY=best.tY;tRotX=best.tX;
       if(lblTimer)clearTimeout(lblTimer);
-      fl.textContent=hit.name;fl.classList.add('on');
+      fl.textContent=best.name;fl.classList.add('on');
       lblTimer=setTimeout(function(){fl.classList.remove('on');},3500);
     } else {
       fl.classList.remove('on');
@@ -393,10 +373,8 @@ header{width:100%;padding:18px 40px;text-align:center}
   }
 
   window.addEventListener('resize',function(){
-    W=sec.clientWidth;H=sec.clientHeight;
-    cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';
-    ctx.scale(DPR,DPR);
-    CX=W/2;CY=H/2-10;
+    var s=resize();W=s.W;H=s.H;ctx.scale(DPR,DPR);CX=W/2-5;CY=H/2;
+    tc=makeTempCanvas();
   });
 })();
 <\/script>
