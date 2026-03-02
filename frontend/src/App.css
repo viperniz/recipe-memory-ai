@@ -15784,7 +15784,6 @@ button.timestamp-link {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  perspective: 1200px;
 }
 
 .cs-brain-glow {
@@ -15806,12 +15805,6 @@ button.timestamp-link {
   z-index: 2;
   mix-blend-mode: screen;
   filter: drop-shadow(0 0 60px rgba(80,160,255,0.3));
-  animation: csBrainRotate 20s linear infinite;
-}
-
-@keyframes csBrainRotate {
-  from { transform: rotateY(0deg); }
-  to { transform: rotateY(360deg); }
 }
 
 @keyframes csBrainPulse {
