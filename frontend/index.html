@@ -4,8 +4,8 @@
 body{background:#06061a;color:#fff;font-family:'Segoe UI',sans-serif;overflow:hidden;width:100vw;height:100vh}
 #main{position:absolute;inset:0;display:flex;align-items:center}
 
-/* Globe container */
-#globe-wrap{position:relative;width:min(52vw,500px);height:100vh;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+/* Globe container — left ~48% */
+#globe-wrap{position:relative;width:min(50vw,480px);height:100vh;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 #globe-canvas{display:block;cursor:grab;position:absolute;inset:0}
 #globe-canvas:active{cursor:grabbing}
 
@@ -15,68 +15,69 @@ body{background:#06061a;color:#fff;font-family:'Segoe UI',sans-serif;overflow:hi
 .icon-node.active{background:rgba(50,90,200,0.98);border-color:rgba(180,225,255,1);box-shadow:0 0 32px rgba(100,180,255,0.85),0 0 70px rgba(80,130,255,0.25);transform:scale(1.2)}
 .icon-node svg{width:21px;height:21px;fill:none;stroke:rgba(150,200,255,0.9);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:stroke 0.2s}
 .icon-node.active svg{stroke:#fff}
-.icon-label{position:absolute;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:rgba(100,160,240,0.65);white-space:nowrap;pointer-events:none;transition:color 0.25s}
-.icon-node.active+.icon-label,.icon-node:hover+.icon-label{color:rgba(180,220,255,0.95)}
+.icon-label{position:absolute;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:rgba(100,160,240,0.6);white-space:nowrap;pointer-events:none;z-index:11}
 
 /* Right panel */
-#right-panel{flex:1;height:100vh;display:flex;flex-direction:column;justify-content:center;padding:0 0 0 10px;position:relative;overflow:hidden;z-index:5}
-#feature-name{font-size:clamp(20px,3.2vw,48px);font-weight:200;letter-spacing:clamp(4px,1.2vw,12px);text-transform:uppercase;opacity:0;transition:opacity 0.5s ease;color:#ddeeff;white-space:nowrap;text-shadow:0 0 40px rgba(100,160,255,0.4)}
-#feature-desc{font-size:clamp(10px,1.1vw,14px);letter-spacing:2.5px;color:rgba(100,150,220,0.65);opacity:0;transition:opacity 0.55s ease 0.08s;text-transform:uppercase;margin-top:6px}
+#right-panel{flex:1;height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 32px 52px 16px;position:relative;overflow:hidden;z-index:5}
+
+/* Feature display — vertically centered in right panel */
+#feature-display{position:absolute;top:50%;left:16px;right:32px;transform:translateY(-50%);margin-top:40px}
+#feature-name{font-size:clamp(20px,3vw,46px);font-weight:200;letter-spacing:clamp(4px,1.2vw,12px);text-transform:uppercase;opacity:0;transition:opacity 0.5s ease;color:#ddeeff;white-space:nowrap;text-shadow:0 0 40px rgba(100,160,255,0.35)}
+#feature-desc{font-size:clamp(10px,1vw,13px);letter-spacing:2.5px;color:rgba(100,150,220,0.65);opacity:0;transition:opacity 0.55s ease 0.08s;text-transform:uppercase;margin-top:6px}
 #feature-name.vis{opacity:1}
-#feature-desc.vis{opacity:0.7}
+#feature-desc.vis{opacity:0.65}
 
-/* Top branding */
-#branding{position:absolute;top:20px;left:0;right:0;text-align:center;z-index:20;pointer-events:none}
-#logo-txt{font-size:10px;letter-spacing:8px;color:#6688ee;text-transform:uppercase;opacity:.7}
-#site-title{font-size:clamp(18px,2.4vw,30px);font-weight:300;letter-spacing:6px;text-transform:uppercase;background:linear-gradient(90deg,#5588ff,#bb77ff,#55aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-
-#countdown{display:flex;gap:16px;position:absolute;top:92px;left:0;right:0;justify-content:center;z-index:20;pointer-events:none}
-.cd-block{display:flex;flex-direction:column;align-items:center;gap:1px}
-.cd-num{font-size:19px;font-weight:200;color:#99bbee;letter-spacing:2px}
+/* Branding — top RIGHT above wave */
+#branding{position:absolute;top:28px;right:0;width:55%;display:flex;flex-direction:column;align-items:center;z-index:20;pointer-events:none;padding-right:32px}
+#logo-txt{font-size:10px;letter-spacing:8px;color:#6688ee;text-transform:uppercase;opacity:.7;margin-bottom:4px}
+#site-title{font-size:clamp(18px,2.4vw,32px);font-weight:300;letter-spacing:6px;text-transform:uppercase;background:linear-gradient(90deg,#5588ff,#bb77ff,#55aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px}
+#countdown{display:flex;gap:18px}
+.cd-block{display:flex;flex-direction:column;align-items:center;gap:2px}
+.cd-num{font-size:20px;font-weight:200;color:#99bbee;letter-spacing:2px}
 .cd-label{font-size:7px;letter-spacing:3px;color:#445599;text-transform:uppercase}
 
-#bottom-ui{position:absolute;bottom:24px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:9px;z-index:20}
-#email-row{display:flex;gap:0;width:min(340px,68vw)}
-#email-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(80,120,240,0.26);border-right:none;color:#fff;padding:8px 13px;font-size:12px;outline:none;letter-spacing:1px}
+/* Bottom email only — centered */
+#bottom-ui{position:absolute;bottom:26px;left:0;right:0;display:flex;justify-content:center;z-index:20}
+#email-row{display:flex;gap:0;width:min(340px,66vw)}
+#email-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(80,120,240,0.26);border-right:none;color:#fff;padding:9px 14px;font-size:12px;outline:none;letter-spacing:1px}
 #email-input::placeholder{color:#334477}
-#email-btn{background:linear-gradient(135deg,#2244bb,#5522aa);border:none;color:#fff;padding:8px 15px;font-size:10px;letter-spacing:2px;cursor:pointer;text-transform:uppercase}
-#tags{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:480px;padding:0 14px}
-.tag{background:rgba(50,70,160,0.1);border:1px solid rgba(60,90,200,0.18);color:#6688cc;padding:3px 8px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase}
+#email-btn{background:linear-gradient(135deg,#2244bb,#5522aa);border:none;color:#fff;padding:9px 16px;font-size:10px;letter-spacing:2px;cursor:pointer;text-transform:uppercase}
 </style>
 </head>
 <body>
+
+<!-- Branding top-right -->
 <div id="branding">
   <div id="logo-txt">Cortexle</div>
   <div id="site-title">Coming Soon</div>
+  <div id="countdown">
+    <div class="cd-block"><span class="cd-num" id="cd-d">00</span><span class="cd-label">Days</span></div>
+    <div class="cd-block"><span class="cd-num" id="cd-h">00</span><span class="cd-label">Hours</span></div>
+    <div class="cd-block"><span class="cd-num" id="cd-m">00</span><span class="cd-label">Mins</span></div>
+    <div class="cd-block"><span class="cd-num" id="cd-s">00</span><span class="cd-label">Secs</span></div>
+  </div>
 </div>
-<div id="countdown">
-  <div class="cd-block"><span class="cd-num" id="cd-d">00</span><span class="cd-label">Days</span></div>
-  <div class="cd-block"><span class="cd-num" id="cd-h">00</span><span class="cd-label">Hours</span></div>
-  <div class="cd-block"><span class="cd-num" id="cd-m">00</span><span class="cd-label">Mins</span></div>
-  <div class="cd-block"><span class="cd-num" id="cd-s">00</span><span class="cd-label">Secs</span></div>
-</div>
+
 <div id="main">
   <div id="globe-wrap">
     <canvas id="globe-canvas"></canvas>
   </div>
   <div id="right-panel">
-    <div id="feature-name"></div>
-    <div id="feature-desc"></div>
+    <div id="feature-display">
+      <div id="feature-name"></div>
+      <div id="feature-desc"></div>
+    </div>
   </div>
 </div>
+
+<!-- Wave canvas behind everything -->
 <canvas id="wave-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:2"></canvas>
+
+<!-- Email only at bottom -->
 <div id="bottom-ui">
   <div id="email-row">
     <input id="email-input" type="email" placeholder="Enter your email for early access"/>
     <button id="email-btn">Notify Me</button>
-  </div>
-  <div id="tags">
-    <span class="tag">AI Q&amp;A</span>
-    <span class="tag">Video Processing</span>
-    <span class="tag">Transcription</span>
-    <span class="tag">Semantic Search</span>
-    <span class="tag">Smart Notes</span>
-    <span class="tag">Chrome Extension</span>
   </div>
 </div>
 
@@ -87,12 +88,12 @@ updateCD();setInterval(updateCD,1000);
 document.getElementById('email-btn').addEventListener('click',()=>{const v=document.getElementById('email-input').value;if(v&&v.includes('@')){document.getElementById('email-btn').textContent='Done ✓';}});
 
 const features=[
-  {name:'AI Q&A',        desc:'Instant answers from your videos',  icon:'brain',  col:'#ff8833'},
-  {name:'Video Processing',   desc:'Frame-by-frame intelligence',        icon:'video',  col:'#ff8833'},
-  {name:'Transcription',      desc:'Speech to searchable text',          icon:'mic',    col:'#55aaff'},
-  {name:'Semantic Search',    desc:'Find anything by meaning',           icon:'search', col:'#55aaff'},
-  {name:'Smart Notes',        desc:'Auto-generated insights',            icon:'notes',  col:'#aa77ff'},
-  {name:'Chrome Extension',   desc:'Works anywhere in your browser',     icon:'chrome', col:'#aa77ff'},
+  {name:'AI Q&A',        desc:'Instant answers from your videos',  icon:'brain'},
+  {name:'Video Processing',   desc:'Frame-by-frame intelligence',        icon:'video'},
+  {name:'Transcription',      desc:'Speech to searchable text',          icon:'mic'},
+  {name:'Semantic Search',    desc:'Find anything by meaning',           icon:'search'},
+  {name:'Smart Notes',        desc:'Auto-generated insights',            icon:'notes'},
+  {name:'Chrome Extension',   desc:'Works anywhere in your browser',     icon:'chrome'},
 ];
 const svgIcons={
   brain:'<circle cx="12" cy="12" r="3"/><path d="M6.6 8.4A6 6 0 0 1 18 12a6 6 0 0 1-11.4 3.6"/><path d="M12 6v2M12 16v2M6 12H4M20 12h-2"/>',
@@ -103,14 +104,16 @@ const svgIcons={
   chrome:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="21.17" y1="8" x2="12" y2="8"/><line x1="3.95" y1="6.06" x2="8.54" y2="14"/><line x1="10.88" y1="21.94" x2="15.46" y2="14"/>',
 };
 
-// Icon positions: angleDeg, radiusFactor (how far out), labelSide (left/right of icon)
+// ── Icon positions: evenly spread around the left arc of the globe ──
+// Angles chosen so icons sit around left/top/bottom arc with good spacing
+// Using angles: left side 150–330 degrees spread evenly = 36° apart
 const iconDefs=[
-  {feat:0,angleDeg:200,rf:1.62,ls:'left'},   // AI Q&A
-  {feat:1,angleDeg:245,rf:1.55,ls:'left'},   // Video Processing
-  {feat:2,angleDeg:160,rf:1.58,ls:'left'},   // Transcription
-  {feat:3,angleDeg:115,rf:1.62,ls:'left'},   // Semantic Search
-  {feat:4,angleDeg:140,rf:1.52,ls:'left'},   // Smart Notes
-  {feat:5,angleDeg:290,rf:1.58,ls:'left'},   // Chrome Extension
+  {feat:0, angleDeg:155, rf:1.68},  // Semantic Search — top-left
+  {feat:1, angleDeg:195, rf:1.65},  // AI Q&A — left-upper
+  {feat:2, angleDeg:235, rf:1.62},  // Video Processing — left
+  {feat:3, angleDeg:270, rf:1.65},  // Transcription — bottom-left
+  {feat:4, angleDeg:308, rf:1.62},  // Smart Notes — bottom
+  {feat:5, angleDeg:118, rf:1.65},  // Chrome Extension — top
 ];
 
 import('https://unpkg.com/three@0.160.0/build/three.module.js').then(THREE=>{
@@ -142,7 +145,6 @@ const wS=[];for(let i=0;i<wPts.length;i++){const nb=[];for(let j=0;j<wPts.length
 brain.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(wS),new THREE.LineBasicMaterial({color:0x2240dd,transparent:true,opacity:.13,depthWrite:false,blending:THREE.AdditiveBlending})));
 function lns(pts,col,mxD,mxC,op){const s=[];for(let i=0;i<pts.length;i++){let c=0;for(let j=i+1;j<pts.length&&c<mxC;j++){if(pts[i].distanceTo(pts[j])<mxD){s.push(pts[i].clone(),pts[j].clone());c++;}}}if(!s.length)return;brain.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(s),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op,depthWrite:false,blending:THREE.AdditiveBlending})));}
 lns(oPos,0xddcc00,0.44,3,0.55);lns(bPos,0x2244ee,0.40,3,0.28);
-
 let drag=false,lx=0,ly=0,rY=0.4,rX=-.05;
 gCanvas.addEventListener('mousedown',e=>{drag=true;lx=e.clientX;ly=e.clientY;e.preventDefault();});
 window.addEventListener('mouseup',()=>drag=false);
@@ -151,28 +153,20 @@ gCanvas.addEventListener('touchstart',e=>{const t=e.touches[0];drag=true;lx=t.cl
 window.addEventListener('touchend',()=>drag=false);
 window.addEventListener('touchmove',e=>{if(!drag)return;const t=e.touches[0];rY+=(t.clientX-lx)*.007;rX+=(t.clientY-ly)*.004;rX=Math.max(-1.2,Math.min(1.2,rX));lx=t.clientX;ly=t.clientY;},{passive:false});
 
-// Icon HTML elements
 let activeIdx=-1;
 const nameEl=document.getElementById('feature-name');
 const descEl=document.getElementById('feature-desc');
-const iconEls=[];
-const labelEls=[];
+const iconEls=[],labelEls=[];
 
 function selectFeature(idx){
-  if(activeIdx===idx){
-    iconEls[idx].classList.remove('active');
-    activeIdx=-1;
-    nameEl.classList.remove('vis');descEl.classList.remove('vis');
-    return;
-  }
+  if(activeIdx===idx){iconEls[idx].classList.remove('active');activeIdx=-1;nameEl.classList.remove('vis');descEl.classList.remove('vis');return;}
   if(activeIdx>=0) iconEls[activeIdx].classList.remove('active');
-  activeIdx=idx;
-  iconEls[idx].classList.add('active');
+  activeIdx=idx;iconEls[idx].classList.add('active');
   nameEl.classList.remove('vis');descEl.classList.remove('vis');
   setTimeout(()=>{
     nameEl.textContent=features[iconDefs[idx].feat].name.toUpperCase();
     descEl.textContent=features[iconDefs[idx].feat].desc;
-    void nameEl.offsetWidth; // reflow
+    void nameEl.offsetWidth;
     nameEl.classList.add('vis');descEl.classList.add('vis');
   },280);
 }
@@ -182,66 +176,60 @@ iconDefs.forEach((def,idx)=>{
   el.className='icon-node';
   el.innerHTML='<svg viewBox="0 0 24 24">'+svgIcons[features[def.feat].icon]+'</svg>';
   el.addEventListener('click',()=>selectFeature(idx));
-  gWrap.appendChild(el);
-  iconEls.push(el);
-  
-  // Label
+  gWrap.appendChild(el);iconEls.push(el);
   const lbl=document.createElement('div');
   lbl.className='icon-label';
   lbl.textContent=features[def.feat].name.toUpperCase();
-  gWrap.appendChild(lbl);
-  labelEls.push(lbl);
+  gWrap.appendChild(lbl);labelEls.push(lbl);
 });
 
 let connSVG=null;
 function posIcons(){
   const W=gWrap.offsetWidth,H=gWrap.offsetHeight;
   const cx=W/2,cy=H/2;
-  const globeR=Math.min(W,H)*0.37;
-  const pad=54; // padding from edge
-  
+  const globeR=Math.min(W,H)*0.36;
   if(connSVG) connSVG.remove();
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('width',W);svg.setAttribute('height',H);
   svg.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:5';
-  
+
   iconDefs.forEach((def,idx)=>{
     const rad=def.angleDeg*Math.PI/180;
     const iconR=globeR*def.rf;
-    let x=cx+Math.cos(rad)*iconR;
-    let y=cy+Math.sin(rad)*iconR;
-    // Clamp to viewport
-    x=Math.max(pad,Math.min(W-pad,x));
-    y=Math.max(pad+50,Math.min(H-pad-50,y));
-    
-    iconEls[idx].style.left=(x-23)+'px';
-    iconEls[idx].style.top=(y-23)+'px';
-    
-    // Label placement
-    const lblEl=labelEls[idx];
-    if(x<cx){lblEl.style.left=(x+28)+'px';lblEl.style.transform='none';}
-    else{lblEl.style.left=(x-23-lblEl.offsetWidth-6)+'px';lblEl.style.transform='none';}
-    lblEl.style.top=(y+14)+'px';
-    
-    // Connector: from globe edge to icon
-    const ex=cx+Math.cos(rad)*globeR*0.98;
-    const ey=cy+Math.sin(rad)*globeR*0.98;
-    
+    // Raw position
+    let ix=cx+Math.cos(rad)*iconR;
+    let iy=cy+Math.sin(rad)*iconR;
+    // Clamp inside globe-wrap with margin
+    const mg=52;
+    ix=Math.max(mg,Math.min(W-mg,ix));
+    iy=Math.max(mg+30,Math.min(H-mg-30,iy));
+
+    iconEls[idx].style.left=(ix-23)+'px';
+    iconEls[idx].style.top=(iy-23)+'px';
+
+    // Label: place to right of icon if icon is on left side, left if right side
+    const lbl=labelEls[idx];
+    const lW=lbl.offsetWidth||80;
+    if(ix<cx){lbl.style.left=(ix+28)+'px';}
+    else{lbl.style.left=(ix-23-lW-4)+'px';}
+    lbl.style.top=(iy+16)+'px';
+
+    // Connector line from globe edge to icon
+    const ex=cx+Math.cos(rad)*globeR*0.97;
+    const ey=cy+Math.sin(rad)*globeR*0.97;
     const line=document.createElementNS('http://www.w3.org/2000/svg','line');
     line.setAttribute('x1',ex);line.setAttribute('y1',ey);
-    line.setAttribute('x2',x);line.setAttribute('y2',y);
-    line.setAttribute('stroke','rgba(70,140,255,0.32)');
+    line.setAttribute('x2',ix);line.setAttribute('y2',iy);
+    line.setAttribute('stroke','rgba(70,140,255,0.3)');
     line.setAttribute('stroke-width','1.2');
     line.setAttribute('stroke-dasharray','5 3');
     svg.appendChild(line);
-    
     const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
     dot.setAttribute('cx',ex);dot.setAttribute('cy',ey);
-    dot.setAttribute('r','3.5');dot.setAttribute('fill','rgba(80,170,255,0.65)');
+    dot.setAttribute('r','3.5');dot.setAttribute('fill','rgba(80,170,255,0.62)');
     svg.appendChild(dot);
   });
-  gWrap.appendChild(svg);
-  connSVG=svg;
+  gWrap.appendChild(svg);connSVG=svg;
 }
 posIcons();
 
@@ -250,35 +238,32 @@ function animG(){requestAnimationFrame(animG);tt+=.016;if(!drag){rY+=.0008;}brai
 animG();
 });
 
-// ── Wave canvas ──────────────────────────────────────────────
+// ── Wave canvas ────────────────────────────────────────────────
 const wc=document.getElementById('wave-canvas');
 const wCtx=wc.getContext('2d');
 function rsW(){wc.width=window.innerWidth;wc.height=window.innerHeight;}
 rsW();window.addEventListener('resize',rsW);
-
 let wt=0;
 function animWave(){
   requestAnimationFrame(animWave);wt+=0.016;
   wc.width=wc.width;
   const W=wc.width,H=wc.height;
   const gW=document.getElementById('globe-wrap').offsetWidth;
-  const sX=gW*0.72; // wave starts around right edge of globe
-  const cY=H*0.5;
-  
-  // Multiple ribbon waves emanating right
+  const sX=gW*0.74;
+  const cY=H*0.54; // slightly below center to leave room for title above
+
   const waves=[
-    {amp:62,freq:1.6,ph:0,    col:[130,55,230], w:2.2, op:0.28},
-    {amp:45,freq:2.1,ph:0.9,  col:[160,80,255], w:1.6, op:0.22},
-    {amp:80,freq:1.3,ph:1.7,  col:[90,40,200],  w:2.8, op:0.24},
-    {amp:35,freq:2.9,ph:2.5,  col:[190,110,255],w:1.2, op:0.18},
-    {amp:55,freq:2.4,ph:3.3,  col:[110,50,210], w:2.0, op:0.20},
-    {amp:28,freq:3.8,ph:0.6,  col:[210,130,255],w:1.0, op:0.15},
-    {amp:70,freq:1.5,ph:2.1,  col:[150,75,245], w:2.4, op:0.22},
-    {amp:38,freq:2.7,ph:1.3,  col:[100,48,200], w:1.5, op:0.17},
-    {amp:20,freq:4.5,ph:0.3,  col:[240,160,255],w:0.8, op:0.12},
-    {amp:48,freq:1.9,ph:4.0,  col:[120,60,220], w:1.8, op:0.19},
+    {amp:58,freq:1.6,ph:0,    col:[130,55,230],w:2.2,op:0.28},
+    {amp:42,freq:2.1,ph:0.9,  col:[160,80,255],w:1.6,op:0.22},
+    {amp:75,freq:1.3,ph:1.7,  col:[90,40,200], w:2.8,op:0.24},
+    {amp:32,freq:2.9,ph:2.5,  col:[190,110,255],w:1.2,op:0.18},
+    {amp:52,freq:2.4,ph:3.3,  col:[110,50,210],w:2.0,op:0.20},
+    {amp:25,freq:3.8,ph:0.6,  col:[210,130,255],w:1.0,op:0.15},
+    {amp:65,freq:1.5,ph:2.1,  col:[150,75,245],w:2.4,op:0.22},
+    {amp:35,freq:2.7,ph:1.3,  col:[100,48,200],w:1.5,op:0.17},
+    {amp:18,freq:4.5,ph:0.3,  col:[240,160,255],w:0.8,op:0.12},
+    {amp:44,freq:1.9,ph:4.0,  col:[120,60,220],w:1.8,op:0.19},
   ];
-  
   waves.forEach(w=>{
     wCtx.beginPath();
     const [r,g,b]=w.col;
@@ -286,27 +271,17 @@ function animWave(){
     wCtx.lineWidth=w.w;
     const pts=140;
     for(let i=0;i<=pts;i++){
-      const t=i/pts;
-      const x=sX+t*(W-sX-10);
+      const t=i/pts;const x=sX+t*(W-sX-10);
       const sp=Math.pow(t*(1-t)*4,0.7);
       const y=cY+(Math.sin(t*Math.PI*w.freq*1.2+wt+w.ph)*w.amp+Math.sin(t*Math.PI*w.freq*.5+wt*.8+w.ph)*w.amp*.3)*sp;
       if(i===0) wCtx.moveTo(x,y); else wCtx.lineTo(x,y);
-    }
-    wCtx.stroke();
+    }wCtx.stroke();
   });
-  
-  // Bright core ribbon
-  wCtx.beginPath();
-  wCtx.strokeStyle='rgba(180,100,255,0.55)';
-  wCtx.lineWidth=1.8;
-  for(let i=0;i<=120;i++){const t=i/120;const x=sX+t*(W-sX-10);const sp=Math.pow(t*(1-t)*4,0.7);const y=cY+Math.sin(t*Math.PI*2.2+wt*1.1)*32*sp;if(i===0) wCtx.moveTo(x,y); else wCtx.lineTo(x,y);}
+  wCtx.beginPath();wCtx.strokeStyle='rgba(180,100,255,0.55)';wCtx.lineWidth=1.8;
+  for(let i=0;i<=120;i++){const t=i/120;const x=sX+t*(W-sX-10);const sp=Math.pow(t*(1-t)*4,0.7);const y=cY+Math.sin(t*Math.PI*2.2+wt*1.1)*30*sp;if(i===0) wCtx.moveTo(x,y); else wCtx.lineTo(x,y);}
   wCtx.stroke();
-  
-  // Extra bright highlight
-  wCtx.beginPath();
-  wCtx.strokeStyle='rgba(220,160,255,0.35)';
-  wCtx.lineWidth=1.2;
-  for(let i=0;i<=120;i++){const t=i/120;const x=sX+t*(W-sX-10);const sp=Math.pow(t*(1-t)*4,0.6);const y=cY+Math.sin(t*Math.PI*3.1+wt*1.4)*18*sp;if(i===0) wCtx.moveTo(x,y); else wCtx.lineTo(x,y);}
+  wCtx.beginPath();wCtx.strokeStyle='rgba(220,160,255,0.32)';wCtx.lineWidth=1.2;
+  for(let i=0;i<=120;i++){const t=i/120;const x=sX+t*(W-sX-10);const sp=Math.pow(t*(1-t)*4,0.6);const y=cY+Math.sin(t*Math.PI*3.1+wt*1.4)*17*sp;if(i===0) wCtx.moveTo(x,y); else wCtx.lineTo(x,y);}
   wCtx.stroke();
 }
 animWave();
