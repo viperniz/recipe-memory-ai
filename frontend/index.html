@@ -9,7 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#050a18;font-family:'Inter',sans-serif}
+html,body{width:100%;height:100%;overflow:hidden;background:#060818;font-family:'Inter',sans-serif}
 canvas{display:block}
 #bg-canvas{position:fixed;inset:0;width:100vw;height:100vh;z-index:0}
 #wave-canvas{position:fixed;inset:0;width:100vw;height:100vh;z-index:1;pointer-events:none}
@@ -76,42 +76,35 @@ canvas{display:block}
   </div>
 </div>
 <script>
+/* ===== STARFIELD ===== */
 (function(){
   var canvas=document.getElementById('bg-canvas');
   var scene=new THREE.Scene();
   var camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,2000);
   camera.position.z=400;
   var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:false});
-  renderer.setPixelRatio(devicePixelRatio);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   renderer.setSize(innerWidth,innerHeight);
-  renderer.setClearColor(0x050a18,1);
-  var starsGeo=new THREE.BufferGeometry();
-  var N=3200,pos=new Float32Array(N*3),col=new Float32Array(N*3);
-  for(var i=0;i<N;i++){pos[i*3]=(Math.random()-0.5)*2400;pos[i*3+1]=(Math.random()-0.5)*2400;pos[i*3+2]=(Math.random()-0.5)*2400;var t2=Math.random();col[i*3]=0.6+t2*0.4;col[i*3+1]=0.6+t2*0.3;col[i*3+2]=0.8+t2*0.2;}
-  starsGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  starsGeo.setAttribute('color',new THREE.BufferAttribute(col,3));
-  scene.add(new THREE.Points(starsGeo,new THREE.PointsMaterial({size:1.2,vertexColors:true,transparent:true,opacity:0.85})));
-  var nebGeo=new THREE.BufferGeometry();
-  var nP=400,nPos=new Float32Array(nP*3),nCol=new Float32Array(nP*3);
-  for(var i=0;i<nP;i++){nPos[i*3]=(Math.random()-0.5)*1200;nPos[i*3+1]=(Math.random()-0.5)*600;nPos[i*3+2]=(Math.random()-0.5)*400-200;nCol[i*3]=0.3+Math.random()*0.4;nCol[i*3+1]=0.1+Math.random()*0.2;nCol[i*3+2]=0.6+Math.random()*0.4;}
-  nebGeo.setAttribute('position',new THREE.BufferAttribute(nPos,3));
-  nebGeo.setAttribute('color',new THREE.BufferAttribute(nCol,3));
-  scene.add(new THREE.Points(nebGeo,new THREE.PointsMaterial({size:3.5,vertexColors:true,transparent:true,opacity:0.25})));
+  renderer.setClearColor(0x060818,1);
+  var N=3000,pos=new Float32Array(N*3),col=new Float32Array(N*3);
+  for(var i=0;i<N;i++){pos[i*3]=(Math.random()-0.5)*2400;pos[i*3+1]=(Math.random()-0.5)*2400;pos[i*3+2]=(Math.random()-0.5)*2400;var t2=Math.random();col[i*3]=0.5+t2*0.5;col[i*3+1]=0.5+t2*0.3;col[i*3+2]=0.8+t2*0.2;}
+  var sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(pos,3));sg.setAttribute('color',new THREE.BufferAttribute(col,3));
+  scene.add(new THREE.Points(sg,new THREE.PointsMaterial({size:1.1,vertexColors:true,transparent:true,opacity:0.8})));
   window.addEventListener('resize',function(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-  var t=0;
-  (function loop(){requestAnimationFrame(loop);t+=0.0003;camera.position.x=Math.sin(t)*30;camera.position.y=Math.cos(t*0.7)*15;renderer.render(scene,camera);})();
+  var t=0;(function loop(){requestAnimationFrame(loop);t+=0.0003;camera.position.x=Math.sin(t)*30;camera.position.y=Math.cos(t*0.7)*15;renderer.render(scene,camera);})();
 })();
+
+/* ===== GLOBE ===== */
 (function(){
   var wrap=document.getElementById('globe-wrap');
   var canvas=document.getElementById('globe-canvas');
-  var W,H;
-  function resize(){W=wrap.offsetWidth;H=wrap.offsetHeight;renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();}
   var scene=new THREE.Scene();
   var camera=new THREE.PerspectiveCamera(42,1,0.1,100);
   camera.position.z=3.2;
   var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true});
-  renderer.setPixelRatio(devicePixelRatio);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   renderer.setClearColor(0x000000,0);
+  function resize(){var W=wrap.offsetWidth,H=wrap.offsetHeight;renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();}
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(1,64,64),new THREE.MeshPhongMaterial({color:0x071428,transparent:true,opacity:0.92})));
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.005,28,28),new THREE.MeshBasicMaterial({color:0x1a3a6a,wireframe:true,transparent:true,opacity:0.22})));
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.18,32,32),new THREE.MeshBasicMaterial({color:0x2040a0,transparent:true,opacity:0.13,side:THREE.BackSide})));
@@ -121,17 +114,17 @@ canvas{display:block}
   var dl2=new THREE.DirectionalLight(0x8844ff,0.6);dl2.position.set(-2,-1,1);scene.add(dl2);
   var ptPos=[];
   for(var i=0;i<180;i++){var th=Math.acos(2*Math.random()-1);var ph=Math.random()*Math.PI*2;ptPos.push(Math.sin(th)*Math.cos(ph),Math.cos(th),Math.sin(th)*Math.sin(ph));}
-  var ptGeo=new THREE.BufferGeometry();
-  ptGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(ptPos),3));
+  var ptGeo=new THREE.BufferGeometry();ptGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(ptPos),3));
   scene.add(new THREE.Points(ptGeo,new THREE.PointsMaterial({color:0x6699ff,size:0.025,transparent:true,opacity:0.7})));
   var tmp=[];for(var i=0;i<ptPos.length;i+=3)tmp.push(new THREE.Vector3(ptPos[i],ptPos[i+1],ptPos[i+2]));
   var pts3=[];for(var i=0;i<tmp.length;i++)for(var j=i+1;j<tmp.length;j++)if(tmp[i].distanceTo(tmp[j])<0.55&&Math.random()<0.18)pts3.push(tmp[i].x,tmp[i].y,tmp[i].z,tmp[j].x,tmp[j].y,tmp[j].z);
   var lineGeo=new THREE.BufferGeometry();lineGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pts3),3));
   scene.add(new THREE.LineSegments(lineGeo,new THREE.LineBasicMaterial({color:0xddaa33,transparent:true,opacity:0.35})));
   new ResizeObserver(resize).observe(wrap);resize();
-  var angle=0;
-  (function loop(){requestAnimationFrame(loop);angle+=0.0025;scene.rotation.y=angle;renderer.render(scene,camera);})();
+  var angle=0;(function loop(){requestAnimationFrame(loop);angle+=0.0025;scene.rotation.y=angle;renderer.render(scene,camera);})();
 })();
+
+/* ===== ICON NODES ===== */
 var FEATURES=[
   {id:'aiq',icon:'brain',name:'AI Q&A',desc:'Instant answers from your videos',angleDeg:118},
   {id:'vid',icon:'video',name:'Video Processing',desc:'Frame-by-frame intelligence',angleDeg:155},
@@ -154,8 +147,7 @@ var activeId=null;
 function placeNodes(){
   document.querySelectorAll('.icon-node').forEach(function(n){n.remove();});
   svgEl.innerHTML='';
-  var W=wrap.offsetWidth,H=wrap.offsetHeight;
-  var cx=W/2,cy=H/2,R=W*0.52;
+  var W=wrap.offsetWidth,H=wrap.offsetHeight,cx=W/2,cy=H/2,R=W*0.52;
   FEATURES.forEach(function(f){
     var rad=f.angleDeg*Math.PI/180;
     var nx=cx+R*Math.cos(rad),ny=cy+R*Math.sin(rad);
@@ -188,42 +180,147 @@ function onIconClick(f){
 }
 placeNodes();
 window.addEventListener('resize',placeNodes);
+
+/* ===== WAVE RIBBON — Clare Mazzetti style ===== */
 (function(){
   var canvas=document.getElementById('wave-canvas');
   var ctx=canvas.getContext('2d');
   function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}
-  resize();window.addEventListener('resize',resize);
-  var COLORS=['rgba(139,92,246,0.55)','rgba(109,40,217,0.45)','rgba(167,139,250,0.50)','rgba(91,33,182,0.38)','rgba(196,181,253,0.35)','rgba(124,58,237,0.42)'];
-  var AMPS=[0.030,0.024,0.020,0.016,0.013,0.010];
-  var FREQS=[1.0,1.4,0.8,1.7,1.2,0.9];
-  var SPEEDS=[0.55,0.42,0.70,0.35,0.60,0.48];
-  var OFFSETS=[0,0.8,1.6,2.4,3.2,4.0];
+  resize();
+  window.addEventListener('resize',resize);
+
   var t=0;
+  var NLINES=52; // dense ribbon like the reference
+
+  // Per-line parameters baked at startup for organic variety
+  var lines=[];
+  for(var i=0;i<NLINES;i++){
+    var frac=i/(NLINES-1); // 0=top edge, 1=bottom edge
+    lines.push({
+      frac: frac,
+      // Each line has 2-3 sine components for organic feel
+      a1: 0.018+Math.random()*0.022,   // amplitude 1
+      f1: 0.8+Math.random()*1.4,        // freq 1
+      p1: Math.random()*Math.PI*2,      // phase 1
+      s1: 0.3+Math.random()*0.5,        // speed 1
+      a2: 0.008+Math.random()*0.012,
+      f2: 1.5+Math.random()*2.0,
+      p2: Math.random()*Math.PI*2,
+      s2: 0.6+Math.random()*0.8,
+      a3: 0.004+Math.random()*0.007,
+      f3: 3.0+Math.random()*3.0,
+      p3: Math.random()*Math.PI*2,
+      s3: 1.2+Math.random()*1.0,
+    });
+  }
+
   function getOrigin(){
     var gw=document.getElementById('globe-wrap');
     var r=gw.getBoundingClientRect();
-    return {x:r.left+r.width*0.85,y:r.top+r.height*0.5};
+    return {
+      x: r.left + r.width * 0.82,
+      cy: r.top + r.height * 0.5,
+      spreadH: r.height * 0.72   // how tall the burst is at the origin
+    };
   }
+
   function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    var o=getOrigin(),ox=o.x,oy=o.y;
+    var o=getOrigin();
+    var ox=o.x, cy=o.cy, spreadH=o.spreadH;
     var totalW=canvas.width-ox;
-    if(totalW<=0){requestAnimationFrame(draw);t+=0.016;return;}
-    for(var li=0;li<6;li++){
+    if(totalW<=0){requestAnimationFrame(draw);t+=0.014;return;}
+
+    for(var li=0;li<NLINES;li++){
+      var ln=lines[li];
+      var frac=ln.frac; // 0..1 across the ribbon height
+
+      // Color: purple-magenta near center lines, blue toward edges
+      // Also: center lines slightly brighter
+      var distFromCenter=Math.abs(frac-0.5)*2; // 0=center, 1=edge
+      var r_c=Math.round(80 + distFromCenter*20);
+      var g_c=Math.round(20 + distFromCenter*10);
+      var b_c=Math.round(180 + distFromCenter*60);
+      var alpha=0.55 - distFromCenter*0.28; // center brighter
+
+      // hue shift toward blue on right side is done per-pixel via progress
       ctx.beginPath();
-      var steps=Math.ceil(totalW);
-      for(var i=0;i<=steps;i++){
-        var progress=i/steps;
-        var spread=1-Math.exp(-i*0.025);
-        var waveY=oy+Math.sin(progress*Math.PI*2*FREQS[li]*2+t*SPEEDS[li]+OFFSETS[li])*canvas.height*AMPS[li]*spread;
-        if(i===0)ctx.moveTo(ox,oy);else ctx.lineTo(ox+i,waveY);
+      var steps=Math.ceil(totalW/2); // every 2px for perf
+      for(var si=0;si<=steps;si++){
+        var px=si/steps;  // 0..1 progress along ribbon
+
+        // Vertical spread: wide at origin, tapers to ~20% at far right
+        // Uses exponential taper so it looks like it's streaming away
+        var spreadFactor = Math.pow(1-px, 0.55); // 1 at origin, ~0 at far right
+        // Also: initial burst — near origin lines fan wide quickly
+        var burstFactor = 1 - Math.exp(-px*8);
+
+        // Each line's vertical offset from center
+        // frac maps 0..1 -> -0.5..0.5, scaled by spread
+        var vertOffset = (frac - 0.5) * spreadH * spreadFactor;
+
+        // Wave displacement: multiple sine components
+        var waveAmp = canvas.height;
+        var wave = Math.sin(px*Math.PI*2*ln.f1+t*ln.s1+ln.p1)*ln.a1*waveAmp * burstFactor
+                 + Math.sin(px*Math.PI*2*ln.f2+t*ln.s2+ln.p2)*ln.a2*waveAmp * burstFactor
+                 + Math.sin(px*Math.PI*2*ln.f3+t*ln.s3+ln.p3)*ln.a3*waveAmp;
+
+        var y = cy + vertOffset + wave;
+        var x = ox + px*totalW;
+
+        // Progressive color shift: purple at left -> blue-white at right
+        var rr=Math.round(r_c*(1-px*0.6) + 140*px);
+        var gg=Math.round(g_c*(1-px*0.5) + 80*px);
+        var bb=Math.round(b_c + 60*px);
+        var aa=(alpha*(1-px*0.3)).toFixed(2);
+
+        if(si===0){
+          ctx.moveTo(x,y);
+          ctx.strokeStyle='rgba('+rr+','+gg+','+bb+','+aa+')';
+        } else {
+          ctx.lineTo(x,y);
+        }
       }
-      ctx.strokeStyle=COLORS[li];ctx.lineWidth=1.5;ctx.stroke();
+      var distC2=Math.abs(ln.frac-0.5)*2;
+      ctx.strokeStyle='rgba('+r_c+','+g_c+','+b_c+','+(0.55-distC2*0.28)+')';
+      ctx.lineWidth = distC2<0.3 ? 1.4 : 0.8;
+      ctx.stroke();
     }
-    t+=0.016;requestAnimationFrame(draw);
+
+    // Additive glow pass — draw bright center lines again thicker
+    var centerLines=[Math.floor(NLINES*0.35),Math.floor(NLINES*0.42),Math.floor(NLINES*0.5),Math.floor(NLINES*0.58),Math.floor(NLINES*0.65)];
+    ctx.globalCompositeOperation='lighter';
+    for(var ci=0;ci<centerLines.length;ci++){
+      var li2=centerLines[ci];
+      var ln2=lines[li2];
+      ctx.beginPath();
+      var steps2=Math.ceil(totalW/3);
+      for(var si=0;si<=steps2;si++){
+        var px=si/steps2;
+        var spreadFactor2=Math.pow(1-px,0.55);
+        var burstFactor2=1-Math.exp(-px*8);
+        var vertOffset2=(ln2.frac-0.5)*spreadH*spreadFactor2;
+        var wave2=Math.sin(px*Math.PI*2*ln2.f1+t*ln2.s1+ln2.p1)*ln2.a1*canvas.height*burstFactor2
+                 +Math.sin(px*Math.PI*2*ln2.f2+t*ln2.s2+ln2.p2)*ln2.a2*canvas.height*burstFactor2
+                 +Math.sin(px*Math.PI*2*ln2.f3+t*ln2.s3+ln2.p3)*ln2.a3*canvas.height;
+        var y2=cy+vertOffset2+wave2;
+        var x2=ox+px*totalW;
+        if(si===0)ctx.moveTo(x2,y2);else ctx.lineTo(x2,y2);
+      }
+      var glowAlpha=(0.12*(1-Math.abs(ln2.frac-0.5)*2.5)).toFixed(3);
+      ctx.strokeStyle='rgba(180,140,255,'+glowAlpha+')';
+      ctx.lineWidth=4;
+      ctx.stroke();
+    }
+    ctx.globalCompositeOperation='source-over';
+
+    t+=0.014;
+    requestAnimationFrame(draw);
   }
   draw();
 })();
+
+/* ===== COUNTDOWN ===== */
 (function(){
   var target=new Date('2025-09-01T00:00:00Z');
   function tick(){
@@ -239,6 +336,8 @@ window.addEventListener('resize',placeNodes);
   }
   tick();setInterval(tick,1000);
 })();
+
+/* ===== NOTIFY ME ===== */
 document.getElementById('notify-btn').addEventListener('click',function(){
   var v=document.getElementById('email-input').value.trim();
   if(!v||!v.includes('@')){document.getElementById('email-input').style.borderColor='#f87171';return;}
