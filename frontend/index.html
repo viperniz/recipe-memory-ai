@@ -6,16 +6,13 @@
 <title>Cortexle – Coming Soon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#04060f;font-family:'Inter',sans-serif}
-/* Canvases fill viewport via CSS — pixel dims set by JS at DPR */
 #bg-canvas,#sphere-canvas,#wave-canvas{
-  position:fixed;inset:0;
-  width:100vw;height:100vh;   /* CSS size only */
-  z-index:0;pointer-events:none;
-  display:block;
-  /* NO transform:scale, NO image-rendering downgrade */
+  position:fixed;inset:0;width:100vw;height:100vh;
+  display:block;pointer-events:none
 }
 #bg-canvas{z-index:0}
 #sphere-canvas{z-index:1}
@@ -38,41 +35,21 @@ html,body{width:100%;height:100%;overflow:hidden;background:#04060f;font-family:
 .cd-unit{display:flex;flex-direction:column;align-items:center}
 .cd-num{font-family:'Rajdhani',sans-serif;font-size:clamp(20px,2.8vw,44px);font-weight:600;color:#e2e8f0;line-height:1}
 .cd-lbl{font-size:clamp(8px,0.7vw,11px);letter-spacing:0.2em;color:rgba(148,163,184,0.6);text-transform:uppercase;margin-top:3px}
-
-/* Fix 3: feature text scrim for readability */
-#feature-display{
-  position:absolute;top:52%;left:0;right:0;
-  padding-left:clamp(16px,3vw,48px);
-  z-index:4;pointer-events:none
-}
-#feature-scrim{
+#feature-display{position:absolute;top:52%;left:0;right:0;padding-left:clamp(16px,3vw,48px);z-index:4;pointer-events:none}
+#feature-card{
   display:inline-block;
-  padding:clamp(8px,1.2vh,16px) clamp(14px,2vw,28px);
-  background:rgba(4,6,20,0.62);
-  backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
-  border:1px solid rgba(100,160,255,0.18);
-  border-radius:8px;
-  max-width:90%;
-  /* hidden when empty */
-  opacity:0;transition:opacity .5s ease
+  padding:clamp(10px,1.4vh,18px) clamp(16px,2.2vw,32px);
+  background:rgba(4,6,22,0.70);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(100,160,255,0.22);
+  border-radius:10px;
+  min-width:200px;
+  opacity:0;transition:opacity .5s ease;
+  pointer-events:none
 }
-#feature-scrim.visible{opacity:1}
-#feature-name{
-  font-family:'Rajdhani',sans-serif;
-  font-size:clamp(15px,2.2vw,38px);
-  font-weight:600;letter-spacing:0.25em;
-  color:#f1f5f9;text-transform:uppercase;
-  white-space:nowrap;
-  text-shadow:0 0 20px rgba(120,200,255,0.8), 0 2px 4px rgba(0,0,0,0.9)
-}
-#feature-desc{
-  font-size:clamp(9px,0.9vw,13px);letter-spacing:0.18em;
-  color:rgba(200,220,255,0.85);text-transform:uppercase;
-  margin-top:0.4em;
-  text-shadow:0 1px 3px rgba(0,0,0,0.9)
-}
-
+#feature-card.visible{opacity:1}
+#feature-name{font-family:'Rajdhani',sans-serif;font-size:clamp(15px,2.2vw,38px);font-weight:600;letter-spacing:0.25em;color:#f1f5f9;text-transform:uppercase;white-space:nowrap;text-shadow:0 0 20px rgba(120,200,255,0.8),0 2px 4px rgba(0,0,0,0.9)}
+#feature-desc{font-size:clamp(9px,0.9vw,13px);letter-spacing:0.18em;color:rgba(200,220,255,0.85);text-transform:uppercase;margin-top:0.4em;text-shadow:0 1px 3px rgba(0,0,0,0.9)}
 #email-row{position:absolute;bottom:10%;left:0;right:0;padding-left:clamp(16px,3vw,48px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);pointer-events:all}
 #email-input{background:rgba(255,255,255,0.05);border:1px solid rgba(80,180,255,0.35);border-radius:6px;padding:clamp(8px,0.9vh,12px) clamp(12px,1.2vw,20px);color:#e2e8f0;font-size:clamp(10px,0.9vw,14px);width:clamp(160px,18vw,260px);outline:none;transition:border-color .3s}
 #email-input:focus{border-color:#60d0ff}
@@ -104,7 +81,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#04060f;font-family:
       </div>
     </div>
     <div id="feature-display">
-      <div id="feature-scrim">
+      <div id="feature-card">
         <div id="feature-name"></div>
         <div id="feature-desc"></div>
       </div>
@@ -116,213 +93,335 @@ html,body{width:100%;height:100%;overflow:hidden;background:#04060f;font-family:
   </div>
 </div>
 <script>
-/* ======================================================
-   SHARED DPR UTILITY
-   All canvases use this to set pixel dims correctly.
-====================================================== */
-var DPR = Math.min(window.devicePixelRatio || 1, 3);
+var DPR = Math.min(window.devicePixelRatio||1, 2);
 
-function initCanvas(id){
-  var c = document.getElementById(id);
-  c.width  = Math.round(innerWidth  * DPR);
-  c.height = Math.round(innerHeight * DPR);
-  var ctx = c.getContext('2d');
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  return {c:c, ctx:ctx};
-}
-
-window.addEventListener('resize', function(){
-  DPR = Math.min(window.devicePixelRatio || 1, 3);
-  ['bg-canvas','sphere-canvas','wave-canvas'].forEach(function(id){
-    var c=document.getElementById(id);
-    c.width  = Math.round(innerWidth  * DPR);
-    c.height = Math.round(innerHeight * DPR);
-    var ctx=c.getContext('2d');
-    ctx.setTransform(DPR,0,0,DPR,0,0);
-  });
-});
-
-/* ======================================================
-   STARFIELD
-====================================================== */
+/* ============================================================
+   STARFIELD (2D canvas)
+============================================================ */
 (function(){
-  var _=initCanvas('bg-canvas'), c=_.c, ctx=_.ctx;
+  var c=document.getElementById('bg-canvas'),ctx=c.getContext('2d');
+  c.width=Math.round(innerWidth*DPR); c.height=Math.round(innerHeight*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
   var stars=[];
-  for(var i=0;i<1800;i++) stars.push({x:Math.random()*9999,y:Math.random()*9999,r:Math.random()*1.0+0.2,a:Math.random()*0.65+0.1,fp:Math.random()*6.283,fs:Math.random()*0.003+0.0005});
+  for(var i=0;i<1800;i++) stars.push({x:Math.random()*9999,y:Math.random()*9999,r:Math.random()*1.0+0.2,a:Math.random()*0.65+0.1,fp:Math.random()*6.283,fs:Math.random()*2+0.5});
   function draw(){
-    ctx.fillStyle='#04060f';ctx.fillRect(0,0,innerWidth,innerHeight);
     var now=Date.now()*0.001;
+    ctx.fillStyle='#04060f';ctx.fillRect(0,0,innerWidth,innerHeight);
     for(var i=0;i<stars.length;i++){
       var s=stars[i];
-      ctx.globalAlpha=s.a*(0.55+0.45*Math.sin(now*s.fs*1000+s.fp));
+      ctx.globalAlpha=s.a*(0.55+0.45*Math.sin(now*s.fs+s.fp));
       ctx.fillStyle='#aac8ff';ctx.beginPath();ctx.arc(s.x%innerWidth,s.y%innerHeight,s.r,0,6.283);ctx.fill();
     }
     ctx.globalAlpha=1;
   }
   draw();setInterval(draw,80);
-})();
-
-/* ======================================================
-   VOLUMETRIC NEURAL SPHERE
-   Fix 2: NO linear-gradient overlay causing dark/light split.
-   Glow is purely radial, centered on sphere.
-====================================================== */
-(function(){
-  var _=initCanvas('sphere-canvas'), c=_.c, ctx=_.ctx;
-
-  /* Re-apply transform on resize */
   window.addEventListener('resize',function(){
+    c.width=Math.round(innerWidth*DPR);c.height=Math.round(innerHeight*DPR);
     ctx.setTransform(DPR,0,0,DPR,0,0);
   });
+})();
+
+/* ============================================================
+   VOLUMETRIC SPHERE (2D canvas — unchanged from v41)
+============================================================ */
+(function(){
+  var c=document.getElementById('sphere-canvas'),ctx=c.getContext('2d');
+  c.width=Math.round(innerWidth*DPR);c.height=Math.round(innerHeight*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  window.addEventListener('resize',function(){c.width=Math.round(innerWidth*DPR);c.height=Math.round(innerHeight*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);});
 
   var NODES=[];
-  /* Surface particles */
-  for(var i=0;i<1100;i++){
-    var th=Math.acos(2*Math.random()-1),ph=Math.random()*6.283,r=0.88+Math.random()*0.12;
-    NODES.push({ox:Math.sin(th)*Math.cos(ph)*r,oy:Math.cos(th)*r,oz:Math.sin(th)*Math.sin(ph)*r,
-      sz:Math.random()*1.8+0.4,surf:true,fl:Math.random()*6.283,fs:0.5+Math.random()*2.0});
-  }
-  /* Interior */
-  for(var i=0;i<380;i++){
-    var th=Math.acos(2*Math.random()-1),ph=Math.random()*6.283,r=Math.random()*0.84;
-    NODES.push({ox:Math.sin(th)*Math.cos(ph)*r,oy:Math.cos(th)*r,oz:Math.sin(th)*Math.sin(ph)*r,
-      sz:Math.random()*1.1+0.2,surf:false,fl:Math.random()*6.283,fs:0.3+Math.random()*1.4});
-  }
-
-  /* Edges */
-  var EDGES=[];
-  var sn=NODES.filter(function(n){return n.surf;}).slice(0,280);
-  for(var i=0;i<sn.length;i++) for(var j=i+1;j<sn.length;j++){
-    var dx=sn[i].ox-sn[j].ox,dy=sn[i].oy-sn[j].oy,dz=sn[i].oz-sn[j].oz,d=Math.sqrt(dx*dx+dy*dy+dz*dz);
-    if(d<0.27&&Math.random()<0.32) EDGES.push({a:sn[i],b:sn[j]});
-  }
-
+  for(var i=0;i<1100;i++){var th=Math.acos(2*Math.random()-1),ph=Math.random()*6.283,r=0.88+Math.random()*0.12;NODES.push({ox:Math.sin(th)*Math.cos(ph)*r,oy:Math.cos(th)*r,oz:Math.sin(th)*Math.sin(ph)*r,sz:Math.random()*1.8+0.4,surf:true,fl:Math.random()*6.283,fs:0.5+Math.random()*2});}
+  for(var i=0;i<380;i++){var th=Math.acos(2*Math.random()-1),ph=Math.random()*6.283,r=Math.random()*0.84;NODES.push({ox:Math.sin(th)*Math.cos(ph)*r,oy:Math.cos(th)*r,oz:Math.sin(th)*Math.sin(ph)*r,sz:Math.random()*1.1+0.2,surf:false,fl:Math.random()*6.283,fs:0.3+Math.random()*1.4});}
+  var EDGES=[],sn=NODES.filter(function(n){return n.surf;}).slice(0,280);
+  for(var i=0;i<sn.length;i++)for(var j=i+1;j<sn.length;j++){var dx=sn[i].ox-sn[j].ox,dy=sn[i].oy-sn[j].oy,dz=sn[i].oz-sn[j].oz,d=Math.sqrt(dx*dx+dy*dy+dz*dz);if(d<0.27&&Math.random()<0.32)EDGES.push({a:sn[i],b:sn[j]});}
   var rotY=0;
-
-  function proj(n,cx,cy,R,ry){
-    var cos=Math.cos(ry),sin=Math.sin(ry);
-    var x3=n.ox*cos-n.oz*sin, z3=n.ox*sin+n.oz*cos;
-    var sc=3.0/(3.0+z3);
-    return {x:cx+x3*R*sc,y:cy+n.oy*R*sc,z:z3,sc:sc};
-  }
-
+  function proj(n,cx,cy,R,ry){var cos=Math.cos(ry),sin=Math.sin(ry),x3=n.ox*cos-n.oz*sin,z3=n.ox*sin+n.oz*cos,sc=3/(3+z3);return{x:cx+x3*R*sc,y:cy+n.oy*R*sc,z:z3,sc:sc};}
   function drawSphere(){
-    var wrap=document.getElementById('globe-wrap');
-    var r=wrap.getBoundingClientRect();
-    var cx=r.left+r.width*0.5, cy=r.top+r.height*0.5, R=r.width*0.48;
-    var t=Date.now()*0.001;
-
-    ctx.clearRect(0,0,innerWidth,innerHeight);
-    ctx.globalCompositeOperation='source-over';
-
-    /* --- RADIAL AURA (no linear split) --- */
-    /* Outer diffuse halo — pure radial, centered */
-    var halo=ctx.createRadialGradient(cx,cy,R*0.3,cx,cy,R*1.7);
-    halo.addColorStop(0,'rgba(30,80,200,0.20)');
-    halo.addColorStop(0.45,'rgba(14,45,160,0.10)');
-    halo.addColorStop(1,'rgba(0,0,0,0)');
+    var wrap=document.getElementById('globe-wrap'),r=wrap.getBoundingClientRect();
+    var cx=r.left+r.width*.5,cy=r.top+r.height*.5,R=r.width*.48,t=Date.now()*.001;
+    ctx.clearRect(0,0,innerWidth,innerHeight);ctx.globalCompositeOperation='source-over';
+    var halo=ctx.createRadialGradient(cx,cy,R*.3,cx,cy,R*1.7);halo.addColorStop(0,'rgba(30,80,200,0.20)');halo.addColorStop(.45,'rgba(14,45,160,0.10)');halo.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=halo;ctx.beginPath();ctx.arc(cx,cy,R*1.7,0,6.283);ctx.fill();
-
-    /* Inner volumetric core glow */
-    var core=ctx.createRadialGradient(cx,cy,0,cx,cy,R);
-    core.addColorStop(0,'rgba(50,130,255,0.28)');
-    core.addColorStop(0.45,'rgba(25,75,220,0.14)');
-    core.addColorStop(0.80,'rgba(10,35,160,0.06)');
-    core.addColorStop(1,'rgba(5,15,80,0)');
+    var core=ctx.createRadialGradient(cx,cy,0,cx,cy,R);core.addColorStop(0,'rgba(50,130,255,0.28)');core.addColorStop(.45,'rgba(25,75,220,0.14)');core.addColorStop(.8,'rgba(10,35,160,0.06)');core.addColorStop(1,'rgba(5,15,80,0)');
     ctx.fillStyle=core;ctx.beginPath();ctx.arc(cx,cy,R,0,6.283);ctx.fill();
-
-    /* --- EDGES (additive) --- */
     ctx.globalCompositeOperation='lighter';
-    for(var i=0;i<EDGES.length;i++){
-      var e=EDGES[i];
-      var pa=proj(e.a,cx,cy,R,rotY), pb=proj(e.b,cx,cy,R,rotY);
-      var da=Math.max(0,(pa.sc+pb.sc)*0.5-0.70)*0.45;
-      if(da<0.015) continue;
-      /* Right-hemisphere brightness boost (purely per-node, not a mask) */
-      var rb=Math.max(0,(pa.x+pb.x)*0.5-cx)/(R*0.7)*0.25;
-      var a=Math.min(0.55,da+rb);
-      ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.lineTo(pb.x,pb.y);
-      ctx.strokeStyle='rgba(40,150,255,'+a.toFixed(3)+')';ctx.lineWidth=0.5;ctx.stroke();
-    }
-
-    /* --- NODES (additive, back-to-front) --- */
-    var proj2=NODES.map(function(n){var p=proj(n,cx,cy,R,rotY);return Object.assign({},n,p);});
-    proj2.sort(function(a,b){return a.z-b.z;});
-
-    for(var i=0;i<proj2.length;i++){
-      var n=proj2[i];
-      var flk=0.55+0.45*Math.sin(t*n.fs+n.fl);
-      var depth=Math.max(0,(n.sc-0.70)*1.8)*flk;
-      if(depth<0.02) continue;
-
-      /* Right-side brightness: purely additive per-node boost, not a mask */
-      var rf=Math.max(0,(n.x-cx)/R);
-      var boost=1+rf*3.2;
-      var a=Math.min(1,depth*boost*(n.surf?1.0:0.45));
-      var sz=n.sz*(0.55+n.sc*0.75);
-
-      ctx.globalCompositeOperation='lighter';
-      var isRimRight=(n.x>cx+R*0.48 && n.surf);
-      if(isRimRight){
-        /* Hot emission on right rim */
-        var g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,sz*4);
-        g.addColorStop(0,'rgba(210,245,255,'+Math.min(1,a).toFixed(2)+')');
-        g.addColorStop(0.3,'rgba(80,210,255,'+Math.min(1,a*0.55).toFixed(2)+')');
-        g.addColorStop(1,'rgba(20,80,255,0)');
-        ctx.fillStyle=g;ctx.beginPath();ctx.arc(n.x,n.y,sz*4,0,6.283);ctx.fill();
-      } else if(n.surf){
-        var g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,sz*2.2);
-        g.addColorStop(0,'rgba(100,190,255,'+Math.min(1,a*0.75).toFixed(2)+')');
-        g.addColorStop(0.5,'rgba(40,110,230,'+Math.min(1,a*0.32).toFixed(2)+')');
-        g.addColorStop(1,'rgba(10,50,200,0)');
-        ctx.fillStyle=g;ctx.beginPath();ctx.arc(n.x,n.y,sz*2.2,0,6.283);ctx.fill();
-      } else {
-        var g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,sz*1.4);
-        g.addColorStop(0,'rgba(55,110,255,'+Math.min(0.38,a*0.38).toFixed(2)+')');
-        g.addColorStop(1,'rgba(20,60,200,0)');
-        ctx.fillStyle=g;ctx.beginPath();ctx.arc(n.x,n.y,sz*1.4,0,6.283);ctx.fill();
-      }
-    }
-
-    /* --- EMISSION RIM ARC (right side only, soft radial glow) ---
-       Uses a clipped arc path + radial gradient centered on the rim,
-       NOT a linear gradient spanning the whole sphere. */
+    for(var i=0;i<EDGES.length;i++){var e=EDGES[i],pa=proj(e.a,cx,cy,R,rotY),pb=proj(e.b,cx,cy,R,rotY),da=Math.max(0,(pa.sc+pb.sc)*.5-.7)*.45,rb=Math.max(0,(pa.x+pb.x)*.5-cx)/(R*.7)*.25,a=Math.min(.55,da+rb);if(a<.015)continue;ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.lineTo(pb.x,pb.y);ctx.strokeStyle='rgba(40,150,255,'+a.toFixed(3)+')';ctx.lineWidth=.5;ctx.stroke();}
+    var p2=NODES.map(function(n){var p=proj(n,cx,cy,R,rotY);return Object.assign({},n,p);});p2.sort(function(a,b){return a.z-b.z;});
+    for(var i=0;i<p2.length;i++){var n=p2[i],flk=.55+.45*Math.sin(t*n.fs+n.fl),depth=Math.max(0,(n.sc-.7)*1.8)*flk;if(depth<.02)continue;var rf=Math.max(0,(n.x-cx)/R),a=Math.min(1,depth*(1+rf*3.2)*(n.surf?1:.45)),sz=n.sz*(.55+n.sc*.75);ctx.globalCompositeOperation='lighter';var isRim=(n.x>cx+R*.48&&n.surf);if(isRim){var g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,sz*4);g.addColorStop(0,'rgba(210,245,255,'+Math.min(1,a).toFixed(2)+')');g.addColorStop(.3,'rgba(80,210,255,'+Math.min(1,a*.55).toFixed(2)+')');g.addColorStop(1,'rgba(20,80,255,0)');}else if(n.surf){var g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,sz*2.2);g.addColorStop(0,'rgba(100,190,255,'+Math.min(1,a*.75).toFixed(2)+')');g.addColorStop(.5,'rgba(40,110,230,'+Math.min(1,a*.32).toFixed(2)+')');g.addColorStop(1,'rgba(10,50,200,0)');}else{var g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,sz*1.4);g.addColorStop(0,'rgba(55,110,255,'+Math.min(.38,a*.38).toFixed(2)+')');g.addColorStop(1,'rgba(20,60,200,0)');}ctx.fillStyle=g;ctx.beginPath();ctx.arc(n.x,n.y,sz*(.8+isRim?2.5:1.6),0,6.283);ctx.fill();}
     ctx.globalCompositeOperation='lighter';
-    var rimCX=cx+R*0.72, rimCY=cy;  /* center of glow shifted to right rim */
-    var rimR=R*0.55;
-    var rimG=ctx.createRadialGradient(rimCX,rimCY,0,rimCX,rimCY,rimR);
-    rimG.addColorStop(0,'rgba(180,240,255,0.28)');
-    rimG.addColorStop(0.35,'rgba(90,200,255,0.14)');
-    rimG.addColorStop(0.7,'rgba(40,120,255,0.05)');
-    rimG.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=rimG;
-    /* Clip to sphere boundary so glow stays inside */
-    ctx.save();ctx.beginPath();ctx.arc(cx,cy,R*1.05,0,6.283);ctx.clip();
-    ctx.beginPath();ctx.arc(rimCX,rimCY,rimR,0,6.283);ctx.fill();
-    ctx.restore();
-
-    /* Crisp bright rim line on right arc */
-    ctx.globalCompositeOperation='lighter';
-    ctx.save();ctx.beginPath();ctx.arc(cx,cy,R*1.01,0,6.283);ctx.clip();
-    var rlg=ctx.createLinearGradient(cx,cy-R,cx,cy+R);
-    rlg.addColorStop(0,'rgba(120,220,255,0)');
-    rlg.addColorStop(0.35,'rgba(180,240,255,0.50)');
-    rlg.addColorStop(0.5,'rgba(255,255,255,0.70)');
-    rlg.addColorStop(0.65,'rgba(180,240,255,0.50)');
-    rlg.addColorStop(1,'rgba(120,220,255,0)');
-    ctx.strokeStyle=rlg;ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(cx,cy,R,Math.PI*0.6,Math.PI*1.4,true);ctx.stroke();
-    ctx.restore();
-
-    ctx.globalCompositeOperation='source-over';
-    rotY+=0.004;
+    var rimCX=cx+R*.72,rimCY=cy,rimG=ctx.createRadialGradient(rimCX,rimCY,0,rimCX,rimCY,R*.55);rimG.addColorStop(0,'rgba(180,240,255,0.28)');rimG.addColorStop(.35,'rgba(90,200,255,0.14)');rimG.addColorStop(.7,'rgba(40,120,255,0.05)');rimG.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=rimG;ctx.save();ctx.beginPath();ctx.arc(cx,cy,R*1.05,0,6.283);ctx.clip();ctx.beginPath();ctx.arc(rimCX,rimCY,R*.55,0,6.283);ctx.fill();ctx.restore();
+    ctx.globalCompositeOperation='source-over';rotY+=.004;
   }
-
   (function loop(){requestAnimationFrame(loop);drawSphere();})();
 })();
-/* ======================================================
+/* ============================================================
+   3D WAVE FIELD — Three.js WebGL renderer on #wave-canvas
+   24 ribbon waves at different Z depths
+   DOM card collider with 3D repulsion
+   Mouse parallax
+============================================================ */
+(function(){
+  var canvas = document.getElementById('wave-canvas');
+  var W = innerWidth, H = innerHeight;
+  var dpr = Math.min(window.devicePixelRatio||1, 2);
+
+  /* ---- Renderer ---- */
+  var renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    alpha: true,
+    antialias: true,
+    premultipliedAlpha: false
+  });
+  renderer.setPixelRatio(dpr);
+  renderer.setSize(W, H);
+  renderer.setClearColor(0x000000, 0); // transparent — sphere shows through
+
+  /* ---- Scene & Camera ---- */
+  var scene = new THREE.Scene();
+  var fov = 55;
+  var camera = new THREE.PerspectiveCamera(fov, W/H, 0.1, 200);
+  camera.position.set(0, 0, 12);
+  camera.lookAt(0, 0, 0);
+
+  /* ---- Viewport helpers ---- */
+  // The wave field should fill the RIGHT half of the screen starting from globe edge
+  // We'll render full canvas but shift wave origin to right half via scene offset
+  var WAVE_X_START = -3.0;   // world-X where waves begin (near sphere edge)
+  var WAVE_X_END   =  9.0;   // world-X where waves end (right edge)
+  var N_SEGS = 120;           // vertices per wave (smooth but not heavy)
+  var N_WAVES = 28;           // total waves
+
+  /* ---- Wave definitions ---- */
+  var waveData = [];
+  for(var wi=0; wi<N_WAVES; wi++){
+    var zFrac = wi / (N_WAVES-1);         // 0..1
+    var zLayer = (zFrac - 0.5) * 7.0;    // Z from -3.5 to +3.5
+    var isFront = zLayer > 0;
+    var distToCenter = Math.abs(zLayer);
+
+    // Color: purple->magenta, brighter for front (near) layers
+    var brightness = 0.35 + (1 - distToCenter/3.5)*0.65;
+    var hueShift = zFrac;  // front=purple, back=deep violet
+
+    waveData.push({
+      zLayer: zLayer,
+      // Amplitude envelope params
+      ampBase:  (0.55 + (1-distToCenter/3.5)*0.45) * 0.9,
+      ampDepth: (0.08 + Math.random()*0.12),  // Z variation amplitude
+      // Frequency components (3 superposed)
+      w1: 1.2 + Math.random()*0.8,
+      w2: 2.8 + Math.random()*1.2,
+      w3: 6.0 + Math.random()*2.0,
+      a1: 1.0,
+      a2: 0.28 + Math.random()*0.14,
+      a3: 0.10 + Math.random()*0.08,
+      p1: Math.random()*6.283,
+      p2: Math.random()*6.283,
+      p3: Math.random()*6.283,
+      s1: 0.35 + Math.random()*0.25,
+      s2: 0.65 + Math.random()*0.35,
+      s3: 1.05 + Math.random()*0.5,
+      // Z oscillation
+      zw1: 1.0 + Math.random()*0.8,
+      zp1: Math.random()*6.283,
+      zs1: 0.25 + Math.random()*0.2,
+      // Vertical offset (which "slice" through wave field)
+      vertFrac: (wi/(N_WAVES-1))*2-1,   // -1..1
+      brightness: brightness,
+      isFront: isFront,
+      distToCenter: distToCenter
+    });
+  }
+
+  /* ---- Color palette per wave ---- */
+  function waveColor(wd){
+    var d = wd.distToCenter/3.5; // 0=center, 1=far
+    // Core: magenta-purple bright; outer: deep violet dim
+    var r = Math.round(160 - d*60);
+    var g = Math.round(20 + d*10);
+    var b = Math.round(255);
+    // Front waves (positive Z) lean magenta, back lean blue
+    if(wd.zLayer > 0){ r = Math.round(r + 60*(wd.zLayer/3.5)); b = Math.round(b - 30*(wd.zLayer/3.5)); }
+    else { r = Math.round(r*0.6); b = Math.round(b*0.9); }
+    return new THREE.Color(r/255, g/255, b/255);
+  }
+
+  /* ---- Build geometry ---- */
+  var waveObjects = [];
+  for(var wi=0; wi<N_WAVES; wi++){
+    var wd = waveData[wi];
+    var geo = new THREE.BufferGeometry();
+    var positions = new Float32Array((N_SEGS+1)*3);
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setDrawRange(0, N_SEGS+1);
+
+    var col = waveColor(wd);
+    var opacity = wd.brightness * (wd.isFront ? 0.90 : 0.55);
+
+    var mat = new THREE.LineBasicMaterial({
+      color: col,
+      transparent: true,
+      opacity: opacity,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      linewidth: 1  // WebGL only supports 1px line natively; we layer for bloom
+    });
+
+    var line = new THREE.Line(geo, mat);
+    scene.add(line);
+    waveObjects.push({geo:geo, mat:mat, wd:wd, positions:positions});
+  }
+
+  /* ---- Collider state ---- */
+  var colliderBox = new THREE.Box3();  // updated each frame from DOM
+  var cardVisible = false;
+
+  function updateCollider(){
+    var card = document.getElementById('feature-card');
+    cardVisible = card && card.classList.contains('visible');
+    if(!cardVisible){ colliderBox.makeEmpty(); return; }
+
+    var rect = card.getBoundingClientRect();
+    // Unproject 4 corners of the card into 3D world space at Z=0 plane
+    // NDC: (-1..1, -1..1)
+    var ndcX0 = (rect.left/W)*2 - 1;
+    var ndcX1 = (rect.right/W)*2 - 1;
+    var ndcY0 = -(rect.top/H)*2 + 1;
+    var ndcY1 = -(rect.bottom/H)*2 + 1;
+
+    // Unproject corners at depth z=0.5 (mid frustum, maps to world Z ~0)
+    function unproj(nx, ny){
+      var v = new THREE.Vector3(nx, ny, 0.5);
+      v.unproject(camera);
+      return v;
+    }
+    var tl = unproj(ndcX0, ndcY0);
+    var br = unproj(ndcX1, ndcY1);
+
+    // Expand box in Z to cover all wave layers
+    colliderBox.set(
+      new THREE.Vector3(Math.min(tl.x,br.x), Math.min(tl.y,br.y), -4.5),
+      new THREE.Vector3(Math.max(tl.x,br.x), Math.max(tl.y,br.y),  4.5)
+    );
+  }
+
+  /* ---- Mouse parallax ---- */
+  var mouse = {x:0, y:0};
+  var camTarget = {x:0, y:0};
+  document.addEventListener('mousemove', function(e){
+    mouse.x = (e.clientX/W)*2 - 1;
+    mouse.y = -(e.clientY/H)*2 + 1;
+  });
+
+  /* ---- Animate ---- */
+  var t = 0;
+  function animate(){
+    requestAnimationFrame(animate);
+    t += 0.016;
+
+    // Update collider
+    updateCollider();
+
+    // Camera parallax — smooth lerp toward mouse
+    camTarget.x += (mouse.x*0.8 - camTarget.x)*0.04;
+    camTarget.y += (mouse.y*0.5 - camTarget.y)*0.04;
+    // Idle drift when no mouse
+    var idleX = Math.sin(t*0.12)*0.3;
+    var idleY = Math.cos(t*0.08)*0.15;
+    camera.position.x = camTarget.x*0.6 + idleX;
+    camera.position.y = camTarget.y*0.4 + idleY;
+    camera.lookAt(0, 0, 0);
+
+    // Update each wave's geometry
+    for(var wi=0; wi<N_WAVES; wi++){
+      var wo = waveObjects[wi];
+      var wd = wo.wd;
+      var pos = wo.positions;
+
+      var envDecayScale = 1.05;
+      var totalXW = WAVE_X_END - WAVE_X_START;
+
+      for(var si=0; si<=N_SEGS; si++){
+        var px = si/N_SEGS;   // 0..1 along wave
+        var wx = WAVE_X_START + px*totalXW;
+
+        // --- Amplitude envelope ---
+        var onset = 1/(1+Math.exp(-18*(px-0.04)));
+        var decay  = Math.exp(-px*envDecayScale);
+        var breathe = 1 + 0.12*Math.sin(t*0.18 + wd.vertFrac*1.1);
+        var A = wd.ampBase * onset * decay * breathe;
+
+        // --- Turbulence near origin ---
+        var turbDecay = Math.exp(-px*22);
+        var turb = (Math.sin(12*px*6.283 + t*2.8 + wd.p1)*0.55 +
+                    Math.sin(20*px*6.283 + t*3.9 + wd.p2)*0.35) * 0.28 * turbDecay;
+
+        // --- Superposed sine Y ---
+        var xw = px*6.283;
+        var waveY = wd.a1*Math.sin(wd.w1*xw + t*wd.s1 + wd.p1)
+                  + wd.a2*Math.sin(wd.w2*xw + t*wd.s2 + wd.p2)
+                  + wd.a3*Math.sin(wd.w3*xw + t*wd.s3 + wd.p3);
+
+        // Vertical spread: wide at origin, converges right
+        var spread = Math.pow(Math.max(0,1-px), 0.60);
+        var wy = wd.vertFrac*1.8*spread + A*waveY + turb;
+
+        // --- Z oscillation ---
+        var wz = wd.zLayer + wd.ampDepth*Math.sin(wd.zw1*xw + t*wd.zs1 + wd.zp1)*0.5;
+
+        // --- Collider repulsion ---
+        if(cardVisible && !colliderBox.isEmpty()){
+          var pt = new THREE.Vector3(wx, wy, wz);
+          // Distance to box (0 if inside)
+          var clamped = pt.clone().clamp(colliderBox.min, colliderBox.max);
+          var dist = pt.distanceTo(clamped);
+          var falloff = 1.2; // world units
+          if(dist < falloff){
+            // Repulsion direction: away from nearest box point
+            var repDir;
+            if(dist < 0.001){
+              // Inside box: push toward nearest face
+              repDir = new THREE.Vector3(0,1,0);
+            } else {
+              repDir = pt.clone().sub(clamped).normalize();
+            }
+            // Strength: stronger for near-Z waves, smooth falloff
+            var strength = (1 - dist/falloff);
+            strength = strength * strength; // quadratic falloff
+            var depthFactor = 1 - wd.distToCenter/3.5; // near waves deflect more
+            var push = strength * 1.8 * (0.4 + depthFactor*0.6);
+            wy += repDir.y * push;
+            wz += repDir.z * push * 0.5;
+          }
+        }
+
+        var idx = si*3;
+        pos[idx]   = wx;
+        pos[idx+1] = wy;
+        pos[idx+2] = wz;
+      }
+
+      wo.geo.attributes.position.needsUpdate = true;
+    }
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  /* ---- Resize ---- */
+  window.addEventListener('resize', function(){
+    W = innerWidth; H = innerHeight;
+    dpr = Math.min(window.devicePixelRatio||1, 2);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(W, H);
+    camera.aspect = W/H;
+    camera.updateProjectionMatrix();
+  });
+})();
+/* ============================================================
    ICON NODES
-====================================================== */
+============================================================ */
 var FEATURES=[
   {id:'aiq',icon:'brain',name:'AI Q&A',desc:'Instant answers from your videos',angleDeg:118},
   {id:'vid',icon:'video',name:'Video Processing',desc:'Frame-by-frame intelligence',angleDeg:155},
@@ -342,7 +441,7 @@ var ICONS={
 var wrapEl=document.getElementById('globe-wrap'),svgEl=document.getElementById('connectors-svg'),activeId=null;
 function placeNodes(){
   document.querySelectorAll('.icon-node').forEach(function(n){n.remove();});svgEl.innerHTML='';
-  var W=wrapEl.offsetWidth,H=wrapEl.offsetHeight,cx=W/2,cy=H/2,R=W*0.52;
+  var W2=wrapEl.offsetWidth,H2=wrapEl.offsetHeight,cx=W2/2,cy=H2/2,R=W2*0.52;
   FEATURES.forEach(function(f){
     var rad=f.angleDeg*Math.PI/180,nx=cx+R*Math.cos(rad),ny=cy+R*Math.sin(rad);
     var line=document.createElementNS('http://www.w3.org/2000/svg','line');
@@ -355,155 +454,16 @@ function placeNodes(){
   });
 }
 function onIconClick(f){
-  var fn=document.getElementById('feature-name'),fd=document.getElementById('feature-desc'),scrim=document.getElementById('feature-scrim'),prev=activeId;
+  var fn=document.getElementById('feature-name'),fd=document.getElementById('feature-desc'),card=document.getElementById('feature-card'),prev=activeId;
   document.querySelectorAll('.icon-node').forEach(function(n){n.classList.remove('active');});
-  if(prev===f.id){
-    activeId=null;
-    scrim.classList.remove('visible');
-    setTimeout(function(){fn.textContent='';fd.textContent='';},500);
-  } else {
-    activeId=f.id;
-    document.querySelector('.icon-node[data-id="'+f.id+'"]').classList.add('active');
-    scrim.classList.remove('visible');
-    fn.textContent='';fd.textContent='';
-    setTimeout(function(){fn.textContent=f.name;fd.textContent=f.desc;scrim.classList.add('visible');},300);
-  }
+  if(prev===f.id){activeId=null;card.classList.remove('visible');setTimeout(function(){fn.textContent='';fd.textContent='';},500);}
+  else{activeId=f.id;document.querySelector('.icon-node[data-id="'+f.id+'"]').classList.add('active');card.classList.remove('visible');fn.textContent='';fd.textContent='';setTimeout(function(){fn.textContent=f.name;fd.textContent=f.desc;card.classList.add('visible');},300);}
 }
 placeNodes();window.addEventListener('resize',placeNodes);
 
-/* ======================================================
-   WAVE RIBBON — Fix 1: DPR-correct canvas rendering
-   y(t) = A(x,t) * sum[a_n * sin(w_n*x + s_n*t + p_n)]
-   Filled ribbon mesh, additive blending, purple->magenta
-====================================================== */
-(function(){
-  var _=initCanvas('wave-canvas'), wc=_.c, ctx=_.ctx;
-  window.addEventListener('resize',function(){ctx.setTransform(DPR,0,0,DPR,0,0);});
-
-  var gT=0;
-
-  /* Build strands */
-  var STRANDS=[];
-  function makeStrand(frac,role){
-    var dc=Math.abs(frac);
-    return {frac:frac,dc:dc,role:role,
-      w1:1.4+dc*0.6+Math.random()*0.5, w2:3.2+dc*1.0+Math.random()*0.8, w3:7.5+dc*0.8+Math.random()*1.5,
-      a1:1.0, a2:0.30+Math.random()*0.14, a3:0.10+Math.random()*0.07,
-      p1:Math.random()*6.283, p2:Math.random()*6.283, p3:Math.random()*6.283,
-      s1:0.38+Math.random()*0.22, s2:0.70+Math.random()*0.36, s3:1.10+Math.random()*0.50,
-      tw1:8+Math.random()*6, tw2:14+Math.random()*8,
-      tp1:Math.random()*6.283, tp2:Math.random()*6.283,
-      ts1:2.5+Math.random()*2, ts2:3.8+Math.random()*2,
-      thick: role==='core'?(2.0-dc*0.9):(0.85-dc*0.45),
-      ampScale: role==='core'?(0.92-dc*0.48):(0.52-dc*0.28),
-      vertBase: frac*0.29
-    };
-  }
-  for(var i=0;i<14;i++) STRANDS.push(makeStrand((i/13)*2-1,'core'));
-  for(var i=0;i<50;i++) STRANDS.push(makeStrand((Math.random()*2-1)*0.95,'thin'));
-
-  function getOrigin(){
-    var gw=document.getElementById('globe-wrap'),r=gw.getBoundingClientRect();
-    return {x:r.left+r.width*0.84, y:r.top+r.height*0.50};
-  }
-
-  function drawStrand(ln,ox,oy,W,H,t){
-    var totalW=W-ox; if(totalW<10) return;
-    var STEPS=240; /* more steps = smoother curves on retina */
-    var pts=[];
-    for(var i=0;i<=STEPS;i++){
-      var px=i/STEPS, x=ox+px*totalW;
-      var onset=1/(1+Math.exp(-20*(px-0.03)));
-      var decay=Math.exp(-px*1.05);
-      var breathe=1+0.14*Math.sin(t*0.18+ln.frac*1.2);
-      var A=H*ln.ampScale*0.12*onset*decay*breathe;
-      var turbDecay=Math.exp(-px*28);
-      var turb=(Math.sin(ln.tw1*px*6.283+t*ln.ts1+ln.tp1)*0.6+Math.sin(ln.tw2*px*6.283+t*ln.ts2+ln.tp2)*0.4)*H*0.04*turbDecay;
-      var xw=px*6.283;
-      var wave=ln.a1*Math.sin(ln.w1*xw+t*ln.s1+ln.p1)+ln.a2*Math.sin(ln.w2*xw+t*ln.s2+ln.p2)+ln.a3*Math.sin(ln.w3*xw+t*ln.s3+ln.p3);
-      var spread=Math.pow(Math.max(0,1-px),0.65);
-      pts.push({x:x,y:oy+ln.vertBase*H*spread+A*wave+turb,env:onset*decay,px:px});
-    }
-    var upper=[],lower=[];
-    for(var i=0;i<=STEPS;i++){
-      var prev=i>0?i-1:0,next=i<STEPS?i+1:STEPS;
-      var tx=pts[next].x-pts[prev].x,ty=pts[next].y-pts[prev].y;
-      var tl=Math.sqrt(tx*tx+ty*ty)||1;
-      var nx2=-ty/tl,ny2=tx/tl;
-      var halfT=ln.thick*(0.35+pts[i].env*2.1)*(1-pts[i].px*0.65);
-      upper.push({x:pts[i].x+nx2*halfT,y:pts[i].y+ny2*halfT});
-      lower.push({x:pts[i].x-nx2*halfT,y:pts[i].y-ny2*halfT});
-    }
-    ctx.save();ctx.globalCompositeOperation='lighter';
-    var dc=ln.dc;
-    var grad=ctx.createLinearGradient(ox,0,W,0);
-    if(dc<0.2){
-      grad.addColorStop(0,'rgba(100,60,220,0)');grad.addColorStop(0.03,'rgba(160,80,255,0.42)');
-      grad.addColorStop(0.18,'rgba(210,100,255,0.65)');grad.addColorStop(0.40,'rgba(225,80,200,0.52)');
-      grad.addColorStop(0.68,'rgba(180,55,195,0.28)');grad.addColorStop(0.88,'rgba(110,35,175,0.10)');
-      grad.addColorStop(1,'rgba(55,15,110,0.01)');
-    } else if(dc<0.55){
-      grad.addColorStop(0,'rgba(80,30,180,0)');grad.addColorStop(0.03,'rgba(120,42,225,0.32)');
-      grad.addColorStop(0.20,'rgba(162,52,215,0.50)');grad.addColorStop(0.52,'rgba(140,28,178,0.33)');
-      grad.addColorStop(0.82,'rgba(78,18,148,0.12)');grad.addColorStop(1,'rgba(38,8,95,0.01)');
-    } else {
-      grad.addColorStop(0,'rgba(50,18,140,0)');grad.addColorStop(0.04,'rgba(80,25,172,0.20)');
-      grad.addColorStop(0.28,'rgba(100,30,172,0.28)');grad.addColorStop(0.68,'rgba(68,18,128,0.12)');
-      grad.addColorStop(1,'rgba(28,8,75,0.01)');
-    }
-    ctx.fillStyle=grad;
-    ctx.beginPath();ctx.moveTo(upper[0].x,upper[0].y);
-    for(var i=1;i<=STEPS;i++) ctx.lineTo(upper[i].x,upper[i].y);
-    for(var i=STEPS;i>=0;i--) ctx.lineTo(lower[i].x,lower[i].y);
-    ctx.closePath();ctx.fill();
-    /* Luminous spine on core strands */
-    if(dc<0.28){
-      var sg=ctx.createLinearGradient(ox,0,W,0);
-      sg.addColorStop(0,'rgba(230,170,255,0)');sg.addColorStop(0.03,'rgba(245,185,255,0.62)');
-      sg.addColorStop(0.20,'rgba(255,205,255,0.75)');sg.addColorStop(0.52,'rgba(222,138,255,0.42)');
-      sg.addColorStop(0.82,'rgba(155,72,218,0.16)');sg.addColorStop(1,'rgba(72,22,155,0.01)');
-      ctx.beginPath();
-      for(var i=0;i<=STEPS;i++){if(i===0)ctx.moveTo(pts[i].x,pts[i].y);else ctx.lineTo(pts[i].x,pts[i].y);}
-      ctx.strokeStyle=sg;ctx.lineWidth=0.9;ctx.globalAlpha=0.82;ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  /* Seam sparks */
-  var SPARKS=[];
-  for(var i=0;i<80;i++) SPARKS.push({vf:(Math.random()-0.5)*0.8,xf:Math.random()*0.12,ph:Math.random()*6.283,sp:1.5+Math.random()*3,al:0.3+Math.random()*0.5,sz:0.5+Math.random()*1.2});
-  function drawSeam(ox,oy,W,H,t){
-    ctx.save();ctx.globalCompositeOperation='lighter';
-    for(var i=0;i<SPARKS.length;i++){
-      var s=SPARKS[i],px=s.xf*(0.5+0.5*Math.sin(t*s.sp*0.3+s.ph));
-      var x=ox+px*(W-ox),y=oy+s.vf*H*0.36*(1-px*4)*Math.sin(t*s.sp+s.ph);
-      var flk=0.5+0.5*Math.sin(t*s.sp*2+s.ph);
-      var a=(s.al*flk*Math.exp(-px*35)).toFixed(3);
-      if(parseFloat(a)<0.005) continue;
-      var g=ctx.createRadialGradient(x,y,0,x,y,s.sz*4);
-      g.addColorStop(0,'rgba(225,185,255,'+a+')');
-      g.addColorStop(0.4,'rgba(165,82,255,'+(parseFloat(a)*0.5).toFixed(3)+')');
-      g.addColorStop(1,'rgba(82,22,205,0)');
-      ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,s.sz*4,0,6.283);ctx.fill();
-    }
-    ctx.restore();
-  }
-
-  function draw(){
-    ctx.clearRect(0,0,innerWidth,innerHeight);
-    var o=getOrigin(),ox=o.x,oy=o.y;
-    if(innerWidth-ox<10){gT+=0.016;requestAnimationFrame(draw);return;}
-    STRANDS.sort(function(a,b){return b.dc-a.dc;});
-    for(var i=0;i<STRANDS.length;i++) drawStrand(STRANDS[i],ox,oy,innerWidth,innerHeight,gT);
-    drawSeam(ox,oy,innerWidth,innerHeight,gT);
-    gT+=0.016;requestAnimationFrame(draw);
-  }
-  draw();
-})();
-
-/* ======================================================
+/* ============================================================
    COUNTDOWN
-====================================================== */
+============================================================ */
 (function(){
   var target=new Date('2025-09-01T00:00:00Z');
   function tick(){
