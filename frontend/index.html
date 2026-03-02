@@ -21,18 +21,18 @@ canvas{display:block}
 #connectors-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .icon-node{position:absolute;width:clamp(32px,3.2vw,52px);height:clamp(32px,3.2vw,52px);border-radius:50%;background:rgba(30,40,80,0.82);border:1.5px solid rgba(120,160,255,0.45);display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:all;transition:border-color .3s,box-shadow .3s,transform .25s;transform:translate(-50%,-50%)}
 .icon-node:hover{border-color:rgba(167,139,250,0.9);box-shadow:0 0 18px rgba(139,92,246,0.7);transform:translate(-50%,-50%) scale(1.15)}
-.icon-node.active{border-color:#a78bfa;box-shadow:0 0 24px rgba(139,92,246,0.9),0 0 6px rgba(139,92,246,0.5)}
+.icon-node.active{border-color:#a78bfa;box-shadow:0 0 24px rgba(139,92,246,0.9)}
 .icon-node svg{width:48%;height:48%;stroke:rgba(160,190,255,0.9);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .icon-node.active svg{stroke:#c4b5fd}
-#right-panel{flex:1;height:100%;position:relative;display:flex;flex-direction:column;pointer-events:none}
-#coming-soon-block{position:absolute;top:12%;left:0;right:0;padding-left:clamp(16px,3vw,48px);pointer-events:none}
+#right-panel{flex:1;height:100%;position:relative;pointer-events:none}
+#coming-soon-block{position:absolute;top:12%;left:0;right:0;padding-left:clamp(16px,3vw,48px)}
 #site-label{font-family:'Rajdhani',sans-serif;font-size:clamp(10px,1vw,14px);letter-spacing:0.4em;color:rgba(148,163,184,0.7);text-transform:uppercase;margin-bottom:0.4em}
 #site-title{font-family:'Rajdhani',sans-serif;font-size:clamp(22px,3.2vw,52px);font-weight:600;letter-spacing:0.15em;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-transform:uppercase;white-space:nowrap;line-height:1.1}
 #countdown{display:flex;gap:clamp(12px,2vw,32px);margin-top:clamp(8px,1.2vh,18px)}
 .cd-unit{display:flex;flex-direction:column;align-items:center}
 .cd-num{font-family:'Rajdhani',sans-serif;font-size:clamp(20px,2.8vw,44px);font-weight:600;color:#e2e8f0;line-height:1}
 .cd-lbl{font-size:clamp(8px,0.7vw,11px);letter-spacing:0.2em;color:rgba(148,163,184,0.6);text-transform:uppercase;margin-top:3px}
-#feature-display{position:absolute;top:57%;left:0;right:0;padding-left:clamp(16px,3vw,48px);pointer-events:none;z-index:4}
+#feature-display{position:absolute;top:57%;left:0;right:0;padding-left:clamp(16px,3vw,48px);z-index:4}
 #feature-name{font-family:'Rajdhani',sans-serif;font-size:clamp(14px,2.2vw,36px);font-weight:600;letter-spacing:0.25em;color:#f1f5f9;text-transform:uppercase;opacity:0;transition:opacity .5s ease;white-space:nowrap}
 #feature-desc{font-size:clamp(9px,0.9vw,13px);letter-spacing:0.18em;color:rgba(148,163,184,0.75);text-transform:uppercase;margin-top:0.4em;opacity:0;transition:opacity .5s ease .1s}
 #email-row{position:absolute;bottom:10%;left:0;right:0;padding-left:clamp(16px,3vw,48px);display:flex;align-items:center;gap:clamp(8px,1vw,14px);pointer-events:all}
@@ -78,16 +78,15 @@ canvas{display:block}
 <script>
 /* ===== STARFIELD ===== */
 (function(){
-  var canvas=document.getElementById('bg-canvas');
-  var scene=new THREE.Scene();
-  var camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,2000);
+  var c=document.getElementById('bg-canvas');
+  var scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,2000);
   camera.position.z=400;
-  var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:false});
+  var renderer=new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:false});
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   renderer.setSize(innerWidth,innerHeight);
   renderer.setClearColor(0x060818,1);
   var N=3000,pos=new Float32Array(N*3),col=new Float32Array(N*3);
-  for(var i=0;i<N;i++){pos[i*3]=(Math.random()-0.5)*2400;pos[i*3+1]=(Math.random()-0.5)*2400;pos[i*3+2]=(Math.random()-0.5)*2400;var t2=Math.random();col[i*3]=0.5+t2*0.5;col[i*3+1]=0.5+t2*0.3;col[i*3+2]=0.8+t2*0.2;}
+  for(var i=0;i<N;i++){pos[i*3]=(Math.random()-0.5)*2400;pos[i*3+1]=(Math.random()-0.5)*2400;pos[i*3+2]=(Math.random()-0.5)*2400;var q=Math.random();col[i*3]=0.5+q*0.5;col[i*3+1]=0.5+q*0.3;col[i*3+2]=0.8+q*0.2;}
   var sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(pos,3));sg.setAttribute('color',new THREE.BufferAttribute(col,3));
   scene.add(new THREE.Points(sg,new THREE.PointsMaterial({size:1.1,vertexColors:true,transparent:true,opacity:0.8})));
   window.addEventListener('resize',function(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
@@ -96,15 +95,12 @@ canvas{display:block}
 
 /* ===== GLOBE ===== */
 (function(){
-  var wrap=document.getElementById('globe-wrap');
-  var canvas=document.getElementById('globe-canvas');
-  var scene=new THREE.Scene();
-  var camera=new THREE.PerspectiveCamera(42,1,0.1,100);
+  var wrap=document.getElementById('globe-wrap'),canvas=document.getElementById('globe-canvas');
+  var scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,0.1,100);
   camera.position.z=3.2;
   var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true});
-  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-  renderer.setClearColor(0x000000,0);
-  function resize(){var W=wrap.offsetWidth,H=wrap.offsetHeight;renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();}
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0,0);
+  function resize(){renderer.setSize(wrap.offsetWidth,wrap.offsetHeight);camera.aspect=wrap.offsetWidth/wrap.offsetHeight;camera.updateProjectionMatrix();}
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(1,64,64),new THREE.MeshPhongMaterial({color:0x071428,transparent:true,opacity:0.92})));
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.005,28,28),new THREE.MeshBasicMaterial({color:0x1a3a6a,wireframe:true,transparent:true,opacity:0.22})));
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.18,32,32),new THREE.MeshBasicMaterial({color:0x2040a0,transparent:true,opacity:0.13,side:THREE.BackSide})));
@@ -113,13 +109,13 @@ canvas{display:block}
   var dl=new THREE.DirectionalLight(0x4488ff,1.2);dl.position.set(2,2,3);scene.add(dl);
   var dl2=new THREE.DirectionalLight(0x8844ff,0.6);dl2.position.set(-2,-1,1);scene.add(dl2);
   var ptPos=[];
-  for(var i=0;i<180;i++){var th=Math.acos(2*Math.random()-1);var ph=Math.random()*Math.PI*2;ptPos.push(Math.sin(th)*Math.cos(ph),Math.cos(th),Math.sin(th)*Math.sin(ph));}
-  var ptGeo=new THREE.BufferGeometry();ptGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(ptPos),3));
-  scene.add(new THREE.Points(ptGeo,new THREE.PointsMaterial({color:0x6699ff,size:0.025,transparent:true,opacity:0.7})));
+  for(var i=0;i<180;i++){var th=Math.acos(2*Math.random()-1),ph=Math.random()*6.283;ptPos.push(Math.sin(th)*Math.cos(ph),Math.cos(th),Math.sin(th)*Math.sin(ph));}
+  var pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(ptPos),3));
+  scene.add(new THREE.Points(pg,new THREE.PointsMaterial({color:0x6699ff,size:0.025,transparent:true,opacity:0.7})));
   var tmp=[];for(var i=0;i<ptPos.length;i+=3)tmp.push(new THREE.Vector3(ptPos[i],ptPos[i+1],ptPos[i+2]));
-  var pts3=[];for(var i=0;i<tmp.length;i++)for(var j=i+1;j<tmp.length;j++)if(tmp[i].distanceTo(tmp[j])<0.55&&Math.random()<0.18)pts3.push(tmp[i].x,tmp[i].y,tmp[i].z,tmp[j].x,tmp[j].y,tmp[j].z);
-  var lineGeo=new THREE.BufferGeometry();lineGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pts3),3));
-  scene.add(new THREE.LineSegments(lineGeo,new THREE.LineBasicMaterial({color:0xddaa33,transparent:true,opacity:0.35})));
+  var lp=[];for(var i=0;i<tmp.length;i++)for(var j=i+1;j<tmp.length;j++)if(tmp[i].distanceTo(tmp[j])<0.55&&Math.random()<0.18)lp.push(tmp[i].x,tmp[i].y,tmp[i].z,tmp[j].x,tmp[j].y,tmp[j].z);
+  var lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(lp),3));
+  scene.add(new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0xddaa33,transparent:true,opacity:0.35})));
   new ResizeObserver(resize).observe(wrap);resize();
   var angle=0;(function loop(){requestAnimationFrame(loop);angle+=0.0025;scene.rotation.y=angle;renderer.render(scene,camera);})();
 })();
@@ -141,180 +137,241 @@ var ICONS={
   notes:'<svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>',
   chrome:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="8" x2="12" y2="2"/><line x1="17.2" y1="15" x2="22.3" y2="6.3"/><line x1="6.8" y1="15" x2="1.7" y2="6.3"/></svg>'
 };
-var wrap=document.getElementById('globe-wrap');
-var svgEl=document.getElementById('connectors-svg');
-var activeId=null;
+var wrapEl=document.getElementById('globe-wrap'),svgEl=document.getElementById('connectors-svg'),activeId=null;
 function placeNodes(){
-  document.querySelectorAll('.icon-node').forEach(function(n){n.remove();});
-  svgEl.innerHTML='';
-  var W=wrap.offsetWidth,H=wrap.offsetHeight,cx=W/2,cy=H/2,R=W*0.52;
+  document.querySelectorAll('.icon-node').forEach(function(n){n.remove();});svgEl.innerHTML='';
+  var W=wrapEl.offsetWidth,H=wrapEl.offsetHeight,cx=W/2,cy=H/2,R=W*0.52;
   FEATURES.forEach(function(f){
-    var rad=f.angleDeg*Math.PI/180;
-    var nx=cx+R*Math.cos(rad),ny=cy+R*Math.sin(rad);
+    var rad=f.angleDeg*Math.PI/180,nx=cx+R*Math.cos(rad),ny=cy+R*Math.sin(rad);
     var line=document.createElementNS('http://www.w3.org/2000/svg','line');
     line.setAttribute('x1',cx);line.setAttribute('y1',cy);line.setAttribute('x2',nx);line.setAttribute('y2',ny);
     line.setAttribute('stroke','rgba(100,140,255,0.25)');line.setAttribute('stroke-width','1');line.setAttribute('stroke-dasharray','4 4');
     svgEl.appendChild(line);
-    var node=document.createElement('div');
-    node.className='icon-node';node.dataset.id=f.id;
-    node.style.left=nx+'px';node.style.top=ny+'px';
-    node.innerHTML=ICONS[f.icon]||'';
-    node.addEventListener('click',function(){onIconClick(f);});
-    wrap.appendChild(node);
+    var node=document.createElement('div');node.className='icon-node';node.dataset.id=f.id;
+    node.style.left=nx+'px';node.style.top=ny+'px';node.innerHTML=ICONS[f.icon]||'';
+    node.addEventListener('click',function(){onIconClick(f);});wrapEl.appendChild(node);
   });
 }
 function onIconClick(f){
-  var fn=document.getElementById('feature-name');
-  var fd=document.getElementById('feature-desc');
-  var prev=activeId;
+  var fn=document.getElementById('feature-name'),fd=document.getElementById('feature-desc'),prev=activeId;
   document.querySelectorAll('.icon-node').forEach(function(n){n.classList.remove('active');});
-  if(prev===f.id){
-    activeId=null;fn.style.opacity='0';fd.style.opacity='0';
-    setTimeout(function(){fn.textContent='';fd.textContent='';},500);
-  } else {
-    activeId=f.id;
-    document.querySelector('.icon-node[data-id="'+f.id+'"]').classList.add('active');
-    fn.style.opacity='0';fd.style.opacity='0';
-    setTimeout(function(){fn.textContent=f.name;fd.textContent=f.desc;fn.style.opacity='1';fd.style.opacity='1';},300);
-  }
+  if(prev===f.id){activeId=null;fn.style.opacity='0';fd.style.opacity='0';setTimeout(function(){fn.textContent='';fd.textContent='';},500);}
+  else{activeId=f.id;document.querySelector('.icon-node[data-id="'+f.id+'"]').classList.add('active');fn.style.opacity='0';fd.style.opacity='0';setTimeout(function(){fn.textContent=f.name;fd.textContent=f.desc;fn.style.opacity='1';fd.style.opacity='1';},300);}
 }
-placeNodes();
-window.addEventListener('resize',placeNodes);
+placeNodes();window.addEventListener('resize',placeNodes);
 
-/* ===== WAVE RIBBON — Clare Mazzetti style ===== */
+/* ===== WAVE RIBBON — mathematically correct sinusoidal parametric ribbon ===== */
 (function(){
   var canvas=document.getElementById('wave-canvas');
   var ctx=canvas.getContext('2d');
   function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}
-  resize();
-  window.addEventListener('resize',resize);
+  resize();window.addEventListener('resize',resize);
 
-  var t=0;
-  var NLINES=52; // dense ribbon like the reference
+  var globalTime=0;
 
-  // Per-line parameters baked at startup for organic variety
-  var lines=[];
-  for(var i=0;i<NLINES;i++){
-    var frac=i/(NLINES-1); // 0=top edge, 1=bottom edge
-    lines.push({
-      frac: frac,
-      // Each line has 2-3 sine components for organic feel
-      a1: 0.018+Math.random()*0.022,   // amplitude 1
-      f1: 0.8+Math.random()*1.4,        // freq 1
-      p1: Math.random()*Math.PI*2,      // phase 1
-      s1: 0.3+Math.random()*0.5,        // speed 1
-      a2: 0.008+Math.random()*0.012,
-      f2: 1.5+Math.random()*2.0,
+  /*
+   * Each STRAND is an independent parametric curve:
+   *   centerY(x) = originY + verticalOffset(x)
+   *              + A(x,t) * [ sin(w1*x + s1*t + p1)
+   *                         + A2*sin(w2*x + s2*t + p2)
+   *                         + A3*sin(w3*x + s3*t + p3) ]
+   *
+   * A(x,t) = baseAmp * envelope(x) * breathe(t)
+   * envelope(x): gaussian-like — rises quickly from origin, peaks ~30%, then gently decays
+   * breathe(t): slow cos oscillation giving expansion/contraction of the whole ribbon
+   *
+   * Then each strand is drawn as a FILLED RIBBON (not just a line):
+   *   upper edge = centerY - halfThick
+   *   lower edge = centerY + halfThick
+   *   filled with a per-strand gradient
+   */
+
+  // Define strands — ordered from outer bottom to outer top so additive blending builds up
+  // Each strand has: vertFrac (-1..1, 0=center), color params, amp scale, phase offsets
+  var STRANDS = [];
+  var N_STRANDS = 18; // enough for rich layering without killing perf
+  for(var si=0; si<N_STRANDS; si++){
+    var frac = (si/(N_STRANDS-1))*2 - 1; // -1..1
+    var distC = Math.abs(frac);           // 0=center, 1=edge
+    STRANDS.push({
+      frac:   frac,
+      distC:  distC,
+      // Frequency components (different per strand for superposition variety)
+      w1: 1.8  + distC*0.8  + Math.random()*0.4,
+      w2: 3.5  + distC*1.2  + Math.random()*0.6,
+      w3: 6.8  + distC*0.5  + Math.random()*1.0,
+      // Amplitude ratios
+      a1: 1.0,
+      a2: 0.38 + Math.random()*0.12,
+      a3: 0.14 + Math.random()*0.08,
+      // Phase offsets (organic variation per strand)
+      p1: Math.random()*Math.PI*2,
       p2: Math.random()*Math.PI*2,
-      s2: 0.6+Math.random()*0.8,
-      a3: 0.004+Math.random()*0.007,
-      f3: 3.0+Math.random()*3.0,
       p3: Math.random()*Math.PI*2,
-      s3: 1.2+Math.random()*1.0,
+      // Animation speeds
+      s1: 0.45 + Math.random()*0.25,
+      s2: 0.70 + Math.random()*0.35,
+      s3: 1.10 + Math.random()*0.50,
+      // Ribbon half-thickness (center strands thicker)
+      thick: (0.5 + (1-distC)*2.5),
+      // Base amplitude scale (center strands larger)
+      ampScale: 0.90 - distC*0.55,
+      // Vertical spread — how far from center this strand starts at origin
+      // and how it converges as x increases
+      vertBase: frac * 0.32,  // fraction of canvas.height
     });
   }
 
   function getOrigin(){
     var gw=document.getElementById('globe-wrap');
     var r=gw.getBoundingClientRect();
-    return {
-      x: r.left + r.width * 0.82,
-      cy: r.top + r.height * 0.5,
-      spreadH: r.height * 0.72   // how tall the burst is at the origin
-    };
+    return { x: r.left+r.width*0.82, y: r.top+r.height*0.50 };
+  }
+
+  function drawStrand(ln, ox, oy, W, H, t){
+    var totalW = W - ox;
+    if(totalW <= 0) return;
+
+    var STEPS = 220; // smooth curve resolution
+
+    // Pre-compute center-line points and perpendicular normals
+    var pts = new Array(STEPS+1);
+    for(var i=0; i<=STEPS; i++){
+      var px = i/STEPS;                       // 0..1 along x
+      var x  = ox + px*totalW;
+
+      // --- Amplitude envelope A(x,t) ---
+      // Rises fast from origin (sigmoid), peaks ~25%, then exponential decay
+      var envRise  = 1/(1+Math.exp(-18*(px-0.05)));  // sigmoid onset
+      var envDecay = Math.exp(-px*1.1);                // exponential tail
+      var envShape = envRise * envDecay;
+
+      // Slow breathing oscillation (whole ribbon expands/contracts)
+      var breathe = 1.0 + 0.18*Math.sin(t*0.22 + ln.frac*0.8);
+
+      // Total amplitude for this x position
+      var baseAmp = H * ln.ampScale * 0.13;  // max ~13% of canvas height
+      var A = baseAmp * envShape * breathe;
+
+      // --- Superposed sine wave (3 components) ---
+      // x scaled to wave-space: multiply by w for frequency in pixels
+      var xw = px * Math.PI * 2;
+      var wave =   ln.a1 * Math.sin(ln.w1*xw + t*ln.s1 + ln.p1)
+                 + ln.a2 * Math.sin(ln.w2*xw + t*ln.s2 + ln.p2)
+                 + ln.a3 * Math.sin(ln.w3*xw + t*ln.s3 + ln.p3);
+
+      // --- Vertical convergence ---
+      // At origin: strand offset = vertBase * H (wide burst)
+      // At end:    converges toward center (tapers)
+      var spreadEnv = Math.pow(1-px, 0.7);
+      var vertOff = ln.vertBase * H * spreadEnv;
+
+      var cy = oy + vertOff + A*wave;
+      pts[i] = {x:x, y:cy, px:px, env:envShape};
+    }
+
+    // Build ribbon: for each point compute perpendicular normal
+    // thickness also modulated by envelope — fat where wave energy is high
+    var upperX=[], upperY=[], lowerX=[], lowerY=[];
+    for(var i=0; i<=STEPS; i++){
+      var thick = ln.thick * (0.5 + pts[i].env*1.5); // thicker at peak envelope
+
+      // Tangent vector (central difference)
+      var prev = i>0 ? i-1 : 0;
+      var next = i<STEPS ? i+1 : STEPS;
+      var tx = pts[next].x - pts[prev].x;
+      var ty = pts[next].y - pts[prev].y;
+      var tlen = Math.sqrt(tx*tx+ty*ty)||1;
+      var nx2 = -ty/tlen;  // perpendicular (rotated 90)
+      var ny2 =  tx/tlen;
+
+      upperX.push(pts[i].x + nx2*thick);
+      upperY.push(pts[i].y + ny2*thick);
+      lowerX.push(pts[i].x - nx2*thick);
+      lowerY.push(pts[i].y - ny2*thick);
+    }
+
+    // --- Draw filled ribbon with gradient ---
+    // Gradient: blue(origin) -> purple(mid) -> magenta(peak) -> fade out
+    // Also alpha fades along x based on envelope
+    ctx.save();
+
+    // Use multiple horizontal gradient segments to simulate per-point color
+    // Simple approach: draw the entire ribbon path with a linear gradient overlay
+    var grad = ctx.createLinearGradient(ox, 0, W, 0);
+    var distC = ln.distC;
+
+    // Color scheme: center strands more magenta/white, outer strands deeper purple/blue
+    if(distC < 0.25){
+      // Near center: bright blue-white core
+      grad.addColorStop(0,   'rgba(100,160,255,0)');
+      grad.addColorStop(0.05,'rgba(120,180,255,0.55)');
+      grad.addColorStop(0.25,'rgba(180,140,255,0.70)');
+      grad.addColorStop(0.55,'rgba(210,120,255,0.60)');
+      grad.addColorStop(0.80,'rgba(160,100,255,0.30)');
+      grad.addColorStop(1.0, 'rgba(100,80,220,0.05)');
+    } else if(distC < 0.6){
+      // Mid strands: purple dominant
+      grad.addColorStop(0,   'rgba(80,60,200,0)');
+      grad.addColorStop(0.05,'rgba(100,60,220,0.45)');
+      grad.addColorStop(0.25,'rgba(140,60,220,0.60)');
+      grad.addColorStop(0.60,'rgba(160,40,200,0.40)');
+      grad.addColorStop(0.85,'rgba(100,40,180,0.15)');
+      grad.addColorStop(1.0, 'rgba(60,30,140,0.02)');
+    } else {
+      // Outer edge strands: deep blue-violet, most transparent
+      grad.addColorStop(0,   'rgba(40,40,160,0)');
+      grad.addColorStop(0.05,'rgba(60,40,180,0.28)');
+      grad.addColorStop(0.30,'rgba(80,40,180,0.35)');
+      grad.addColorStop(0.70,'rgba(60,30,150,0.18)');
+      grad.addColorStop(1.0, 'rgba(40,20,120,0.02)');
+    }
+
+    ctx.fillStyle = grad;
+    ctx.globalCompositeOperation = 'lighter'; // additive glow
+
+    // Trace ribbon outline: upper edge forward, lower edge backward
+    ctx.beginPath();
+    ctx.moveTo(upperX[0], upperY[0]);
+    for(var i=1; i<=STEPS; i++) ctx.lineTo(upperX[i], upperY[i]);
+    for(var i=STEPS; i>=0; i--) ctx.lineTo(lowerX[i], lowerY[i]);
+    ctx.closePath();
+    ctx.fill();
+
+    // Core bright line down the center (like the luminous spine in the reference)
+    if(distC < 0.35){
+      var coreGrad = ctx.createLinearGradient(ox,0,W,0);
+      coreGrad.addColorStop(0,   'rgba(200,200,255,0)');
+      coreGrad.addColorStop(0.04,'rgba(220,200,255,0.50)');
+      coreGrad.addColorStop(0.20,'rgba(255,220,255,0.65)');
+      coreGrad.addColorStop(0.55,'rgba(200,160,255,0.40)');
+      coreGrad.addColorStop(1.0, 'rgba(120,80,200,0.02)');
+      ctx.beginPath();
+      for(var i=0; i<=STEPS; i++){
+        if(i===0) ctx.moveTo(pts[i].x, pts[i].y);
+        else ctx.lineTo(pts[i].x, pts[i].y);
+      }
+      ctx.strokeStyle = coreGrad;
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = 0.7;
+      ctx.stroke();
+    }
+
+    ctx.restore();
   }
 
   function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    var o=getOrigin();
-    var ox=o.x, cy=o.cy, spreadH=o.spreadH;
-    var totalW=canvas.width-ox;
-    if(totalW<=0){requestAnimationFrame(draw);t+=0.014;return;}
+    var o = getOrigin();
+    var ox=o.x, oy=o.y;
 
-    for(var li=0;li<NLINES;li++){
-      var ln=lines[li];
-      var frac=ln.frac; // 0..1 across the ribbon height
-
-      // Color: purple-magenta near center lines, blue toward edges
-      // Also: center lines slightly brighter
-      var distFromCenter=Math.abs(frac-0.5)*2; // 0=center, 1=edge
-      var r_c=Math.round(80 + distFromCenter*20);
-      var g_c=Math.round(20 + distFromCenter*10);
-      var b_c=Math.round(180 + distFromCenter*60);
-      var alpha=0.55 - distFromCenter*0.28; // center brighter
-
-      // hue shift toward blue on right side is done per-pixel via progress
-      ctx.beginPath();
-      var steps=Math.ceil(totalW/2); // every 2px for perf
-      for(var si=0;si<=steps;si++){
-        var px=si/steps;  // 0..1 progress along ribbon
-
-        // Vertical spread: wide at origin, tapers to ~20% at far right
-        // Uses exponential taper so it looks like it's streaming away
-        var spreadFactor = Math.pow(1-px, 0.55); // 1 at origin, ~0 at far right
-        // Also: initial burst — near origin lines fan wide quickly
-        var burstFactor = 1 - Math.exp(-px*8);
-
-        // Each line's vertical offset from center
-        // frac maps 0..1 -> -0.5..0.5, scaled by spread
-        var vertOffset = (frac - 0.5) * spreadH * spreadFactor;
-
-        // Wave displacement: multiple sine components
-        var waveAmp = canvas.height;
-        var wave = Math.sin(px*Math.PI*2*ln.f1+t*ln.s1+ln.p1)*ln.a1*waveAmp * burstFactor
-                 + Math.sin(px*Math.PI*2*ln.f2+t*ln.s2+ln.p2)*ln.a2*waveAmp * burstFactor
-                 + Math.sin(px*Math.PI*2*ln.f3+t*ln.s3+ln.p3)*ln.a3*waveAmp;
-
-        var y = cy + vertOffset + wave;
-        var x = ox + px*totalW;
-
-        // Progressive color shift: purple at left -> blue-white at right
-        var rr=Math.round(r_c*(1-px*0.6) + 140*px);
-        var gg=Math.round(g_c*(1-px*0.5) + 80*px);
-        var bb=Math.round(b_c + 60*px);
-        var aa=(alpha*(1-px*0.3)).toFixed(2);
-
-        if(si===0){
-          ctx.moveTo(x,y);
-          ctx.strokeStyle='rgba('+rr+','+gg+','+bb+','+aa+')';
-        } else {
-          ctx.lineTo(x,y);
-        }
-      }
-      var distC2=Math.abs(ln.frac-0.5)*2;
-      ctx.strokeStyle='rgba('+r_c+','+g_c+','+b_c+','+(0.55-distC2*0.28)+')';
-      ctx.lineWidth = distC2<0.3 ? 1.4 : 0.8;
-      ctx.stroke();
+    // Draw outer strands first (they sit behind), then inner strands on top
+    // Already ordered by frac, so just draw all
+    for(var si=0; si<STRANDS.length; si++){
+      drawStrand(STRANDS[si], ox, oy, canvas.width, canvas.height, globalTime);
     }
 
-    // Additive glow pass — draw bright center lines again thicker
-    var centerLines=[Math.floor(NLINES*0.35),Math.floor(NLINES*0.42),Math.floor(NLINES*0.5),Math.floor(NLINES*0.58),Math.floor(NLINES*0.65)];
-    ctx.globalCompositeOperation='lighter';
-    for(var ci=0;ci<centerLines.length;ci++){
-      var li2=centerLines[ci];
-      var ln2=lines[li2];
-      ctx.beginPath();
-      var steps2=Math.ceil(totalW/3);
-      for(var si=0;si<=steps2;si++){
-        var px=si/steps2;
-        var spreadFactor2=Math.pow(1-px,0.55);
-        var burstFactor2=1-Math.exp(-px*8);
-        var vertOffset2=(ln2.frac-0.5)*spreadH*spreadFactor2;
-        var wave2=Math.sin(px*Math.PI*2*ln2.f1+t*ln2.s1+ln2.p1)*ln2.a1*canvas.height*burstFactor2
-                 +Math.sin(px*Math.PI*2*ln2.f2+t*ln2.s2+ln2.p2)*ln2.a2*canvas.height*burstFactor2
-                 +Math.sin(px*Math.PI*2*ln2.f3+t*ln2.s3+ln2.p3)*ln2.a3*canvas.height;
-        var y2=cy+vertOffset2+wave2;
-        var x2=ox+px*totalW;
-        if(si===0)ctx.moveTo(x2,y2);else ctx.lineTo(x2,y2);
-      }
-      var glowAlpha=(0.12*(1-Math.abs(ln2.frac-0.5)*2.5)).toFixed(3);
-      ctx.strokeStyle='rgba(180,140,255,'+glowAlpha+')';
-      ctx.lineWidth=4;
-      ctx.stroke();
-    }
-    ctx.globalCompositeOperation='source-over';
-
-    t+=0.014;
+    globalTime += 0.016;
     requestAnimationFrame(draw);
   }
   draw();
