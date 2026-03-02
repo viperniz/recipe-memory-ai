@@ -54,15 +54,14 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5));
 renderer.setClearColor(0x000000,1);
 var scene=new THREE.Scene();
 var W=wrap.clientWidth,H=wrap.clientHeight;
+// Pull camera back more so brain fits
 var camera=new THREE.PerspectiveCamera(38,W/H,0.1,100);
-camera.position.z=3.8;
+camera.position.z=4.3;
 function resize(){W=wrap.clientWidth;H=wrap.clientHeight;renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();}
 resize();window.addEventListener('resize',resize);
 
-// NO harsh lights - we'll use shader for all glow
 scene.add(new THREE.AmbientLight(0x000000,1));
 
-// Build brain geometry
 function mkBrain(seg){
   var g=new THREE.SphereGeometry(1,seg,Math.floor(seg*0.75));
   var p=g.attributes.position;
@@ -82,118 +81,80 @@ function mkBrain(seg){
 
 var bg=mkBrain(80);
 
-// The KEY: Fresnel rim shader - creates the glowing blue edge
-// Dark interior, bright glowing rim (just like the reference image)
+// Rim glow shader - FrontSide only (no artifacts)
 var brainMat=new THREE.ShaderMaterial({
   uniforms:{
-    rimCol:{value:new THREE.Color(0x5599ff)},
-    rimPow:{value:2.8},
-    rimInt:{value:2.2},
-    innerCol:{value:new THREE.Color(0x010814)},
-    innerInt:{value:1.0},
-    time:{value:0.0}
+    rimCol:{value:new THREE.Color(0x4488ff)},
+    rimPow:{value:2.6},rimInt:{value:2.5},
+    innerCol:{value:new THREE.Color(0x010814)}
   },
-  vertexShader:`
-    varying vec3 vNormal;
-    varying vec3 vViewDir;
-    varying vec3 vWorldPos;
-    void main(){
-      vNormal=normalize(normalMatrix*normal);
-      vec4 mv=modelViewMatrix*vec4(position,1.0);
-      vViewDir=normalize(-mv.xyz);
-      vWorldPos=(modelMatrix*vec4(position,1.0)).xyz;
-      gl_Position=projectionMatrix*mv;
-    }
-  `,
-  fragmentShader:`
-    uniform vec3 rimCol;
-    uniform float rimPow;
-    uniform float rimInt;
-    uniform vec3 innerCol;
-    uniform float innerInt;
-    uniform float time;
-    varying vec3 vNormal;
-    varying vec3 vViewDir;
-    varying vec3 vWorldPos;
-    void main(){
-      float fresnel=1.0-clamp(dot(vNormal,vViewDir),0.0,1.0);
-      float rim=pow(fresnel,rimPow)*rimInt;
-      // Slight purple tint on one side for depth
-      vec3 rimC=mix(rimCol,vec3(0.5,0.2,1.0),clamp(vWorldPos.x*-0.3+0.3,0.0,0.8));
-      vec3 col=mix(innerCol*innerInt,rimC,rim);
-      // Faint interior blue glow 
-      col+=vec3(0.01,0.03,0.12)*0.5;
-      float alpha=0.75+rim*0.25;
-      gl_FragColor=vec4(col,alpha);
-    }
-  `,
-  transparent:true,side:THREE.DoubleSide
+  vertexShader:'varying vec3 vN;varying vec3 vV;varying vec3 wP;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.0);vV=normalize(-mv.xyz);wP=(modelMatrix*vec4(position,1.0)).xyz;gl_Position=projectionMatrix*mv;}',
+  fragmentShader:'uniform vec3 rimCol;uniform float rimPow;uniform float rimInt;uniform vec3 innerCol;varying vec3 vN;varying vec3 vV;varying vec3 wP;void main(){float f=1.0-clamp(dot(vN,vV),0.0,1.0);float rim=pow(f,rimPow)*rimInt;vec3 rc=mix(rimCol,vec3(0.45,0.15,0.9),clamp(-wP.x*0.25+0.3,0.0,0.75));vec3 col=mix(innerCol,rc,clamp(rim,0.0,1.0));col+=vec3(0.008,0.02,0.08)*0.6;float a=0.72+rim*0.28;gl_FragColor=vec4(col,a);}',
+  transparent:true,side:THREE.FrontSide
 });
-
 var bMesh=new THREE.Mesh(bg,brainMat);
 
-// Extra outer glow shell (additive - creates the bloom effect)
-var oGeo=mkBrain(30);
+// Dark inner face (BackSide - solid dark interior - removes artifact)
+var innerMat=new THREE.MeshBasicMaterial({color:0x010510,transparent:false,side:THREE.BackSide});
+var innerMesh=new THREE.Mesh(bg,innerMat);
+
+// Outer glow bloom shell
+var oGeo=mkBrain(28);
 var oMat=new THREE.ShaderMaterial({
-  uniforms:{col:{value:new THREE.Color(0x4488ff)},pow:{value:2.0}},
-  vertexShader:`varying vec3 vN;varying vec3 vV;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`,
-  fragmentShader:`uniform vec3 col;uniform float pow;varying vec3 vN;varying vec3 vV;void main(){float r=1.-clamp(dot(vN,vV),0.,1.);r=pow(r,pow);gl_FragColor=vec4(col*r*1.5,r*0.6);}`,
+  uniforms:{col:{value:new THREE.Color(0x3366ff)}},
+  vertexShader:'varying vec3 vN;varying vec3 vV;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}',
+  fragmentShader:'uniform vec3 col;varying vec3 vN;varying vec3 vV;void main(){float r=1.-clamp(dot(vN,vV),0.,1.);r=pow(r,1.8);gl_FragColor=vec4(col*r*1.8,r*0.55);}',
   transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.BackSide
 });
-var oMesh=new THREE.Mesh(oGeo,oMat);
-oMesh.scale.setScalar(1.08);
+var oMesh=new THREE.Mesh(oGeo,oMat);oMesh.scale.setScalar(1.1);
 
-// Very subtle wire
+// Wire overlay
 var wg=mkBrain(22);
-var wMat=new THREE.MeshBasicMaterial({color:0x2244aa,wireframe:true,transparent:true,opacity:0.06});
-var wMesh=new THREE.Mesh(wg,wMat);
+var wMesh=new THREE.Mesh(wg,new THREE.MeshBasicMaterial({color:0x2244aa,wireframe:true,transparent:true,opacity:0.055}));
 
 var bg2=new THREE.Group();
-bg2.add(bMesh);bg2.add(oMesh);bg2.add(wMesh);
+bg2.add(innerMesh);bg2.add(bMesh);bg2.add(oMesh);bg2.add(wMesh);
 scene.add(bg2);
 
-// Neural nodes on surface - TINY dots like reference
+// Neural nodes on surface
 var nd=[];var nGrp=new THREE.Group();bg2.add(nGrp);
 var bv=bg.attributes.position;var seen2={};var nc=0;
-while(nc<180){
+while(nc<190){
   var vi=Math.floor(Math.random()*bv.count);
   if(seen2[vi])continue;seen2[vi]=true;
   var nx=bv.getX(vi),ny=bv.getY(vi),nz=bv.getZ(vi);
   var isO=Math.random()<0.20;
-  var nr=isO?(Math.random()*0.015+0.012):(Math.random()*0.01+0.007);
-  // Offset slightly outward from surface for visibility
+  var nr=isO?(Math.random()*0.016+0.013):(Math.random()*0.011+0.007);
   var len=Math.sqrt(nx*nx+ny*ny+nz*nz);
-  var off=1.0+0.01/len;
-  var nm2=new THREE.Mesh(
+  var sc=1.0+0.012/len;
+  var nm=new THREE.Mesh(
     new THREE.SphereGeometry(nr,8,5),
     new THREE.MeshBasicMaterial({color:isO?0xff9922:0xaaccff,transparent:true,opacity:isO?0.95:0.8})
   );
-  nm2.position.set(nx*off,ny*off,nz*off);
-  nGrp.add(nm2);
-  nd.push({m:nm2,o:isO,ph:Math.random()*Math.PI*2,nx:nx*off,ny:ny*off,nz:nz*off});
+  nm.position.set(nx*sc,ny*sc,nz*sc);
+  nGrp.add(nm);
+  nd.push({m:nm,o:isO,ph:Math.random()*Math.PI*2,nx:nx*sc,ny:ny*sc,nz:nz*sc});
   nc++;
 }
 
-// Neural connections - MULTIPLE lines per node pair to look denser
+// Lines
 var lGrp=new THREE.Group();bg2.add(lGrp);
-var mO=new THREE.LineBasicMaterial({color:0xffcc11,transparent:true,opacity:0.6});
-var mB=new THREE.LineBasicMaterial({color:0x3355bb,transparent:true,opacity:0.38});
-var mM=new THREE.LineBasicMaterial({color:0xff7711,transparent:true,opacity:0.45});
+var mO=new THREE.LineBasicMaterial({color:0xffcc11,transparent:true,opacity:0.62});
+var mB=new THREE.LineBasicMaterial({color:0x3355bb,transparent:true,opacity:0.42});
+var mM=new THREE.LineBasicMaterial({color:0xff8811,transparent:true,opacity:0.5});
 for(var i=0;i<nd.length;i++){
   for(var j=i+1;j<nd.length;j++){
     var a=nd[i],b=nd[j];
     var dx=a.nx-b.nx,dy=a.ny-b.ny,dz=a.nz-b.nz;
     var dd=Math.sqrt(dx*dx+dy*dy+dz*dz);
-    if(dd<0.52&&Math.random()<0.45){
-      var pts=[new THREE.Vector3(a.nx,a.ny,a.nz),new THREE.Vector3(b.nx,b.ny,b.nz)];
-      var lg=new THREE.BufferGeometry().setFromPoints(pts);
-      var lm=(a.o&&b.o)?mO:(a.o||b.o)?mM:mB;
-      lGrp.add(new THREE.Line(lg,lm));
+    if(dd<0.54&&Math.random()<0.46){
+      var lg=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a.nx,a.ny,a.nz),new THREE.Vector3(b.nx,b.ny,b.nz)]);
+      lGrp.add(new THREE.Line(lg,(a.o&&b.o)?mO:(a.o||b.o)?mM:mB));
     }
   }
 }
 
-// Feature hotspots
+// Hotspots
 var features=[
   {id:'aiq', name:'AI Q&A',          px:-1.06,py: 0.28,pz: 0.42, tY:-0.65,tX: 0.12},
   {id:'vid', name:'Video Processing', px:-0.02,py: 1.04,pz: 0.22, tY: 0.0, tX:-0.68},
@@ -206,12 +167,10 @@ var hsGrp=new THREE.Group();bg2.add(hsGrp);var hsMeshes=[];
 features.forEach(function(f){
   var hm=new THREE.Mesh(new THREE.SphereGeometry(0.058,14,10),new THREE.MeshBasicMaterial({color:0x4af0fc,transparent:true,opacity:0.95}));
   hm.position.set(f.px,f.py,f.pz);hm.userData={f:f};
-  var rg=new THREE.RingGeometry(0.074,0.105,24);
-  hm.add(new THREE.Mesh(rg,new THREE.MeshBasicMaterial({color:0x4af0fc,transparent:true,opacity:0.38,side:THREE.DoubleSide})));
+  hm.add(new THREE.Mesh(new THREE.RingGeometry(0.074,0.105,24),new THREE.MeshBasicMaterial({color:0x4af0fc,transparent:true,opacity:0.38,side:THREE.DoubleSide})));
   hsGrp.add(hm);hsMeshes.push(hm);
 });
 
-// Controls
 var rX=0.18,rY_=-0.3,tRX=0.18,tRY=-0.3,drag=false,lx=0,ly=0,ckx=0,cky=0,spin=true;
 var lbl=document.getElementById('lbl'),actF=null;
 canvas.addEventListener('mousedown',function(e){drag=true;lx=ckx=e.clientX;ly=cky=e.clientY;spin=false;},{passive:true});
@@ -239,14 +198,13 @@ var clk=new THREE.Clock();
 function animate(){
   requestAnimationFrame(animate);
   var t=clk.getElapsedTime();
-  brainMat.uniforms.time.value=t;
   if(spin&&!drag)tRY+=0.0028;
   rX+=(tRX-rX)*0.07;rY_+=(tRY-rY_)*0.07;
   bg2.rotation.x=rX;bg2.rotation.y=rY_;
   nd.forEach(function(n){
     var p=0.72+Math.sin(t*2.8+n.ph)*0.28;
     n.m.scale.setScalar(p);
-    if(n.o){n.m.material.color.setRGB(1,0.4+Math.sin(t*3+n.ph)*0.15,0.05);n.m.material.opacity=0.78+p*0.22;}
+    if(n.o){n.m.material.color.setRGB(1,0.4+Math.sin(t*3+n.ph)*0.15,0.05);n.m.material.opacity=0.8+p*0.2;}
     else{n.m.material.opacity=0.5+p*0.42;}
   });
   hsMeshes.forEach(function(hs,i){
