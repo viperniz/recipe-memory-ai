@@ -8,7 +8,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:'Helvetica Neue',Arial,sans-serif}
 #main{display:flex;width:100vw;height:100vh;position:relative}
-#globe-wrap{width:48vw;height:100vh;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+#globe-wrap{width:50vw;height:100vh;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative}
 #globe-canvas{display:block;cursor:grab;position:absolute;inset:0}
 #globe-canvas:active{cursor:grabbing}
 .icon-node{position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(15,28,80,0.82);border:1.5px solid rgba(80,150,255,0.55);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.28s ease;z-index:10;backdrop-filter:blur(6px);box-shadow:0 0 14px rgba(60,120,255,0.18)}
@@ -90,12 +90,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
   function resize(){canvas.width=canvas.offsetWidth;canvas.height=canvas.offsetHeight;}
   resize();window.addEventListener('resize',resize);
   const waves=[
-    {freq:0.012,amp:38,speed:0.018,phase:0,color:'rgba(120,60,220,0.55)',lw:1.5},
-    {freq:0.010,amp:55,speed:0.013,phase:2.1,color:'rgba(100,40,200,0.40)',lw:1.0},
-    {freq:0.015,amp:28,speed:0.022,phase:4.3,color:'rgba(160,80,255,0.35)',lw:0.9},
-    {freq:0.009,amp:65,speed:0.009,phase:1.5,color:'rgba(80,30,180,0.30)',lw:0.8},
-    {freq:0.018,amp:20,speed:0.028,phase:3.7,color:'rgba(140,70,240,0.28)',lw:0.7},
-    {freq:0.007,amp:75,speed:0.007,phase:0.9,color:'rgba(70,20,160,0.22)',lw:0.6},
+    {freq:0.012,amp:40,speed:0.018,phase:0,color:'rgba(120,60,220,0.55)',lw:1.5},
+    {freq:0.010,amp:58,speed:0.013,phase:2.1,color:'rgba(100,40,200,0.40)',lw:1.0},
+    {freq:0.015,amp:30,speed:0.022,phase:4.3,color:'rgba(160,80,255,0.35)',lw:0.9},
+    {freq:0.009,amp:68,speed:0.009,phase:1.5,color:'rgba(80,30,180,0.30)',lw:0.8},
+    {freq:0.018,amp:22,speed:0.028,phase:3.7,color:'rgba(140,70,240,0.28)',lw:0.7},
+    {freq:0.007,amp:78,speed:0.007,phase:0.9,color:'rgba(70,20,160,0.22)',lw:0.6},
   ];
   let t=0;
   function draw(){
@@ -105,7 +105,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
     waves.forEach(w=>{
       ctx.beginPath();ctx.lineWidth=w.lw;ctx.strokeStyle=w.color;
       for(let x=0;x<=W;x+=2){
-        const spread=1-Math.exp(-x*0.003);
+        const spread=1-Math.exp(-x*0.004);
         const y=cy+Math.sin(x*w.freq+t*w.speed+w.phase)*w.amp*spread;
         x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
       }
@@ -123,8 +123,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
   renderer.setSize(W,H);
   const scene=new THREE.Scene();
-  const camera=new THREE.PerspectiveCamera(42,W/H,0.1,100);
-  camera.position.set(0,0,3.2);
+  const camera=new THREE.PerspectiveCamera(32,W/H,0.1,100);
+  camera.position.set(0,0,4.2);
   const R=1.0;
   const sphereMat=new THREE.ShaderMaterial({
     uniforms:{time:{value:0}},
@@ -187,7 +187,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
   const nodeEls=[];
   features.forEach((f,i)=>{
     const cx=wrap.offsetWidth/2,cy2=wrap.offsetHeight/2;
-    const r=wrap.offsetWidth*0.44,re=wrap.offsetWidth*0.24;
+    const r=wrap.offsetWidth*0.42,re=wrap.offsetWidth*0.22;
     const a=(f.angleDeg-90)*Math.PI/180;
     const px=cx+r*Math.cos(a),py=cy2+r*Math.sin(a);
     const ex=cx+re*Math.cos(a),ey=cy2+re*Math.sin(a);
