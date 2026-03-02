@@ -10,36 +10,23 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
 
 #main{display:flex;width:100vw;height:100vh;align-items:center}
 
-/* LEFT COLUMN — globe + branding centered above it */
+/* LEFT COLUMN — CORTEXLE above globe */
 #left-col{
   width:52vw;height:100vh;flex-shrink:0;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
   position:relative;overflow:visible;padding-left:5vw
 }
 
-/* BRANDING sits above the globe, centered */
-#branding{
-  display:flex;flex-direction:column;align-items:center;
-  gap:0.4vh;margin-bottom:2vh;z-index:20
-}
+/* CORTEXLE label — stays above the globe */
 #logo-txt{
   font-size:clamp(13px,1.1vw,18px);
   letter-spacing:0.65em;
-  color:#6688ee;text-transform:uppercase;opacity:.8
+  color:#6688ee;text-transform:uppercase;
+  opacity:.8;margin-bottom:2vh;z-index:20
 }
-#site-title{
-  font-size:clamp(20px,2.6vw,38px);
-  font-weight:300;letter-spacing:0.42em;text-transform:uppercase;
-  white-space:nowrap;
-  background:linear-gradient(90deg,#5588ff,#bb77ff,#55aaff);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
-}
-#countdown{display:flex;gap:2vw;margin-top:0.6vh}
-.cd-block{display:flex;flex-direction:column;align-items:center;gap:0.2vh}
-.cd-num{font-size:clamp(14px,1.6vw,24px);font-weight:200;color:#99bbee;letter-spacing:0.15em}
-.cd-label{font-size:clamp(6px,0.52vw,9px);letter-spacing:0.3em;color:#445599;text-transform:uppercase}
 
-/* GLOBE WRAP — square */
+/* GLOBE WRAP */
 #globe-wrap{
   width:min(38vw,72vh);height:min(38vw,72vh);
   position:relative;flex-shrink:0
@@ -47,7 +34,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
 #globe-canvas{display:block;cursor:grab;position:absolute;inset:0;width:100%!important;height:100%!important}
 #globe-canvas:active{cursor:grabbing}
 
-/* ICON NODES — no labels at all */
+/* ICON NODES — no labels */
 .icon-node{
   position:absolute;
   width:3vw;height:3vw;min-width:34px;min-height:34px;max-width:50px;max-height:50px;
@@ -55,28 +42,37 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
   border:1.5px solid rgba(80,150,255,0.55);
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;transition:all 0.28s ease;z-index:10;
-  backdrop-filter:blur(6px);
-  box-shadow:0 0 1vw rgba(60,120,255,0.18)
+  backdrop-filter:blur(6px);box-shadow:0 0 1vw rgba(60,120,255,0.18)
 }
-.icon-node:hover{
-  border-color:rgba(120,180,255,0.9);
-  box-shadow:0 0 2vw rgba(80,140,255,0.45);
-  background:rgba(20,40,120,0.9)
-}
-.icon-node.active{
-  border-color:#66aaff;
-  box-shadow:0 0 3vw rgba(80,160,255,0.65);
-  background:rgba(20,50,140,0.95)
-}
+.icon-node:hover{border-color:rgba(120,180,255,0.9);box-shadow:0 0 2vw rgba(80,140,255,0.45);background:rgba(20,40,120,0.9)}
+.icon-node.active{border-color:#66aaff;box-shadow:0 0 3vw rgba(80,160,255,0.65);background:rgba(20,50,140,0.95)}
 .icon-node svg{width:55%;height:55%;stroke:#88aaee;stroke-width:1.6;fill:none;transition:stroke 0.28s}
 .icon-node:hover svg,.icon-node.active svg{stroke:#aaccff}
-
 #connectors-svg{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:visible}
 
 /* RIGHT PANEL */
 #right-panel{
   flex:1;height:100vh;position:relative;overflow:hidden;z-index:5
 }
+
+/* COMING SOON + COUNTDOWN — top of right panel */
+#coming-soon-block{
+  position:absolute;
+  top:18%;left:5%;right:5%;
+  display:flex;flex-direction:column;
+  align-items:flex-start;gap:0.6vh;z-index:20
+}
+#site-title{
+  font-size:clamp(22px,3.8vw,52px);
+  font-weight:300;letter-spacing:0.42em;
+  text-transform:uppercase;white-space:nowrap;
+  background:linear-gradient(90deg,#5588ff,#bb77ff,#55aaff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
+}
+#countdown{display:flex;gap:2vw;margin-top:0.4vh}
+.cd-block{display:flex;flex-direction:column;align-items:center;gap:0.2vh}
+.cd-num{font-size:clamp(16px,2vw,30px);font-weight:200;color:#99bbee;letter-spacing:0.15em}
+.cd-label{font-size:clamp(6px,0.55vw,9px);letter-spacing:0.3em;color:#445599;text-transform:uppercase}
 
 /* FEATURE DISPLAY — centered vertically */
 #feature-display{
@@ -102,7 +98,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
 #feature-name.vis{opacity:1}
 #feature-desc.vis{opacity:0.65}
 
-/* EMAIL ROW */
+/* EMAIL ROW — bottom of right panel */
 #email-row{
   position:absolute;top:78%;left:5%;
   display:flex;gap:0;width:min(38vw,360px);z-index:20
@@ -127,8 +123,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
 
 /* WAVE CANVAS */
 #wave-canvas{
-  position:absolute;inset:0;
-  width:100%;height:100%;
+  position:absolute;inset:0;width:100%;height:100%;
   pointer-events:none;z-index:2
 }
 </style>
@@ -136,10 +131,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
 <body>
 <div id="main">
 
-  <!-- LEFT: branding above globe -->
+  <!-- LEFT: CORTEXLE above globe -->
   <div id="left-col">
-    <div id="branding">
-      <div id="logo-txt">Cortexle</div>
+    <div id="logo-txt">Cortexle</div>
+    <div id="globe-wrap">
+      <canvas id="globe-canvas"></canvas>
+      <svg id="connectors-svg"></svg>
+    </div>
+  </div>
+
+  <!-- RIGHT: Coming Soon top, feature center, email bottom -->
+  <div id="right-panel">
+
+    <div id="coming-soon-block">
       <div id="site-title">Coming Soon</div>
       <div id="countdown">
         <div class="cd-block"><span class="cd-num" id="cd-d">00</span><span class="cd-label">Days</span></div>
@@ -148,22 +152,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
         <div class="cd-block"><span class="cd-num" id="cd-s">00</span><span class="cd-label">Secs</span></div>
       </div>
     </div>
-    <div id="globe-wrap">
-      <canvas id="globe-canvas"></canvas>
-      <svg id="connectors-svg"></svg>
-    </div>
-  </div>
 
-  <!-- RIGHT: wave + feature reveal + email -->
-  <div id="right-panel">
     <div id="feature-display">
       <div id="feature-name"></div>
       <div id="feature-desc"></div>
     </div>
+
     <div id="email-row">
       <input id="email-input" type="email" placeholder="Enter your email for early access"/>
       <button id="email-btn">Notify Me</button>
     </div>
+
     <canvas id="wave-canvas"></canvas>
   </div>
 </div>
@@ -187,7 +186,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
   tick();setInterval(tick,1000);
 })();
 
-/* WAVE — centered at 50% height of right panel */
+/* WAVE */
 (function(){
   const canvas=document.getElementById('wave-canvas');
   const ctx=canvas.getContext('2d');
@@ -227,20 +226,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
   draw();
 })();
 
-/* GLOBE + ICONS (no labels) */
+/* GLOBE + ICONS */
 (function(){
   const wrap=document.getElementById('globe-wrap');
   const canvas=document.getElementById('globe-canvas');
   const SZ=wrap.offsetWidth;
-
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
   renderer.setSize(SZ,SZ);
-
   const scene=new THREE.Scene();
   const camera=new THREE.PerspectiveCamera(42,1,0.1,100);
   camera.position.set(0,0,3.2);
-
   const R=1.0;
   const sphereMat=new THREE.ShaderMaterial({
     uniforms:{time:{value:0}},
@@ -263,7 +259,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
   });
   const globe=new THREE.Mesh(new THREE.SphereGeometry(R,48,48),sphereMat);
   scene.add(globe);
-
   const haloMat=new THREE.ShaderMaterial({
     uniforms:{},
     vertexShader:`varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
@@ -271,36 +266,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
     transparent:true,side:THREE.BackSide,depthWrite:false
   });
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(R*1.08,32,32),haloMat));
-
-  /* Stars */
   const sv=[];
-  for(let i=0;i<1800;i++){
-    const r=2.5+Math.random()*2,t2=Math.random()*Math.PI*2,p=Math.acos(2*Math.random()-1);
-    sv.push(r*Math.sin(p)*Math.cos(t2),r*Math.cos(p),r*Math.sin(p)*Math.sin(t2));
-  }
+  for(let i=0;i<1800;i++){const r=2.5+Math.random()*2,t2=Math.random()*Math.PI*2,p=Math.acos(2*Math.random()-1);sv.push(r*Math.sin(p)*Math.cos(t2),r*Math.cos(p),r*Math.sin(p)*Math.sin(t2));}
   const sg=new THREE.BufferGeometry();
   sg.setAttribute('position',new THREE.Float32BufferAttribute(sv,3));
   scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0x8899cc,size:0.025,transparent:true,opacity:0.55})));
-
-  /* Neural network */
   const lg=new THREE.Group();scene.add(lg);
   const lm=new THREE.LineBasicMaterial({color:0x2244aa,transparent:true,opacity:0.35});
   const ym=new THREE.LineBasicMaterial({color:0xaa8822,transparent:true,opacity:0.5});
   const dm=new THREE.MeshBasicMaterial({color:0x4488ff,transparent:true,opacity:0.8});
   const ydm=new THREE.MeshBasicMaterial({color:0xffcc44,transparent:true,opacity:0.7});
   const dg=new THREE.SphereGeometry(0.018,8,8);
-  function rOS(){
-    const u=Math.random(),v=Math.random(),t2=2*Math.PI*u,p=Math.acos(2*v-1);
-    return new THREE.Vector3(R*Math.sin(p)*Math.cos(t2),R*Math.cos(p),R*Math.sin(p)*Math.sin(t2));
-  }
+  function rOS(){const u=Math.random(),v=Math.random(),t2=2*Math.PI*u,p=Math.acos(2*v-1);return new THREE.Vector3(R*Math.sin(p)*Math.cos(t2),R*Math.cos(p),R*Math.sin(p)*Math.sin(t2));}
   const nodes=Array.from({length:80},rOS);
   nodes.forEach(n=>{const d=new THREE.Mesh(dg,dm);d.position.copy(n);lg.add(d);});
   const yn=Array.from({length:30},rOS);
   yn.forEach(n=>{const d=new THREE.Mesh(dg,ydm);d.position.copy(n);lg.add(d);});
   for(let i=0;i<120;i++){const a=nodes[~~(Math.random()*80)],b=nodes[~~(Math.random()*80)];lg.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a.clone(),b.clone()]),lm));}
   for(let i=0;i<50;i++){const a=yn[~~(Math.random()*30)],b=yn[~~(Math.random()*30)];lg.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a.clone(),b.clone()]),ym));}
-
-  /* Drag rotate */
   let isDrag=false,prevM={x:0,y:0},vx=0,vy=0;
   canvas.addEventListener('mousedown',e=>{isDrag=true;prevM={x:e.clientX,y:e.clientY};vx=0;vy=0;});
   window.addEventListener('mouseup',()=>{isDrag=false;});
@@ -312,26 +295,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
     lg.rotation.y+=vx;lg.rotation.x+=vy;
     prevM={x:e.clientX,y:e.clientY};
   });
-
   function animate(){
     requestAnimationFrame(animate);
     sphereMat.uniforms.time.value+=0.01;
-    if(!isDrag){
-      vx*=0.96;vy*=0.96;
-      globe.rotation.y+=0.003+vx;globe.rotation.x+=vy;
-      lg.rotation.y+=0.003+vx;lg.rotation.x+=vy;
-    }
+    if(!isDrag){vx*=0.96;vy*=0.96;globe.rotation.y+=0.003+vx;globe.rotation.x+=vy;lg.rotation.y+=0.003+vx;lg.rotation.x+=vy;}
     renderer.render(scene,camera);
   }
   animate();
+  window.addEventListener('resize',()=>{const SZ2=wrap.offsetWidth;camera.aspect=1;camera.updateProjectionMatrix();renderer.setSize(SZ2,SZ2);});
 
-  window.addEventListener('resize',()=>{
-    const SZ2=wrap.offsetWidth;
-    camera.aspect=1;camera.updateProjectionMatrix();
-    renderer.setSize(SZ2,SZ2);
-  });
-
-  /* ICON NODES — NO labels whatsoever */
   const features=[
     {name:'AI Q&A',        desc:'Instant answers from your videos',   icon:'brain',  angleDeg:118},
     {name:'Video Processing',desc:'Frame-by-frame intelligence',      icon:'video',  angleDeg:155},
@@ -348,30 +320,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
     notes: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/>',
     chrome:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><line x1="12" y1="8.5" x2="12" y2="3"/><line x1="15.2" y1="10.2" x2="20.2" y2="7.6"/><line x1="15.2" y1="13.8" x2="20.2" y2="16.4"/>'
   };
-
   const svgEl=document.getElementById('connectors-svg');
   const fn=document.getElementById('feature-name');
   const fd=document.getElementById('feature-desc');
-  let activeIdx=-1;
-  const nodeEls=[];
-
+  let activeIdx=-1;const nodeEls=[];
   features.forEach((f,i)=>{
-    const cx=SZ/2,cy2=SZ/2;
-    const r=SZ*0.46,re=SZ*0.24;
-    const a=(f.angleDeg-90)*Math.PI/180;
-    const px=cx+r*Math.cos(a),py=cy2+r*Math.sin(a);
-    const ex=cx+re*Math.cos(a),ey=cy2+re*Math.sin(a);
-
-    /* Icon button only — NO label element created */
+    const cx=SZ/2,cy2=SZ/2,r=SZ*0.46,re=SZ*0.24,a=(f.angleDeg-90)*Math.PI/180;
+    const px=cx+r*Math.cos(a),py=cy2+r*Math.sin(a),ex=cx+re*Math.cos(a),ey=cy2+re*Math.sin(a);
     const node=document.createElement('div');
     node.className='icon-node';
-    node.style.left=(px/SZ*100)+'%';
-    node.style.top=(py/SZ*100)+'%';
+    node.style.left=(px/SZ*100)+'%';node.style.top=(py/SZ*100)+'%';
     node.style.transform='translate(-50%,-50%)';
     node.innerHTML='<svg viewBox="0 0 24 24">'+ICONS[f.icon]+'</svg>';
-    node.title=f.name; /* tooltip only on hover, no persistent label */
-
-    /* Dashed connector line */
+    node.title=f.name;
     const line=document.createElementNS('http://www.w3.org/2000/svg','line');
     line.setAttribute('x1',ex);line.setAttribute('y1',ey);
     line.setAttribute('x2',px);line.setAttribute('y2',py);
@@ -379,28 +340,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
     line.setAttribute('stroke-width','1');
     line.setAttribute('stroke-dasharray','4 3');
     svgEl.appendChild(line);
-
-    /* Click: fade feature in/out */
     node.addEventListener('click',()=>{
-      if(activeIdx===i){
-        node.classList.remove('active');
-        fn.classList.remove('vis');fd.classList.remove('vis');
-        activeIdx=-1;return;
-      }
+      if(activeIdx===i){node.classList.remove('active');fn.classList.remove('vis');fd.classList.remove('vis');activeIdx=-1;return;}
       nodeEls.forEach(n=>n.classList.remove('active'));
       fn.classList.remove('vis');fd.classList.remove('vis');
-      activeIdx=i;
-      node.classList.add('active');
-      setTimeout(()=>{
-        fn.textContent=f.name;
-        fd.textContent=f.desc;
-        fn.classList.add('vis');
-        fd.classList.add('vis');
-      },280);
+      activeIdx=i;node.classList.add('active');
+      setTimeout(()=>{fn.textContent=f.name;fd.textContent=f.desc;fn.classList.add('vis');fd.classList.add('vis');},280);
     });
-
-    wrap.appendChild(node);
-    nodeEls.push(node);
+    wrap.appendChild(node);nodeEls.push(node);
   });
 })();
 </script>
