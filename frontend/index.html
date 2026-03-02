@@ -1,301 +1,301 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Cortexle - Coming Soon</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden}
-body{background:radial-gradient(ellipse at 50% 40%,#0a1f4e 0%,#040d1f 70%,#020810 100%);font-family:'Segoe UI',sans-serif;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-height:100vh;padding:18px 20px 14px}
-.top{text-align:center;flex-shrink:0}
-.logo{font-size:2rem;font-weight:800;letter-spacing:.15em;color:#fff;text-shadow:0 0 20px #4af0fc,0 0 40px #4af0fc88}
-.logo span{color:#4af0fc}
-.tagline{font-size:.78rem;letter-spacing:.25em;color:#7ab8d4;text-transform:uppercase;margin-top:4px}
-.stage{position:relative;flex:1;width:100%;display:flex;align-items:center;justify-content:center;min-height:0}
-#bw{position:relative;width:500px;height:360px;flex-shrink:0}
-.lbl{position:absolute;background:rgba(4,20,60,.85);border:1px solid #4af0fc55;border-radius:8px;padding:7px 11px;min-width:128px;max-width:142px;cursor:pointer;transition:border-color .3s,box-shadow .3s;backdrop-filter:blur(6px)}
-.lbl:hover,.lbl.on{border-color:#4af0fc;box-shadow:0 0 16px #4af0fc66}
-.lbl .ln{font-size:.72rem;font-weight:700;color:#4af0fc;letter-spacing:.06em;text-transform:uppercase}
-.lbl .ld{font-size:.62rem;color:#8fcde0;margin-top:2px;line-height:1.35}
-.lbl .la{font-size:.58rem;color:#4e8fa8;margin-top:3px;font-style:italic}
-.bottom{flex-shrink:0;text-align:center;width:100%}
-.cd{display:flex;gap:18px;justify-content:center;margin-bottom:12px}
-.cd .u{text-align:center}
-.cd .n{font-size:1.9rem;font-weight:700;color:#4af0fc;text-shadow:0 0 12px #4af0fc99;line-height:1}
-.cd .l{font-size:.55rem;letter-spacing:.18em;color:#4e8fa8;text-transform:uppercase}
-.col{font-size:1.9rem;font-weight:700;color:#4af0fc88;align-self:flex-start;padding-top:1px}
-.er{display:flex;gap:0;justify-content:center;margin-bottom:8px}
-.er input{width:220px;padding:9px 14px;background:rgba(255,255,255,.07);border:1px solid #4af0fc55;border-right:none;border-radius:6px 0 0 6px;color:#fff;font-size:.8rem;outline:none}
-.er input::placeholder{color:#4e7a8a}
-.er button{padding:9px 16px;background:#1a6fff;border:1px solid #4af0fc55;border-radius:0 6px 6px 0;color:#fff;font-size:.8rem;cursor:pointer;font-weight:600;transition:background .2s}
-.er button:hover{background:#4af0fc;color:#040d1f}
-.tgs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
-.tg{font-size:.6rem;padding:3px 9px;border:1px solid #4af0fc44;border-radius:20px;color:#4e8fa8;letter-spacing:.08em}
-.tip{position:absolute;background:rgba(4,14,40,.95);border:1px solid #4af0fc88;border-radius:8px;padding:8px 12px;font-size:.7rem;color:#cee8f5;pointer-events:none;opacity:0;transition:opacity .25s;z-index:99;white-space:nowrap;line-height:1.5}
-.tip.show{opacity:1}
-</style>
-</head>
-<body>
-<div class="top">
-<div class="logo">CORTEX<span>LE</span></div>
-<div class="tagline">AI-Powered Video Intelligence &mdash; Coming Soon</div>
-</div>
-<div class="stage">
-<div id="bw">
-<canvas id="bc" width="500" height="360" style="position:absolute;top:0;left:0"></canvas>
-<svg id="bs" viewBox="0 0 500 360" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible">
-<defs>
-<filter id="g2" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-</defs>
-<circle class="hr" id="p0r" cx="115" cy="120" r="5" fill="#4af0fc" opacity="0.35"/>
-<circle id="h0" cx="115" cy="120" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
-<circle class="hr" id="p1r" cx="268" cy="60" r="5" fill="#4af0fc" opacity="0.35"/>
-<circle id="h1" cx="268" cy="60" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
-<circle class="hr" id="p2r" cx="96" cy="220" r="5" fill="#4af0fc" opacity="0.35"/>
-<circle id="h2" cx="96" cy="220" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
-<circle class="hr" id="p3r" cx="370" cy="148" r="5" fill="#4af0fc" opacity="0.35"/>
-<circle id="h3" cx="370" cy="148" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
-<circle class="hr" id="p4r" cx="340" cy="295" r="5" fill="#4af0fc" opacity="0.35"/>
-<circle id="h4" cx="340" cy="295" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
-<circle class="hr" id="p5r" cx="208" cy="330" r="5" fill="#4af0fc" opacity="0.35"/>
-<circle id="h5" cx="208" cy="330" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
-<svg id="cl" width="500" height="360" style="overflow:visible;pointer-events:none"></svg>
-</svg>
-<div class="lbl" id="l0" style="left:-150px;top:80px"><div class="ln">AI Q&amp;A</div><div class="ld">Ask questions about any video instantly</div><div class="la">Frontal lobe &middot; Language &amp; reasoning</div></div>
-<div class="lbl" id="l2" style="left:-150px;top:184px"><div class="ln">Transcription</div><div class="ld">Auto-transcribe audio to searchable text</div><div class="la">Temporal lobe &middot; Speech &amp; audio</div></div>
-<div class="lbl" id="l5" style="left:-140px;top:290px"><div class="ln">Chrome Extension</div><div class="ld">Works silently in your browser</div><div class="la">Brainstem &middot; Background processing</div></div>
-<div class="lbl" id="l1" style="right:-150px;top:24px"><div class="ln">Video Processing</div><div class="ld">Frame-level analysis of any video</div><div class="la">Parietal lobe &middot; Sensory integration</div></div>
-<div class="lbl" id="l3" style="right:-150px;top:110px"><div class="ln">Semantic Search</div><div class="ld">Find moments by meaning, not keywords</div><div class="la">Occipital lobe &middot; Visual recognition</div></div>
-<div class="lbl" id="l4" style="right:-150px;top:260px"><div class="ln">Structured Notes</div><div class="ld">Auto-generated smart summaries</div><div class="la">Cerebellum &middot; Organisation &amp; structure</div></div>
-<div class="tip" id="tp"></div>
-</div>
-</div>
-<div class="bottom">
-<div class="cd">
-<div class="u"><div class="n" id="cd-d">91</div><div class="l">Days</div></div>
-<div class="col">:</div>
-<div class="u"><div class="n" id="cd-h">00</div><div class="l">Hours</div></div>
-<div class="col">:</div>
-<div class="u"><div class="n" id="cd-m">00</div><div class="l">Mins</div></div>
-<div class="col">:</div>
-<div class="u"><div class="n" id="cd-s">00</div><div class="l">Secs</div></div>
-</div>
-<div class="er"><input type="email" placeholder="Enter your email for early access"/><button>Notify Me</button></div>
-<div class="tgs"><span class="tg">AI Video</span><span class="tg">Transcription</span><span class="tg">Semantic Search</span><span class="tg">Chrome Extension</span><span class="tg">Smart Notes</span></div>
-</div>
-<script>
-(function(){
-var canvas=document.getElementById('bc');
-var ctx=canvas.getContext('2d');
-var W=500,H=360;
+    <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Cortexle - Coming Soon</title>
+    <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{width:100%;height:100%;overflow:hidden}
+    body{background:radial-gradient(ellipse at 50% 40%,#0a1f4e 0%,#040d1f 70%,#020810 100%);font-family:'Segoe UI',sans-serif;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-height:100vh;padding:18px 20px 14px}
+    .top{text-align:center;flex-shrink:0}
+    .logo{font-size:2rem;font-weight:800;letter-spacing:.15em;color:#fff;text-shadow:0 0 20px #4af0fc,0 0 40px #4af0fc88}
+    .logo span{color:#4af0fc}
+    .tagline{font-size:.78rem;letter-spacing:.25em;color:#7ab8d4;text-transform:uppercase;margin-top:4px}
+    .stage{position:relative;flex:1;width:100%;display:flex;align-items:center;justify-content:center;min-height:0}
+    #bw{position:relative;width:520px;height:340px;flex-shrink:0}
+    .lbl{position:absolute;background:rgba(4,20,60,.85);border:1px solid #4af0fc55;border-radius:8px;padding:7px 11px;min-width:128px;max-width:142px;cursor:pointer;transition:border-color .3s,box-shadow .3s;backdrop-filter:blur(6px)}
+    .lbl:hover,.lbl.on{border-color:#4af0fc;box-shadow:0 0 16px #4af0fc66}
+    .lbl .ln{font-size:.72rem;font-weight:700;color:#4af0fc;letter-spacing:.06em;text-transform:uppercase}
+    .lbl .ld{font-size:.62rem;color:#8fcde0;margin-top:2px;line-height:1.35}
+    .lbl .la{font-size:.58rem;color:#4e8fa8;margin-top:3px;font-style:italic}
+    .bottom{flex-shrink:0;text-align:center;width:100%}
+    .cd{display:flex;gap:18px;justify-content:center;margin-bottom:12px}
+    .cd .u{text-align:center}
+    .cd .n{font-size:1.9rem;font-weight:700;color:#4af0fc;text-shadow:0 0 12px #4af0fc99;line-height:1}
+    .cd .l{font-size:.55rem;letter-spacing:.18em;color:#4e8fa8;text-transform:uppercase}
+    .col{font-size:1.9rem;font-weight:700;color:#4af0fc88;align-self:flex-start;padding-top:1px}
+    .er{display:flex;gap:0;justify-content:center;margin-bottom:8px}
+    .er input{width:220px;padding:9px 14px;background:rgba(255,255,255,.07);border:1px solid #4af0fc55;border-right:none;border-radius:6px 0 0 6px;color:#fff;font-size:.8rem;outline:none}
+    .er input::placeholder{color:#4e7a8a}
+    .er button{padding:9px 16px;background:#1a6fff;border:1px solid #4af0fc55;border-radius:0 6px 6px 0;color:#fff;font-size:.8rem;cursor:pointer;font-weight:600;transition:background .2s}
+    .er button:hover{background:#4af0fc;color:#040d1f}
+    .tgs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+    .tg{font-size:.6rem;padding:3px 9px;border:1px solid #4af0fc44;border-radius:20px;color:#4e8fa8;letter-spacing:.08em}
+    .tip{position:absolute;background:rgba(4,14,40,.95);border:1px solid #4af0fc88;border-radius:8px;padding:8px 12px;font-size:.7rem;color:#cee8f5;pointer-events:none;opacity:0;transition:opacity .25s;z-index:99;white-space:nowrap;line-height:1.5}
+    .tip.show{opacity:1}
+    </style>
+    </head>
+    <body>
+    <div class="top">
+    <div class="logo">CORTEX<span>LE</span></div>
+    <div class="tagline">AI-Powered Video Intelligence &mdash; Coming Soon</div>
+    </div>
+    <div class="stage">
+    <div id="bw">
+    <canvas id="bc" width="520" height="340" style="position:absolute;top:0;left:0"></canvas>
+    <svg id="bs" viewBox="0 0 520 340" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible">
+    <defs>
+    <filter id="g2" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <circle class="hr" cx="118" cy="110" r="5" fill="#4af0fc" opacity="0.35"/>
+    <circle id="h0" cx="118" cy="110" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
+    <circle class="hr" cx="270" cy="52" r="5" fill="#4af0fc" opacity="0.35"/>
+    <circle id="h1" cx="270" cy="52" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
+    <circle class="hr" cx="98" cy="205" r="5" fill="#4af0fc" opacity="0.35"/>
+    <circle id="h2" cx="98" cy="205" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
+    <circle class="hr" cx="388" cy="138" r="5" fill="#4af0fc" opacity="0.35"/>
+    <circle id="h3" cx="388" cy="138" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
+    <circle class="hr" cx="358" cy="290" r="5" fill="#4af0fc" opacity="0.35"/>
+    <circle id="h4" cx="358" cy="290" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
+    <circle class="hr" cx="210" cy="322" r="5" fill="#4af0fc" opacity="0.35"/>
+    <circle id="h5" cx="210" cy="322" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
+    <svg id="cl" width="520" height="340" style="overflow:visible;pointer-events:none"></svg>
+    </svg>
+    <div class="lbl" id="l0" style="left:-150px;top:74px"><div class="ln">AI Q&amp;A</div><div class="ld">Ask questions about any video instantly</div><div class="la">Frontal lobe &middot; Language &amp; reasoning</div></div>
+    <div class="lbl" id="l2" style="left:-150px;top:170px"><div class="ln">Transcription</div><div class="ld">Auto-transcribe audio to searchable text</div><div class="la">Temporal lobe &middot; Speech &amp; audio</div></div>
+    <div class="lbl" id="l5" style="left:-140px;top:284px"><div class="ln">Chrome Extension</div><div class="ld">Works silently in your browser</div><div class="la">Brainstem &middot; Background processing</div></div>
+    <div class="lbl" id="l1" style="right:-150px;top:16px"><div class="ln">Video Processing</div><div class="ld">Frame-level analysis of any video</div><div class="la">Parietal lobe &middot; Sensory integration</div></div>
+    <div class="lbl" id="l3" style="right:-150px;top:100px"><div class="ln">Semantic Search</div><div class="ld">Find moments by meaning, not keywords</div><div class="la">Occipital lobe &middot; Visual recognition</div></div>
+    <div class="lbl" id="l4" style="right:-150px;top:256px"><div class="ln">Structured Notes</div><div class="ld">Auto-generated smart summaries</div><div class="la">Cerebellum &middot; Organisation &amp; structure</div></div>
+    <div class="tip" id="tp"></div>
+    </div>
+    </div>
+    <div class="bottom">
+    <div class="cd">
+    <div class="u"><div class="n" id="cd-d">91</div><div class="l">Days</div></div>
+    <div class="col">:</div>
+    <div class="u"><div class="n" id="cd-h">00</div><div class="l">Hours</div></div>
+    <div class="col">:</div>
+    <div class="u"><div class="n" id="cd-m">00</div><div class="l">Mins</div></div>
+    <div class="col">:</div>
+    <div class="u"><div class="n" id="cd-s">00</div><div class="l">Secs</div></div>
+    </div>
+    <div class="er"><input type="email" placeholder="Enter your email for early access"/><button>Notify Me</button></div>
+    <div class="tgs"><span class="tg">AI Video</span><span class="tg">Transcription</span><span class="tg">Semantic Search</span><span class="tg">Chrome Extension</span><span class="tg">Smart Notes</span></div>
+    </div>
+    <script>
+    (function(){
+    var C=document.getElementById('bc');
+    var ctx=C.getContext('2d');
 
-function drawBrain(){
-ctx.clearRect(0,0,W,H);
-// Brain lateral silhouette - proper left-side view
-// Frontal lobe (front/left), Parietal (top), Occipital (back/right), Temporal (below), Brainstem (bottom)
-var path=new Path2D();
-// Start at frontal pole (front, mid-height)
-// Going clockwise: up over frontal, across parietal crown, down occipital, around temporal, up brainstem, back
-path.moveTo(90,190);
-// Frontal lobe upper curve
-path.bezierCurveTo(70,160, 62,120, 76,90);
-path.bezierCurveTo(88,64, 112,46, 146,36);
-// Frontal-parietal junction
-path.bezierCurveTo(178,26, 210,20, 250,18);
-// Parietal crown (top of brain)
-path.bezierCurveTo(290,16, 330,24, 360,44);
-// Parieto-occipital
-path.bezierCurveTo(386,62, 400,90, 398,122);
-// Occipital lobe (back)
-path.bezierCurveTo(396,152, 382,178, 368,198);
-// Occipital-temporal junction
-path.bezierCurveTo(356,216, 340,226, 318,228);
-// Superior temporal sulcus
-path.bezierCurveTo(296,230, 266,226, 240,220);
-// Temporal lobe lower curve
-path.bezierCurveTo(214,214, 190,208, 170,210);
-path.bezierCurveTo(148,212, 126,220, 112,236);
-// Frontal base / orbital frontal
-path.bezierCurveTo(98,250, 86,268, 88,284);
-// Brainstem connection
-path.bezierCurveTo(90,296, 98,306, 110,308);
-// Temporal pole base
-path.bezierCurveTo(130,310, 152,306, 170,298);
-path.bezierCurveTo(188,290, 200,280, 210,272);
-// Back to frontal base
-path.bezierCurveTo(160,258, 118,234, 90,190);
-path.closePath();
+    function glow(color,blur){ctx.shadowColor=color;ctx.shadowBlur=blur;}
 
-// Cerebellum (separate lobe at back-bottom)
-var cereb=new Path2D();
-cereb.moveTo(310,240);
-cereb.bezierCurveTo(330,232, 356,234, 374,244);
-cereb.bezierCurveTo(394,256, 404,278, 400,298);
-cereb.bezierCurveTo(396,318, 376,330, 354,330);
-cereb.bezierCurveTo(332,330, 312,318, 306,302);
-cereb.bezierCurveTo(298,284, 300,256, 310,240);
-cereb.closePath();
+    function drawBrain(){
+    ctx.clearRect(0,0,520,340);
 
-// Brainstem
-var bstem=new Path2D();
-bstem.moveTo(195,300);
-bstem.bezierCurveTo(202,296, 212,294, 220,296);
-bstem.bezierCurveTo(228,298, 234,306, 232,316);
-bstem.bezierCurveTo(230,326, 224,336, 218,340);
-bstem.bezierCurveTo(210,344, 200,344, 195,338);
-bstem.bezierCurveTo(188,332, 186,322, 188,312);
-bstem.bezierCurveTo(190,306, 192,302, 195,300);
-bstem.closePath();
+    // ===== CEREBELLUM (drawn first, behind) =====
+    ctx.save();
+    glow('#4af0fc',18);
+    ctx.beginPath();
+    // Cerebellum: roughly oval, sits posterior-inferior
+    ctx.moveTo(310,226);
+    ctx.bezierCurveTo(332,218,364,220,386,234);
+    ctx.bezierCurveTo(410,250,416,276,408,298);
+    ctx.bezierCurveTo(400,320,376,332,352,330);
+    ctx.bezierCurveTo(326,328,306,312,302,294);
+    ctx.bezierCurveTo(296,274,300,242,310,226);
+    ctx.closePath();
+    ctx.fillStyle='rgba(8,22,80,0.42)';ctx.fill();
+    ctx.strokeStyle='rgba(26,111,255,0.8)';ctx.lineWidth=2;ctx.stroke();
+    ctx.strokeStyle='rgba(74,240,252,0.5)';ctx.lineWidth=1.2;ctx.stroke();
+    // Cerebellum folds
+    ctx.strokeStyle='rgba(74,240,252,0.25)';ctx.lineWidth=1;ctx.shadowBlur=4;
+    [0,1,2,3].forEach(function(i){
+    ctx.beginPath();
+    var y=238+i*16;
+    ctx.moveTo(306,y);
+    ctx.bezierCurveTo(326,y-6,358,y-6,400,y);
+    ctx.stroke();
+    });
+    ctx.restore();
 
-// Glow effect
-ctx.save();
-ctx.shadowColor='#4af0fc';
-ctx.shadowBlur=22;
+    // ===== BRAINSTEM =====
+    ctx.save();
+    glow('#4af0fc',14);
+    ctx.beginPath();
+    ctx.moveTo(196,272);
+    ctx.bezierCurveTo(206,268,220,268,228,272);
+    ctx.bezierCurveTo(238,278,240,294,236,312);
+    ctx.bezierCurveTo(232,328,222,338,212,340);
+    ctx.bezierCurveTo(200,340,190,330,188,316);
+    ctx.bezierCurveTo(185,300,188,278,196,272);
+    ctx.closePath();
+    ctx.fillStyle='rgba(8,22,80,0.48)';ctx.fill();
+    ctx.strokeStyle='rgba(74,240,252,0.6)';ctx.lineWidth=1.8;ctx.stroke();
+    ctx.restore();
 
-// Draw cerebellum
-ctx.fillStyle='rgba(10,30,100,0.38)';
-ctx.fill(cereb);
-ctx.strokeStyle='rgba(74,240,252,0.65)';
-ctx.lineWidth=1.8;
-ctx.stroke(cereb);
+    // ===== MAIN CEREBRUM =====
+    // This is the key shape - proper lateral (side) view of human brain
+    // Starting at frontal pole (left), going up and over, then down occipital (right), across temporal (bottom), back
+    ctx.save();
+    glow('#4af0fc',24);
+    ctx.beginPath();
 
-// Draw brainstem
-ctx.fillStyle='rgba(10,30,100,0.42)';
-ctx.fill(bstem);
-ctx.strokeStyle='rgba(74,240,252,0.6)';
-ctx.lineWidth=1.8;
-ctx.stroke(bstem);
+    // Frontal pole - left, slightly pointed downward
+    ctx.moveTo(78,200);
+    // Frontal lobe - sweeps up and forward
+    ctx.bezierCurveTo(60,172, 56,138, 66,108);
+    ctx.bezierCurveTo(76,78, 100,56, 132,42);
+    // Transition to frontal-parietal
+    ctx.bezierCurveTo(160,28, 196,18, 236,16);
+    // Parietal (crown of brain - highest point)
+    ctx.bezierCurveTo(276,14, 316,22, 348,40);
+    // Parieto-occipital slope
+    ctx.bezierCurveTo(380,58, 402,88, 406,122);
+    // Occipital lobe - back of brain, curves inward
+    ctx.bezierCurveTo(410,156, 398,188, 378,208);
+    // Occipital-temporal transition
+    ctx.bezierCurveTo(358,226, 326,232, 296,228);
+    // This is where the separation line between temporal and occipital is
+    ctx.bezierCurveTo(262,224, 226,218, 198,220);
+    // Lateral temporal sulcus (lower edge of brain, forms temporal lobe)
+    ctx.bezierCurveTo(170,222, 142,230, 120,246);
+    // Temporal-frontal junction at base
+    ctx.bezierCurveTo(100,260, 86,276, 86,294);
+    // Coming back up through frontal base
+    ctx.bezierCurveTo(86,306, 94,312, 106,310);
+    // Temporal pole area
+    ctx.bezierCurveTo(128,308, 152,298, 170,286);
+    ctx.bezierCurveTo(186,276, 194,264, 200,256);
+    // Closing back to frontal pole
+    ctx.bezierCurveTo(164,248, 122,228, 78,200);
+    ctx.closePath();
 
-// Draw main brain body
-ctx.fillStyle='rgba(8,22,80,0.45)';
-ctx.fill(path);
-ctx.strokeStyle='rgba(26,111,255,0.85)';
-ctx.lineWidth=2.2;
-ctx.stroke(path);
+    // Fill
+    ctx.fillStyle='rgba(6,18,70,0.50)';ctx.fill();
+    // Inner blue stroke
+    ctx.strokeStyle='rgba(26,111,255,0.9)';ctx.lineWidth=2.2;ctx.stroke();
+    // Outer cyan glow
+    ctx.shadowBlur=36;
+    ctx.strokeStyle='rgba(74,240,252,0.6)';ctx.lineWidth=1.4;ctx.stroke();
+    ctx.restore();
 
-// Bright glow outline
-ctx.shadowBlur=32;
-ctx.strokeStyle='rgba(74,240,252,0.55)';
-ctx.lineWidth=1.2;
-ctx.stroke(path);
-ctx.strokeStyle='rgba(74,240,252,0.4)';
-ctx.stroke(cereb);
+    // ===== SULCI (brain folds) =====
+    ctx.save();
+    ctx.strokeStyle='rgba(74,240,252,0.25)';
+    ctx.lineWidth=1;
+    glow('#4af0fc',5);
 
-ctx.restore();
+    // Central sulcus (vertical, divides frontal/parietal)
+    ctx.beginPath();ctx.moveTo(208,22);
+    ctx.bezierCurveTo(200,60,192,110,186,160);
+    ctx.bezierCurveTo(182,196,180,224,182,256);ctx.stroke();
 
-// Internal sulci lines
-ctx.save();
-ctx.strokeStyle='rgba(74,240,252,0.28)';
-ctx.lineWidth=1;
-ctx.shadowColor='#4af0fc';
-ctx.shadowBlur=6;
+    // Precentral sulcus
+    ctx.beginPath();ctx.moveTo(172,26);
+    ctx.bezierCurveTo(166,64,160,116,156,164);
+    ctx.bezierCurveTo(153,200,153,228,156,258);ctx.stroke();
 
-// Central sulcus
-drawLine(ctx,206,28,196,80,186,134,180,190);
-// Post-central sulcus
-drawLine(ctx,248,20,240,72,232,128,228,184);
-// Lateral (Sylvian) fissure
-drawLine(ctx,102,190,140,178,186,170,230,168,274,170,316,178,356,192);
-// Superior temporal
-drawLine(ctx,96,220,134,210,178,204,224,202,270,204,310,210,348,220);
-// Precentral
-drawLine(ctx,172,30,166,82,160,136,158,192);
-// Parieto-occipital
-drawLine(ctx,308,28,316,72,322,120,326,170,322,220);
+    // Post-central sulcus
+    ctx.beginPath();ctx.moveTo(248,18);
+    ctx.bezierCurveTo(242,56,236,108,232,156);
+    ctx.bezierCurveTo(228,192,226,222,228,252);ctx.stroke();
 
-ctx.restore();
-}
+    // Lateral fissure (Sylvian) - horizontal, divides temporal from frontal/parietal
+    ctx.beginPath();ctx.moveTo(82,196);
+    ctx.bezierCurveTo(116,182,158,174,202,172);
+    ctx.bezierCurveTo(246,170,288,172,326,180);
+    ctx.bezierCurveTo(356,186,378,196,392,206);ctx.stroke();
 
-function drawLine(ctx){
-var pts=Array.prototype.slice.call(arguments,1);
-if(pts.length<2)return;
-ctx.beginPath();
-ctx.moveTo(pts[0],pts[1]);
-for(var i=2;i<pts.length-1;i+=2){ctx.lineTo(pts[i],pts[i+1]);}
-ctx.stroke();
-}
+    // Superior temporal sulcus
+    ctx.beginPath();ctx.moveTo(92,222);
+    ctx.bezierCurveTo(126,210,168,204,212,202);
+    ctx.bezierCurveTo(256,200,294,204,328,212);ctx.stroke();
 
-drawBrain();
+    // Parieto-occipital sulcus (diagonal at back)
+    ctx.beginPath();ctx.moveTo(314,26);
+    ctx.bezierCurveTo(324,68,330,116,332,164);
+    ctx.bezierCurveTo(334,202,330,232,322,256);ctx.stroke();
 
-// Hotspot data [canvasX, canvasY, labelId]
-var pts=[[115,120,'l0'],[268,60,'l1'],[96,220,'l2'],[370,148,'l3'],[340,295,'l4'],[208,330,'l5']];
-var svg=document.getElementById('bs');
-var cl=document.getElementById('cl');
-var bw=document.getElementById('bw');
-var tp=document.getElementById('tp');
-var W2=500,H2=360;
+    // Intraparietal sulcus
+    ctx.beginPath();ctx.moveTo(234,18);
+    ctx.bezierCurveTo(268,20,300,30,324,48);ctx.stroke();
 
-// Pulse animation for hotspot rings
-var rings=document.querySelectorAll('.hr');
-var t=0;
-setInterval(function(){
-t+=0.06;
-rings.forEach(function(r,i){
-var s=5+4*Math.abs(Math.sin(t+i*0.7));
-var op=0.9-0.6*Math.abs(Math.sin(t+i*0.7));
-r.setAttribute('r',s.toFixed(1));
-r.setAttribute('opacity',op.toFixed(2));
-});
-},40);
+    ctx.restore();
+    }
 
-var tips=['<b>Frontal Lobe</b><br>Language, reasoning &amp; decisions<br><i>Powers AI Q&amp;A</i>','<b>Parietal Lobe</b><br>Sensory integration &amp; spatial<br><i>Powers Video Processing</i>','<b>Temporal Lobe</b><br>Auditory &amp; speech processing<br><i>Powers Transcription</i>','<b>Occipital Lobe</b><br>Visual recognition &amp; meaning<br><i>Powers Semantic Search</i>','<b>Cerebellum</b><br>Organisation &amp; coordination<br><i>Powers Structured Notes</i>','<b>Brainstem</b><br>Always-on background functions<br><i>Powers Chrome Extension</i>'];
+    drawBrain();
 
-function draw(){
-cl.innerHTML='';
-var svgRect=svg.getBoundingClientRect();
-var br=bw.getBoundingClientRect();
-var sx=svgRect.width/W2,sy=svgRect.height/H2;
-pts.forEach(function(p,i){
-var lb=document.getElementById(p[2]);
-if(!lb)return;
-var lr=lb.getBoundingClientRect();
-var hx=(svgRect.left-br.left)+p[0]*sx;
-var hy=(svgRect.top-br.top)+p[1]*sy;
-var lx,ly;
-if(lr.left<br.left){lx=lr.right-br.left;ly=lr.top-br.top+lr.height/2;}
-else{lx=lr.left-br.left;ly=lr.top-br.top+lr.height/2;}
-var line=document.createElementNS('http://www.w3.org/2000/svg','line');
-line.setAttribute('x1',hx.toFixed(1));line.setAttribute('y1',hy.toFixed(1));
-line.setAttribute('x2',lx.toFixed(1));line.setAttribute('y2',ly.toFixed(1));
-line.setAttribute('stroke','#4af0fc');line.setAttribute('stroke-width','1');
-line.setAttribute('stroke-dasharray','4 3');line.setAttribute('opacity','0.5');
-cl.appendChild(line);
-});
-}
+    // Pulse animation
+    var rings=document.querySelectorAll('.hr');
+    var t=0;
+    setInterval(function(){
+    t+=0.06;
+    rings.forEach(function(r,i){
+    var s=5+4*Math.abs(Math.sin(t+i*0.7));
+    var op=0.9-0.6*Math.abs(Math.sin(t+i*0.7));
+    r.setAttribute('r',s.toFixed(1));
+    r.setAttribute('opacity',op.toFixed(2));
+    });
+    },40);
 
-pts.forEach(function(p,i){
-var el=document.getElementById('h'+i);
-var lb=document.getElementById(p[2]);
-if(!el)return;
-el.addEventListener('mouseenter',function(){
-lb.classList.add('on');
-tp.innerHTML=tips[i];
-var r=bw.getBoundingClientRect();
-var sr=svg.getBoundingClientRect();
-var sx=sr.width/W2,sy=sr.height/H2;
-tp.style.left=((sr.left-r.left)+p[0]*sx+14)+'px';
-tp.style.top=((sr.top-r.top)+p[1]*sy-10)+'px';
-tp.classList.add('show');
-});
-el.addEventListener('mouseleave',function(){lb.classList.remove('on');tp.classList.remove('show');});
-lb.addEventListener('mouseenter',function(){lb.classList.add('on');});
-lb.addEventListener('mouseleave',function(){lb.classList.remove('on');});
-});
+    var pts=[[118,110,'l0'],[270,52,'l1'],[98,205,'l2'],[388,138,'l3'],[358,290,'l4'],[210,322,'l5']];
+    var svg=document.getElementById('bs');
+    var cl=document.getElementById('cl');
+    var bw=document.getElementById('bw');
+    var tp=document.getElementById('tp');
+    var tips=['<b>Frontal Lobe</b><br>Language, reasoning &amp; decisions<br><i>Powers AI Q&amp;A</i>','<b>Parietal Lobe</b><br>Sensory integration &amp; spatial<br><i>Powers Video Processing</i>','<b>Temporal Lobe</b><br>Auditory &amp; speech processing<br><i>Powers Transcription</i>','<b>Occipital Lobe</b><br>Visual recognition &amp; meaning<br><i>Powers Semantic Search</i>','<b>Cerebellum</b><br>Organisation &amp; coordination<br><i>Powers Structured Notes</i>','<b>Brainstem</b><br>Always-on background functions<br><i>Powers Chrome Extension</i>'];
 
-window.addEventListener('resize',draw);
-draw();setTimeout(draw,300);
+    function draw(){
+    cl.innerHTML='';
+    var sr=svg.getBoundingClientRect();
+    var br=bw.getBoundingClientRect();
+    var sx=sr.width/520,sy=sr.height/340;
+    pts.forEach(function(p,i){
+    var lb=document.getElementById(p[2]);if(!lb)return;
+    var lr=lb.getBoundingClientRect();
+    var hx=(sr.left-br.left)+p[0]*sx,hy=(sr.top-br.top)+p[1]*sy;
+    var lx,ly;
+    if(lr.left<br.left){lx=lr.right-br.left;ly=lr.top-br.top+lr.height/2;}
+    else{lx=lr.left-br.left;ly=lr.top-br.top+lr.height/2;}
+    var line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',hx.toFixed(1));line.setAttribute('y1',hy.toFixed(1));
+    line.setAttribute('x2',lx.toFixed(1));line.setAttribute('y2',ly.toFixed(1));
+    line.setAttribute('stroke','#4af0fc');line.setAttribute('stroke-width','1');
+    line.setAttribute('stroke-dasharray','4 3');line.setAttribute('opacity','0.5');
+    cl.appendChild(line);
+    });
+    }
 
-var tgt=new Date();tgt.setDate(tgt.getDate()+91);tgt.setHours(tgt.getHours()+11);
-function tick(){
-var d=Math.max(0,tgt-new Date());
-document.getElementById('cd-d').textContent=String(Math.floor(d/86400000)).padStart(2,'0');
-document.getElementById('cd-h').textContent=String(Math.floor((d%86400000)/3600000)).padStart(2,'0');
-document.getElementById('cd-m').textContent=String(Math.floor((d%3600000)/60000)).padStart(2,'0');
-document.getElementById('cd-s').textContent=String(Math.floor((d%60000)/1000)).padStart(2,'0');
-}
-tick();setInterval(tick,1000);
-})();
-</script>
-</body>
-</html>
+    pts.forEach(function(p,i){
+    var el=document.getElementById('h'+i);
+    var lb=document.getElementById(p[2]);if(!el)return;
+    el.addEventListener('mouseenter',function(){
+    lb.classList.add('on');tp.innerHTML=tips[i];
+    var r=bw.getBoundingClientRect();var sr=svg.getBoundingClientRect();
+    var sx=sr.width/520,sy=sr.height/340;
+    tp.style.left=((sr.left-r.left)+p[0]*sx+14)+'px';
+    tp.style.top=((sr.top-r.top)+p[1]*sy-10)+'px';
+    tp.classList.add('show');
+    });
+    el.addEventListener('mouseleave',function(){lb.classList.remove('on');tp.classList.remove('show');});
+    lb.addEventListener('mouseenter',function(){lb.classList.add('on');});
+    lb.addEventListener('mouseleave',function(){lb.classList.remove('on');});
+    });
+
+    window.addEventListener('resize',draw);draw();setTimeout(draw,300);
+
+    var tgt=new Date();tgt.setDate(tgt.getDate()+91);tgt.setHours(tgt.getHours()+11);
+    function tick(){
+    var d=Math.max(0,tgt-new Date());
+    document.getElementById('cd-d').textContent=String(Math.floor(d/86400000)).padStart(2,'0');
+    document.getElementById('cd-h').textContent=String(Math.floor((d%86400000)/3600000)).padStart(2,'0');
+    document.getElementById('cd-m').textContent=String(Math.floor((d%3600000)/60000)).padStart(2,'0');
+    document.getElementById('cd-s').textContent=String(Math.floor((d%60000)/1000)).padStart(2,'0');
+    }
+    tick();setInterval(tick,1000);
+    })();
+    </script>
+    </body>
+    </html>
