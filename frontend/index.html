@@ -1,173 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Cortexle - Coming Soon</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden}
-body{background:radial-gradient(ellipse at 50% 40%,#0a1f4e 0%,#040d1f 70%,#020810 100%);font-family:'Segoe UI',sans-serif;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-height:100vh;padding:18px 20px 14px}
-.top{text-align:center;flex-shrink:0}
-.logo{font-size:2rem;font-weight:800;letter-spacing:.15em;color:#fff;text-shadow:0 0 20px #4af0fc,0 0 40px #4af0fc88}
-.logo span{color:#4af0fc}
-.tagline{font-size:.78rem;letter-spacing:.25em;color:#7ab8d4;text-transform:uppercase;margin-top:4px}
-.stage{position:relative;flex:1;width:100%;display:flex;align-items:center;justify-content:center;min-height:0}
-#bw{position:relative;width:460px;height:340px;flex-shrink:0}
-#bw svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 18px #1a8fff88) drop-shadow(0 0 40px #0a4fff44)}
-.lbl{position:absolute;background:rgba(4,20,60,.85);border:1px solid #4af0fc55;border-radius:8px;padding:7px 11px;min-width:128px;max-width:142px;cursor:pointer;transition:border-color .3s,box-shadow .3s;backdrop-filter:blur(6px)}
-.lbl:hover,.lbl.on{border-color:#4af0fc;box-shadow:0 0 16px #4af0fc66}
-.lbl .ln{font-size:.72rem;font-weight:700;color:#4af0fc;letter-spacing:.06em;text-transform:uppercase}
-.lbl .ld{font-size:.62rem;color:#8fcde0;margin-top:2px;line-height:1.35}
-.lbl .la{font-size:.58rem;color:#4e8fa8;margin-top:3px;font-style:italic}
-#cl{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible}
-.bottom{flex-shrink:0;text-align:center;width:100%}
-.cd{display:flex;gap:18px;justify-content:center;margin-bottom:12px}
-.cd .u{text-align:center}
-.cd .n{font-size:1.9rem;font-weight:700;color:#4af0fc;text-shadow:0 0 12px #4af0fc99;line-height:1}
-.cd .l{font-size:.55rem;letter-spacing:.18em;color:#4e8fa8;text-transform:uppercase}
-.col{font-size:1.9rem;font-weight:700;color:#4af0fc88;align-self:flex-start;padding-top:1px}
-.er{display:flex;gap:0;justify-content:center;margin-bottom:8px}
-.er input{width:220px;padding:9px 14px;background:rgba(255,255,255,.07);border:1px solid #4af0fc55;border-right:none;border-radius:6px 0 0 6px;color:#fff;font-size:.8rem;outline:none}
-.er input::placeholder{color:#4e7a8a}
-.er button{padding:9px 16px;background:#1a6fff;border:1px solid #4af0fc55;border-radius:0 6px 6px 0;color:#fff;font-size:.8rem;cursor:pointer;font-weight:600;transition:background .2s}
-.er button:hover{background:#4af0fc;color:#040d1f}
-.tgs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
-.tg{font-size:.6rem;padding:3px 9px;border:1px solid #4af0fc44;border-radius:20px;color:#4e8fa8;letter-spacing:.08em}
-@keyframes pulse{0%{r:5;opacity:.9}50%{r:9;opacity:.3}100%{r:5;opacity:.9}}
-.hr{animation:pulse 2.2s ease-in-out infinite}
-.tip{position:absolute;background:rgba(4,14,40,.95);border:1px solid #4af0fc88;border-radius:8px;padding:8px 12px;font-size:.7rem;color:#cee8f5;pointer-events:none;opacity:0;transition:opacity .25s;z-index:99;white-space:nowrap;line-height:1.5}
-.tip.show{opacity:1}
-</style>
-</head>
-<body>
-<div class="top">
-<div class="logo">CORTEX<span>LE</span></div>
-<div class="tagline">AI-Powered Video Intelligence &mdash; Coming Soon</div>
-</div>
-<div class="stage">
-<div id="bw">
-<svg id="bs" viewBox="0 0 460 340" xmlns="http://www.w3.org/2000/svg">
-<defs>
-<filter id="g1" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-<filter id="g2" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-<clipPath id="bc"><path d="M148,44 C122,16 72,20 54,56 C36,92 46,128 60,150 C42,160 30,180 34,208 C38,234 60,248 82,248 C86,268 96,288 118,296 C132,302 150,300 164,292 C174,312 194,324 220,322 C242,320 258,308 266,292 C282,304 302,308 320,298 C340,288 350,268 346,246 C368,240 384,224 386,202 C388,178 374,158 356,148 C370,124 372,92 354,64 C336,36 298,24 264,36 C248,14 222,4 196,10 C174,16 156,30 148,44Z"/></clipPath>
-<linearGradient id="bf" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0a2a6e;stop-opacity:0.55"/><stop offset="100%" style="stop-color:#041030;stop-opacity:0.3"/></linearGradient>
-</defs>
-<path d="M148,44 C122,16 72,20 54,56 C36,92 46,128 60,150 C42,160 30,180 34,208 C38,234 60,248 82,248 C86,268 96,288 118,296 C132,302 150,300 164,292 C174,312 194,324 220,322 C242,320 258,308 266,292 C282,304 302,308 320,298 C340,288 350,268 346,246 C368,240 384,224 386,202 C388,178 374,158 356,148 C370,124 372,92 354,64 C336,36 298,24 264,36 C248,14 222,4 196,10 C174,16 156,30 148,44Z" fill="url(#bf)" stroke="#1a6fff" stroke-width="1.5" filter="url(#g1)" opacity="0.9"/>
-<path d="M148,44 C122,16 72,20 54,56 C36,92 46,128 60,150 C42,160 30,180 34,208 C38,234 60,248 82,248 C86,268 96,288 118,296 C132,302 150,300 164,292 C174,312 194,324 220,322 C242,320 258,308 266,292 C282,304 302,308 320,298 C340,288 350,268 346,246 C368,240 384,224 386,202 C388,178 374,158 356,148 C370,124 372,92 354,64 C336,36 298,24 264,36 C248,14 222,4 196,10 C174,16 156,30 148,44Z" fill="none" stroke="#4af0fc" stroke-width="2" filter="url(#g2)" opacity="0.7"/>
-<g clip-path="url(#bc)" stroke="#4af0fc" stroke-width="1" fill="none" opacity="0.32" filter="url(#g1)">
-<path d="M200,26 C195,66 185,106 175,146 C168,176 162,208 165,248"/>
-<path d="M240,24 C238,64 230,104 222,144 C215,176 210,210 212,250"/>
-<path d="M80,156 C110,144 150,138 190,136 C230,134 270,136 310,141 C340,144 365,151 382,156"/>
-<path d="M72,192 C100,182 140,177 180,175 C220,173 265,175 305,179 C335,182 360,187 380,192"/>
-<path d="M85,96 C108,91 135,90 162,92 C185,94 200,101 205,114"/>
-<path d="M280,41 C300,76 316,116 320,161 C324,196 318,234 308,264"/>
-<path d="M165,31 C162,71 158,114 155,154 C152,191 152,228 158,264"/>
-<path d="M55,126 C90,116 140,111 190,110 C240,109 295,112 345,121"/>
-<path d="M48,171 C85,159 140,154 200,153 C258,152 318,156 370,166"/>
-</g>
-<ellipse cx="120" cy="116" rx="55" ry="45" fill="#1a6fff" opacity="0.06"/>
-<ellipse cx="258" cy="76" rx="60" ry="38" fill="#4af0fc" opacity="0.04"/>
-<ellipse cx="100" cy="216" rx="50" ry="38" fill="#1a6fff" opacity="0.05"/>
-<ellipse cx="330" cy="156" rx="45" ry="40" fill="#4af0fc" opacity="0.04"/>
-<ellipse cx="210" cy="296" rx="80" ry="25" fill="#1a6fff" opacity="0.06"/>
-<circle class="hr" cx="118" cy="106" r="5" fill="#4af0fc" opacity="0.35" style="animation-delay:0s"/>
-<circle id="h0" cx="118" cy="106" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
-<circle class="hr" cx="254" cy="66" r="5" fill="#4af0fc" opacity="0.35" style="animation-delay:.4s"/>
-<circle id="h1" cx="254" cy="66" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
-<circle class="hr" cx="94" cy="206" r="5" fill="#4af0fc" opacity="0.35" style="animation-delay:.8s"/>
-<circle id="h2" cx="94" cy="206" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
-<circle class="hr" cx="356" cy="136" r="5" fill="#4af0fc" opacity="0.35" style="animation-delay:1.2s"/>
-<circle id="h3" cx="356" cy="136" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
-<circle class="hr" cx="298" cy="278" r="5" fill="#4af0fc" opacity="0.35" style="animation-delay:1.6s"/>
-<circle id="h4" cx="298" cy="278" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
-<circle class="hr" cx="192" cy="306" r="5" fill="#4af0fc" opacity="0.35" style="animation-delay:2s"/>
-<circle id="h5" cx="192" cy="306" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
-<svg id="cl" width="460" height="340" style="position:absolute;top:0;left:0;overflow:visible;pointer-events:none"></svg>
-</svg>
-<div class="lbl" id="l0" style="left:-146px;top:68px"><div class="ln">AI Q&amp;A</div><div class="ld">Ask questions about any video instantly</div><div class="la">Frontal lobe &middot; Language &amp; reasoning</div></div>
-<div class="lbl" id="l2" style="left:-146px;top:170px"><div class="ln">Transcription</div><div class="ld">Auto-transcribe audio to searchable text</div><div class="la">Temporal lobe &middot; Speech &amp; audio</div></div>
-<div class="lbl" id="l5" style="left:-136px;top:270px"><div class="ln">Chrome Extension</div><div class="ld">Works silently in your browser</div><div class="la">Brainstem &middot; Background processing</div></div>
-<div class="lbl" id="l1" style="right:-146px;top:28px"><div class="ln">Video Processing</div><div class="ld">Frame-level analysis of any video</div><div class="la">Parietal lobe &middot; Sensory integration</div></div>
-<div class="lbl" id="l3" style="right:-146px;top:100px"><div class="ln">Semantic Search</div><div class="ld">Find moments by meaning, not keywords</div><div class="la">Occipital lobe &middot; Visual recognition</div></div>
-<div class="lbl" id="l4" style="right:-146px;top:248px"><div class="ln">Structured Notes</div><div class="ld">Auto-generated smart summaries</div><div class="la">Cerebellum &middot; Organisation &amp; structure</div></div>
-<div class="tip" id="tp"></div>
-</div>
-</div>
-<div class="bottom">
-<div class="cd">
-<div class="u"><div class="n" id="cd-d">91</div><div class="l">Days</div></div>
-<div class="col">:</div>
-<div class="u"><div class="n" id="cd-h">00</div><div class="l">Hours</div></div>
-<div class="col">:</div>
-<div class="u"><div class="n" id="cd-m">00</div><div class="l">Mins</div></div>
-<div class="col">:</div>
-<div class="u"><div class="n" id="cd-s">00</div><div class="l">Secs</div></div>
-</div>
-<div class="er"><input type="email" placeholder="Enter your email for early access"/><button>Notify Me</button></div>
-<div class="tgs"><span class="tg">AI Video</span><span class="tg">Transcription</span><span class="tg">Semantic Search</span><span class="tg">Chrome Extension</span><span class="tg">Smart Notes</span></div>
-</div>
-<script>
-(function(){
-var pts=[[118,106,'l0'],[254,66,'l1'],[94,206,'l2'],[356,136,'l3'],[298,278,'l4'],[192,306,'l5']];
-var svg=document.getElementById('bs');
-var cl=document.getElementById('cl');
-var bw=document.getElementById('bw');
-var tp=document.getElementById('tp');
-var tips=['<b>Frontal Lobe</b><br>Language, reasoning &amp; decisions<br><i>Powers AI Q&amp;A</i>','<b>Parietal Lobe</b><br>Sensory integration &amp; spatial<br><i>Powers Video Processing</i>','<b>Temporal Lobe</b><br>Auditory &amp; speech processing<br><i>Powers Transcription</i>','<b>Occipital Lobe</b><br>Visual recognition &amp; meaning<br><i>Powers Semantic Search</i>','<b>Cerebellum</b><br>Organisation &amp; coordination<br><i>Powers Structured Notes</i>','<b>Brainstem</b><br>Always-on background functions<br><i>Powers Chrome Extension</i>'];
-function draw(){
-cl.innerHTML='';
-var sr=svg.getBoundingClientRect();
-var br=bw.getBoundingClientRect();
-var sx=sr.width/460,sy=sr.height/340;
-pts.forEach(function(p,i){
-var lb=document.getElementById(p[2]);
-if(!lb)return;
-var lr=lb.getBoundingClientRect();
-var hx=(sr.left-br.left)+p[0]*sx;
-var hy=(sr.top-br.top)+p[1]*sy;
-var lx,ly;
-if(lr.left<br.left){lx=lr.right-br.left;ly=lr.top-br.top+lr.height/2;}
-else{lx=lr.left-br.left;ly=lr.top-br.top+lr.height/2;}
-var line=document.createElementNS('http://www.w3.org/2000/svg','line');
-line.setAttribute('x1',hx.toFixed(1));line.setAttribute('y1',hy.toFixed(1));
-line.setAttribute('x2',lx.toFixed(1));line.setAttribute('y2',ly.toFixed(1));
-line.setAttribute('stroke','#4af0fc');line.setAttribute('stroke-width','1');
-line.setAttribute('stroke-dasharray','4 3');line.setAttribute('opacity','0.55');
-cl.appendChild(line);
-});
-}
-pts.forEach(function(p,i){
-var el=document.getElementById('h'+i);
-var lb=document.getElementById(p[2]);
-if(!el)return;
-el.addEventListener('mouseenter',function(){
-lb.classList.add('on');
-tp.innerHTML=tips[i];
-var r=bw.getBoundingClientRect();
-var sr=svg.getBoundingClientRect();
-var sx=sr.width/460,sy=sr.height/340;
-tp.style.left=((sr.left-r.left)+p[0]*sx+14)+'px';
-tp.style.top=((sr.top-r.top)+p[1]*sy-10)+'px';
-tp.classList.add('show');
-});
-el.addEventListener('mouseleave',function(){lb.classList.remove('on');tp.classList.remove('show');});
-lb.addEventListener('mouseenter',function(){lb.classList.add('on');});
-lb.addEventListener('mouseleave',function(){lb.classList.remove('on');});
-});
-window.addEventListener('resize',draw);
-draw();setTimeout(draw,300);
-var tgt=new Date();tgt.setDate(tgt.getDate()+91);tgt.setHours(tgt.getHours()+11);
-function tick(){
-var d=Math.max(0,tgt-new Date());
-document.getElementById('cd-d').textContent=String(Math.floor(d/86400000)).padStart(2,'0');
-document.getElementById('cd-h').textContent=String(Math.floor((d%86400000)/3600000)).padStart(2,'0');
-document.getElementById('cd-m').textContent=String(Math.floor((d%3600000)/60000)).padStart(2,'0');
-document.getElementById('cd-s').textContent=String(Math.floor((d%60000)/1000)).padStart(2,'0');
-}
-tick();setInterval(tick,1000);
-})();
-</script>
-</body>
+    <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Cortexle - Coming Soon</title>
+    <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{width:100%;height:100%;overflow:hidden}
+    body{background:radial-gradient(ellipse at 50% 40%,#0a1f4e 0%,#040d1f 70%,#020810 100%);font-family:'Segoe UI',sans-serif;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-between;min-height:100vh;padding:18px 20px 14px}
+    .top{text-align:center;flex-shrink:0}
+    .logo{font-size:2rem;font-weight:800;letter-spacing:.15em;color:#fff;text-shadow:0 0 20px #4af0fc,0 0 40px #4af0fc88}
+    .logo span{color:#4af0fc}
+    .tagline{font-size:.78rem;letter-spacing:.25em;color:#7ab8d4;text-transform:uppercase;margin-top:4px}
+    .stage{position:relative;flex:1;width:100%;display:flex;align-items:center;justify-content:center;min-height:0}
+    #bw{position:relative;width:500px;height:340px;flex-shrink:0}
+    #bw svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 16px #1a8fff77) drop-shadow(0 0 36px #0a4fff33)}
+    .lbl{position:absolute;background:rgba(4,20,60,.85);border:1px solid #4af0fc55;border-radius:8px;padding:7px 11px;min-width:128px;max-width:142px;cursor:pointer;transition:border-color .3s,box-shadow .3s;backdrop-filter:blur(6px)}
+    .lbl:hover,.lbl.on{border-color:#4af0fc;box-shadow:0 0 16px #4af0fc66}
+    .lbl .ln{font-size:.72rem;font-weight:700;color:#4af0fc;letter-spacing:.06em;text-transform:uppercase}
+    .lbl .ld{font-size:.62rem;color:#8fcde0;margin-top:2px;line-height:1.35}
+    .lbl .la{font-size:.58rem;color:#4e8fa8;margin-top:3px;font-style:italic}
+    .bottom{flex-shrink:0;text-align:center;width:100%}
+    .cd{display:flex;gap:18px;justify-content:center;margin-bottom:12px}
+    .cd .u{text-align:center}
+    .cd .n{font-size:1.9rem;font-weight:700;color:#4af0fc;text-shadow:0 0 12px #4af0fc99;line-height:1}
+    .cd .l{font-size:.55rem;letter-spacing:.18em;color:#4e8fa8;text-transform:uppercase}
+    .col{font-size:1.9rem;font-weight:700;color:#4af0fc88;align-self:flex-start;padding-top:1px}
+    .er{display:flex;gap:0;justify-content:center;margin-bottom:8px}
+    .er input{width:220px;padding:9px 14px;background:rgba(255,255,255,.07);border:1px solid #4af0fc55;border-right:none;border-radius:6px 0 0 6px;color:#fff;font-size:.8rem;outline:none}
+    .er input::placeholder{color:#4e7a8a}
+    .er button{padding:9px 16px;background:#1a6fff;border:1px solid #4af0fc55;border-radius:0 6px 6px 0;color:#fff;font-size:.8rem;cursor:pointer;font-weight:600;transition:background .2s}
+    .er button:hover{background:#4af0fc;color:#040d1f}
+    .tgs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+    .tg{font-size:.6rem;padding:3px 9px;border:1px solid #4af0fc44;border-radius:20px;color:#4e8fa8;letter-spacing:.08em}
+    @keyframes pulse{0%{r:5;opacity:.9}50%{r:9;opacity:.3}100%{r:5;opacity:.9}}
+    .hr{animation:pulse 2.2s ease-in-out infinite}
+    .tip{position:absolute;background:rgba(4,14,40,.95);border:1px solid #4af0fc88;border-radius:8px;padding:8px 12px;font-size:.7rem;color:#cee8f5;pointer-events:none;opacity:0;transition:opacity .25s;z-index:99;white-space:nowrap;line-height:1.5}
+    .tip.show{opacity:1}
+    </style>
+    </head>
+    <body>
+    <div class="top">
+    <div class="logo">CORTEX<span>LE</span></div>
+    <div class="tagline">AI-Powered Video Intelligence &mdash; Coming Soon</div>
+    </div>
+    <div class="stage">
+    <div id="bw">
+    <svg id="bs" viewBox="0 0 500 340" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+    <filter id="g1" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="g2" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="bc">
+    <path d="M130,52 C118,34 98,22 76,26 C54,30 36,50 30,74 C22,104 34,136 52,156 C38,168 26,188 28,214 C30,238 48,256 70,262 C72,278 80,296 98,306 C116,316 138,312 154,302 C166,322 188,334 214,332 C236,330 254,318 262,304 C276,316 296,320 316,310 C336,300 346,278 344,256 C352,248 362,234 368,218 C378,194 374,166 360,148 C376,130 384,104 378,78 C370,48 344,28 316,26 C304,8 280,-2 254,4 C232,10 214,26 208,46 C194,34 176,26 158,30 C144,34 134,42 130,52Z"/>
+    </clipPath>
+    <linearGradient id="bf" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0a2a6e;stop-opacity:0.55"/><stop offset="100%" style="stop-color:#041030;stop-opacity:0.3"/></linearGradient>
+    </defs>
+    <!-- Brain main silhouette - lateral view -->
+    <path id="brain-outline" d="M130,52 C118,34 98,22 76,26 C54,30 36,50 30,74 C22,104 34,136 52,156 C38,168 26,188 28,214 C30,238 48,256 70,262 C72,278 80,296 98,306 C116,316 138,312 154,302 C166,322 188,334 214,332 C236,330 254,318 262,304 C276,316 296,320 316,310 C336,300 346,278 344,256 C352,248 362,234 368,218 C378,194 374,166 360,148 C376,130 384,104 378,78 C370,48 344,28 316,26 C304,8 280,-2 254,4 C232,10 214,26 208,46 C194,34 176,26 158,30 C144,34 134,42 130,52Z" fill="url(#bf)" stroke="#1a6fff" stroke-width="1.5" filter="url(#g1)" opacity="0.9"/>
+    <path d="M130,52 C118,34 98,22 76,26 C54,30 36,50 30,74 C22,104 34,136 52,156 C38,168 26,188 28,214 C30,238 48,256 70,262 C72,278 80,296 98,306 C116,316 138,312 154,302 C166,322 188,334 214,332 C236,330 254,318 262,304 C276,316 296,320 316,310 C336,300 346,278 344,256 C352,248 362,234 368,218 C378,194 374,166 360,148 C376,130 384,104 378,78 C370,48 344,28 316,26 C304,8 280,-2 254,4 C232,10 214,26 208,46 C194,34 176,26 158,30 C144,34 134,42 130,52Z" fill="none" stroke="#4af0fc" stroke-width="1.8" filter="url(#g2)" opacity="0.75"/>
+    <!-- Sulci / brain folds inside -->
+    <g clip-path="url(#bc)" stroke="#4af0fc" stroke-width="1" fill="none" opacity="0.3" filter="url(#g1)">
+    <path d="M208,20 C204,60 196,100 188,140 C182,170 178,202 180,242"/>
+    <path d="M252,12 C250,52 244,92 238,132 C232,164 228,198 230,238"/>
+    <path d="M68,162 C96,150 132,144 170,142 C208,140 248,142 284,146 C314,150 340,156 364,162"/>
+    <path d="M60,198 C90,186 130,180 170,178 C210,176 252,178 290,182 C320,186 348,192 370,198"/>
+    <path d="M76,110 C100,102 128,98 158,100 C184,102 204,110 210,124"/>
+    <path d="M296,36 C314,70 326,108 330,150 C334,186 328,222 318,254"/>
+    <path d="M174,36 C170,76 166,118 162,158 C158,194 158,230 164,266"/>
+    <path d="M48,134 C82,122 128,116 176,114 C224,112 274,116 320,124"/>
+    <path d="M42,172 C78,160 130,154 186,152 C242,150 298,154 346,162"/>
+    </g>
+    <!-- Lobe glow patches -->
+    <ellipse cx="105" cy="118" rx="62" ry="52" fill="#1a6fff" opacity="0.06"/>
+    <ellipse cx="270" cy="80" rx="65" ry="42" fill="#4af0fc" opacity="0.04"/>
+    <ellipse cx="88" cy="224" rx="54" ry="42" fill="#1a6fff" opacity="0.05"/>
+    <ellipse cx="348" cy="148" rx="48" ry="44" fill="#4af0fc" opacity="0.04"/>
+    <ellipse cx="210" cy="308" rx="90" ry="26" fill="#1a6fff" opacity="0.06"/>
+    <!-- HOTSPOTS -->
+    <circle class="hr" cx="108" cy="108" r="5" fill="#4af0fc" opacity="0.35" style="animation-delay:0s"/>
+    <circle id="h0" cx="108" cy="108" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
+    <circle class="hr" cx="266" cy="62" r="5" fill="#4af0fc" opacity="0.35" style="animation-delay:.4s"/>
+    <circle id="h1" cx="266" cy="62" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
+    <circle class="hr" cx="82" cy="214" r="5" fill="#4af0fc" opacity="0.35" style="animation-delay:.8s"/>
+    <circle id="h2" cx="82" cy="214" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
+    <circle class="hr" cx="354" cy="138" r="5" fill="#4af0fc" opacity="0.35" style="animation-delay:1.2s"/>
+    <circle id="h3" cx="354" cy="138" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
+    <circle class="hr" cx="308" cy="288" r="5" fill="#4af0fc" opacity="0.35" style="animation-delay:1.6s"/>
+    <circle id="h4" cx="308" cy="288" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
+    <circle class="hr" cx="196" cy="318" r="5" fill="#4af0fc" opacity="0.35" style="animation-delay:2s"/>
+    <circle id="h5" cx="196" cy="318" r="6" fill="#4af0fc" stroke="#4af0fc" stroke-width="1.5" filter="url(#g2)" opacity="0.95" style="cursor:pointer"/>
+    <svg id="cl" width="500" height="340" style="position:absolute;top:0;left:0;overflow:visible;pointer-events:none"></svg>
+    </svg>
+    <div class="lbl" id="l0" style="left:-150px;top:68px"><div class="ln">AI Q&amp;A</div><div class="ld">Ask questions about any video instantly</div><div class="la">Frontal lobe &middot; Language &amp; reasoning</div></div>
+    <div class="lbl" id="l2" style="left:-150px;top:174px"><div class="ln">Transcription</div><div class="ld">Auto-transcribe audio to searchable text</div><div class="la">Temporal lobe &middot; Speech &amp; audio</div></div>
+    <div class="lbl" id="l5" style="left:-140px;top:274px"><div class="ln">Chrome Extension</div><div class="ld">Works silently in your browser</div><div class="la">Brainstem &middot; Background processing</div></div>
+    <div class="lbl" id="l1" style="right:-150px;top:24px"><div class="ln">Video Processing</div><div class="ld">Frame-level analysis of any video</div><div class="la">Parietal lobe &middot; Sensory integration</div></div>
+    <div class="lbl" id="l3" style="right:-150px;top:100px"><div class="ln">Semantic Search</div><div class="ld">Find moments by meaning, not keywords</div><div class="la">Occipital lobe &middot; Visual recognition</div></div>
+    <div class="lbl" id="l4" style="right:-150px;top:250px"><div class="ln">Structured Notes</div><div class="ld">Auto-generated smart summaries</div><div class="la">Cerebellum &middot; Organisation &amp; structure</div></div>
+    <div class="tip" id="tp"></div>
+    </div>
+    </div>
+    <div class="bottom">
+    <div class="cd">
+    <div class="u"><div class="n" id="cd-d">91</div><div class="l">Days</div></div>
+    <div class="col">:</div>
+    <div class="u"><div class="n" id="cd-h">00</div><div class="l">Hours</div></div>
+    <div class="col">:</div>
+    <div class="u"><div class="n" id="cd-m">00</div><div class="l">Mins</div></div>
+    <div class="col">:</div>
+    <div class="u"><div class="n" id="cd-s">00</div><div class="l">Secs</div></div>
+    </div>
+    <div class="er"><input type="email" placeholder="Enter your email for early access"/><button>Notify Me</button></div>
+    <div class="tgs"><span class="tg">AI Video</span><span class="tg">Transcription</span><span class="tg">Semantic Search</span><span class="tg">Chrome Extension</span><span class="tg">Smart Notes</span></div>
+    </div>
+    <script>
+    (function(){
+    var pts=[[108,108,'l0'],[266,62,'l1'],[82,214,'l2'],[354,138,'l3'],[308,288,'l4'],[196,318,'l5']];
+    var svg=document.getElementById('bs');
+    var cl=document.getElementById('cl');
+    var bw=document.getElementById('bw');
+    var tp=document.getElementById('tp');
+    var tips=['<b>Frontal Lobe</b><br>Language, reasoning &amp; decisions<br><i>Powers AI Q&amp;A</i>','<b>Parietal Lobe</b><br>Sensory integration &amp; spatial<br><i>Powers Video Processing</i>','<b>Temporal Lobe</b><br>Auditory &amp; speech processing<br><i>Powers Transcription</i>','<b>Occipital Lobe</b><br>Visual recognition &amp; meaning<br><i>Powers Semantic Search</i>','<b>Cerebellum</b><br>Organisation &amp; coordination<br><i>Powers Structured Notes</i>','<b>Brainstem</b><br>Always-on background functions<br><i>Powers Chrome Extension</i>'];
+    function draw(){
+    cl.innerHTML='';
+    var sr=svg.getBoundingClientRect();
+    var br=bw.getBoundingClientRect();
+    var sx=sr.width/500,sy=sr.height/340;
+    pts.forEach(function(p,i){
+    var lb=document.getElementById(p[2]);
+    if(!lb)return;
+    var lr=lb.getBoundingClientRect();
+    var hx=(sr.left-br.left)+p[0]*sx;
+    var hy=(sr.top-br.top)+p[1]*sy;
+    var lx,ly;
+    if(lr.left<br.left){lx=lr.right-br.left;ly=lr.top-br.top+lr.height/2;}
+    else{lx=lr.left-br.left;ly=lr.top-br.top+lr.height/2;}
+    var line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',hx.toFixed(1));line.setAttribute('y1',hy.toFixed(1));
+    line.setAttribute('x2',lx.toFixed(1));line.setAttribute('y2',ly.toFixed(1));
+    line.setAttribute('stroke','#4af0fc');line.setAttribute('stroke-width','1');
+    line.setAttribute('stroke-dasharray','4 3');line.setAttribute('opacity','0.5');
+    cl.appendChild(line);
+    });
+    }
+    pts.forEach(function(p,i){
+    var el=document.getElementById('h'+i);
+    var lb=document.getElementById(p[2]);
+    if(!el)return;
+    el.addEventListener('mouseenter',function(){
+    lb.classList.add('on');
+    tp.innerHTML=tips[i];
+    var r=bw.getBoundingClientRect();
+    var sr=svg.getBoundingClientRect();
+    var sx=sr.width/500,sy=sr.height/340;
+    tp.style.left=((sr.left-r.left)+p[0]*sx+14)+'px';
+    tp.style.top=((sr.top-r.top)+p[1]*sy-10)+'px';
+    tp.classList.add('show');
+    });
+    el.addEventListener('mouseleave',function(){lb.classList.remove('on');tp.classList.remove('show');});
+    lb.addEventListener('mouseenter',function(){lb.classList.add('on');});
+    lb.addEventListener('mouseleave',function(){lb.classList.remove('on');});
+    });
+    window.addEventListener('resize',draw);
+    draw();setTimeout(draw,300);
+    var tgt=new Date();tgt.setDate(tgt.getDate()+91);tgt.setHours(tgt.getHours()+11);
+    function tick(){
+    var d=Math.max(0,tgt-new Date());
+    document.getElementById('cd-d').textContent=String(Math.floor(d/86400000)).padStart(2,'0');
+    document.getElementById('cd-h').textContent=String(Math.floor((d%86400000)/3600000)).padStart(2,'0');
+    document.getElementById('cd-m').textContent=String(Math.floor((d%3600000)/60000)).padStart(2,'0');
+    document.getElementById('cd-s').textContent=String(Math.floor((d%60000)/1000)).padStart(2,'0');
+    }
+    tick();setInterval(tick,1000);
+    })();
+    </script>
+    </body>
+    </html>
 </html>
