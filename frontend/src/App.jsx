@@ -19,6 +19,7 @@ import TermsPage from './pages/TermsPage'
 import PrivacyPage from './pages/PrivacyPage'
 import ExtensionCallbackPage from './pages/ExtensionCallbackPage'
 import TeamPage from './pages/TeamPage'
+import ComingSoonPage from './pages/ComingSoonPage'
 import NotFoundPage from './pages/NotFoundPage'
 import './App.css'
 
@@ -75,8 +76,8 @@ function PublicRoute({ children }) {
   return children
 }
 
-// Landing page - shows LandingPage for guests, redirects to /app for authenticated
-function LandingRoute() {
+// Coming soon page — guests see ComingSoonPage, authenticated users go to /app
+function ComingSoonRoute() {
   const { isAuthenticated, loading } = useAuth()
 
   if (loading) {
@@ -92,14 +93,35 @@ function LandingRoute() {
     return <Navigate to="/app" replace />
   }
 
-  return <LandingPage />
+  return <ComingSoonPage />
+}
+
+// Admin-only route — requires is_superuser, otherwise redirects to /
+function AdminRoute({ children }) {
+  const { isAuthenticated, user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated || !user?.is_superuser) {
+    return <Navigate to="/" replace />
+  }
+
+  return children
 }
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public landing page */}
-      <Route path="/" element={<LandingRoute />} />
+      {/* Coming soon page (replaces landing for pre-launch) */}
+      <Route path="/" element={<ComingSoonRoute />} />
+      <Route path="/landing" element={<AdminRoute><LandingPage /></AdminRoute>} />
 
       {/* Auth routes */}
       <Route

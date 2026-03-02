@@ -262,6 +262,7 @@ class AuthService:
             created_at=user.created_at,
             tier=subscription_tier,
             referral_code=getattr(user, 'referral_code', None),
+            is_superuser=getattr(user, 'is_superuser', False),
             avatar_url=getattr(user, 'avatar_url', None),
             preferences=getattr(user, 'preferences', None),
         )

@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from app import VideoMemoryAI
 from video_processor import _extract_video_id
-from database import get_db, init_db, User, get_tier_limits, engine, SessionLocal, ChatSession, ChatMessage, GeneratedContent, ContentVector, Collection, CREDIT_COSTS, TIER_CREDITS, TOPUP_PACKS, Team, TeamMember, TeamInvitation, TeamContent, Notification, Report, Referral, CreditTransaction, Subscription
+from database import get_db, init_db, User, get_tier_limits, engine, SessionLocal, ChatSession, ChatMessage, GeneratedContent, ContentVector, Collection, CREDIT_COSTS, TIER_CREDITS, TOPUP_PACKS, Team, TeamMember, TeamInvitation, TeamContent, Notification, Report, Referral, CreditTransaction, Subscription, WaitlistEmail
 from auth import (
     UserCreate, UserLogin, UserResponse, Token,
     ForgotPasswordRequest, ResetPasswordRequest, GoogleAuthRequest,
@@ -365,6 +365,7 @@ async def get_me(
         tier=tier,
         has_password=current_user.hashed_password is not None,
         referral_code=referral_code,
+        is_superuser=getattr(current_user, 'is_superuser', False),
         avatar_url=getattr(current_user, 'avatar_url', None),
         preferences=getattr(current_user, 'preferences', None),
     )
@@ -750,6 +751,41 @@ async def delete_account(
 # =============================================
 # Health Check Endpoints
 # =============================================
+# =============================================
+# Waitlist Endpoints
+# =============================================
+class WaitlistRequest(BaseModel):
+    email: str
+
+@app.post("/api/waitlist")
+async def add_to_waitlist(req: WaitlistRequest, db: Session = Depends(get_db)):
+    """Add email to waitlist (public, no auth required)"""
+    email = req.email.strip().lower()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Invalid email address")
+    existing = db.query(WaitlistEmail).filter(WaitlistEmail.email == email).first()
+    if existing:
+        return {"message": "You're already on the list!", "already_exists": True}
+    entry = WaitlistEmail(email=email)
+    db.add(entry)
+    db.commit()
+    return {"message": "You're on the list! We'll notify you when we launch.", "already_exists": False}
+
+@app.get("/api/waitlist")
+async def get_waitlist(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get all waitlist emails (admin only)"""
+    if not getattr(current_user, 'is_superuser', False):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    entries = db.query(WaitlistEmail).order_by(WaitlistEmail.created_at.desc()).all()
+    return {
+        "count": len(entries),
+        "emails": [{"email": e.email, "created_at": e.created_at.isoformat()} for e in entries]
+    }
+
+
 @app.get("/api/health")
 async def health_check():
     """

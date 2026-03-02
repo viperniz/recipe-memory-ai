@@ -15748,3 +15748,484 @@ button.timestamp-link {
   }
 }
 
+
+/* =============================================
+   Coming Soon Page
+   ============================================= */
+
+.cs-page {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #0a0a1a;
+  color: #fff;
+}
+
+.cs-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cs-layout {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 32px;
+  gap: 64px;
+}
+
+/* Left half — brand + orb */
+.cs-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  flex-shrink: 0;
+}
+
+.cs-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cs-brand-icon {
+  width: 36px;
+  height: 36px;
+  color: #a78bfa;
+  filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.5));
+}
+
+.cs-brand-text {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #a78bfa, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 0 20px rgba(167, 139, 250, 0.3));
+}
+
+/* Orb container */
+.cs-orb-container {
+  position: relative;
+  width: 340px;
+  height: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cs-orb-glow {
+  position: absolute;
+  inset: -30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.2) 0%, rgba(6, 182, 212, 0.08) 50%, transparent 70%);
+  animation: csOrbPulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.cs-orb-canvas {
+  position: relative;
+  z-index: 1;
+}
+
+.cs-orb-ring {
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(167, 139, 250, 0.1);
+  animation: csOrbPulse 4s ease-in-out infinite reverse;
+  pointer-events: none;
+}
+
+@keyframes csOrbPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+/* Right half — title + tiles */
+.cs-right {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 480px;
+}
+
+.cs-title {
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -1px;
+  margin: 0;
+}
+
+.cs-title-char {
+  display: inline-block;
+  background: linear-gradient(135deg, #e2e8f0, #a78bfa, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cs-subtitle {
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+/* Feature tiles — 2x3 grid */
+.cs-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.cs-tile {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  transition: transform 0.2s, background 0.2s, border-color 0.2s;
+}
+
+.cs-tile:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
+}
+
+.cs-tile:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+.cs-tile-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-tile-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  flex: 1;
+}
+
+.cs-tile-chevron {
+  color: rgba(255, 255, 255, 0.3);
+  transition: transform 0.25s ease;
+}
+
+.cs-tile-chevron-open {
+  transform: rotate(180deg);
+}
+
+/* Accordion body */
+.cs-tile-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+
+.cs-tile-expanded .cs-tile-body {
+  max-height: 120px;
+  opacity: 1;
+  margin-top: 8px;
+}
+
+.cs-tile-body p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+  padding-left: 26px;
+  border-left: 2px solid var(--accent, #a78bfa);
+}
+
+/* CTA button */
+.cs-cta-btn {
+  margin-top: 8px;
+  padding: 12px 28px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  align-self: flex-start;
+}
+
+.cs-cta-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px rgba(124, 58, 237, 0.35);
+}
+
+/* Notify Me Widget */
+.cs-notify-widget {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 50;
+}
+
+.cs-notify-fab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.cs-notify-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(124, 58, 237, 0.5);
+}
+
+.cs-notify-fab-label {
+  white-space: nowrap;
+}
+
+.cs-notify-panel {
+  width: 300px;
+  background: rgba(15, 15, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: csNotifySlideUp 0.25s ease-out;
+}
+
+@keyframes csNotifySlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cs-notify-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.cs-notify-close {
+  all: unset;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.2s;
+}
+
+.cs-notify-close:hover {
+  color: #fff;
+}
+
+.cs-notify-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+.cs-notify-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.cs-notify-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.cs-notify-input:focus {
+  border-color: #7c3aed;
+}
+
+.cs-notify-submit {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.cs-notify-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cs-notify-error {
+  font-size: 12px;
+  color: #f87171;
+  margin: 0;
+}
+
+.cs-notify-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  text-align: center;
+  color: #34d399;
+}
+
+.cs-notify-success p {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* =============================================
+   Coming Soon — Responsive
+   ============================================= */
+@media (max-width: 768px) {
+  .cs-layout {
+    flex-direction: column;
+    gap: 32px;
+    padding: 32px 20px;
+    justify-content: flex-start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cs-left {
+    gap: 20px;
+  }
+
+  .cs-orb-container {
+    width: 200px;
+    height: 200px;
+  }
+
+  .cs-orb-canvas {
+    width: 200px !important;
+    height: 200px !important;
+  }
+
+  .cs-brand-text {
+    font-size: 22px;
+  }
+
+  .cs-brand-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .cs-right {
+    align-items: center;
+    text-align: center;
+    max-width: 100%;
+  }
+
+  .cs-title {
+    font-size: 36px;
+  }
+
+  .cs-subtitle {
+    font-size: 14px;
+  }
+
+  .cs-tiles {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .cs-tile-body p {
+    padding-left: 20px;
+  }
+
+  .cs-cta-btn {
+    align-self: center;
+  }
+
+  .cs-notify-widget {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .cs-notify-panel {
+    width: calc(100vw - 32px);
+    max-width: 300px;
+  }
+
+  .cs-notify-fab-label {
+    display: none;
+  }
+
+  .cs-notify-fab {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+}
+
+/* =============================================
+   Coming Soon — Reduced Motion
+   ============================================= */
+@media (prefers-reduced-motion: reduce) {
+  .cs-orb-glow,
+  .cs-orb-ring {
+    animation: none;
+  }
+
+  .cs-title-char {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .cs-tile {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .cs-notify-panel {
+    animation: none;
+  }
+}
+

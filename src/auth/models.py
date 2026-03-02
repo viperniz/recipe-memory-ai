@@ -36,6 +36,7 @@ class UserResponse(BaseModel):
     tier: str = "free"
     has_password: bool = True
     referral_code: Optional[str] = None
+    is_superuser: bool = False
     avatar_url: Optional[str] = None
     preferences: Optional[dict] = None
 
