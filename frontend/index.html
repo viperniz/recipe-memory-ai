@@ -1,395 +1,485 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Cortexle - Coming Soon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow-x:hidden;background:#000}
-body{color:#fff;font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
-#hdr{text-align:center;padding:22px 20px 0;flex-shrink:0}
-.logo{font-size:2.4rem;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,#a78bfa,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.tl{font-size:0.82rem;color:#3a5070;margin-top:4px;letter-spacing:2px;text-transform:uppercase}
-#bw{flex:1;display:flex;align-items:center;justify-content:center;position:relative;width:100%}
-#bc{display:block;cursor:grab;max-width:100%}
-#bc:active{cursor:grabbing}
-#lbl{position:absolute;top:6%;left:50%;transform:translateX(-50%);background:rgba(0,4,18,0.93);border:1px solid rgba(74,240,252,0.75);border-radius:10px;padding:10px 24px;font-size:0.95rem;font-weight:700;color:#4af0fc;letter-spacing:2px;text-transform:uppercase;pointer-events:none;opacity:0;transition:opacity 0.35s;box-shadow:0 0 28px rgba(74,240,252,0.35);white-space:nowrap;z-index:10}
-#lbl.show{opacity:1}
-#dtip{color:rgba(255,255,255,0.16);font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;text-align:center;padding:4px 0;flex-shrink:0}
-#bot{text-align:center;padding:10px 20px 20px;width:100%;max-width:540px;flex-shrink:0}
-.cd{display:flex;justify-content:center;gap:14px;margin-bottom:12px;align-items:center}
-.cdu{text-align:center}.cdn{font-size:1.9rem;font-weight:700;color:#60a5fa;display:block;line-height:1}
-.cdl{font-size:0.52rem;color:#2a3a4a;text-transform:uppercase;letter-spacing:2px;margin-top:2px}
-.sp{color:#162030;font-size:1.6rem;padding-bottom:12px}
-.er{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
-.er input{padding:10px 14px;border-radius:8px;border:1px solid rgba(74,240,252,0.2);background:rgba(255,255,255,0.04);color:#fff;font-size:0.83rem;width:215px;outline:none}
-.er input:focus{border-color:rgba(74,240,252,0.6)}
-.er button{padding:10px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#4f46e5,#0ea5e9);color:#fff;font-weight:700;font-size:0.83rem;cursor:pointer}
-.tgs{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
-.tg{padding:3px 9px;border-radius:20px;border:1px solid rgba(74,240,252,0.15);color:#253040;font-size:0.63rem}
+body{background:#000;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+header{width:100%;padding:22px 40px;display:flex;align-items:center;justify-content:center}
+.logo{font-size:28px;font-weight:700;letter-spacing:2px;background:linear-gradient(135deg,#4fc3f7,#7c4dff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero{text-align:center;padding:8px 20px 0}
+.hero h1{font-size:clamp(30px,5vw,52px);font-weight:700;line-height:1.1;margin-bottom:10px;background:linear-gradient(135deg,#fff 0%,#4fc3f7 50%,#7c4dff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-size:clamp(13px,1.8vw,17px);color:rgba(255,255,255,0.55);max-width:480px;margin:0 auto 12px}
+#brain-section{position:relative;width:100%;max-width:680px;height:480px;margin:0 auto}
+#brain-canvas{display:block;width:100%;height:100%;cursor:grab}
+#brain-canvas:active{cursor:grabbing}
+.feature-label{position:absolute;left:50%;top:16%;transform:translate(-50%,-50%);background:rgba(0,0,20,0.9);border:1px solid rgba(79,195,247,0.7);border-radius:8px;padding:8px 18px;font-size:14px;font-weight:600;color:#4fc3f7;pointer-events:none;opacity:0;transition:opacity 0.4s;white-space:nowrap;letter-spacing:0.5px;box-shadow:0 0 20px rgba(79,195,247,0.35)}
+.feature-label.visible{opacity:1}
+.hint{font-size:10px;color:rgba(255,255,255,0.22);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;text-align:center}
+.countdown-section{text-align:center;padding:4px 20px 14px}
+.countdown-title{font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.countdown-grid{display:flex;gap:20px;justify-content:center}
+.countdown-item{text-align:center}
+.countdown-num{font-size:clamp(26px,4vw,42px);font-weight:700;color:#4fc3f7;line-height:1;display:block}
+.countdown-lbl{font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:1px;text-transform:uppercase;margin-top:3px}
+.email-section{padding:0 20px 14px;text-align:center}
+.email-form{display:flex;gap:10px;max-width:380px;margin:0 auto;justify-content:center}
+.email-input{flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(79,195,247,0.3);border-radius:8px;padding:10px 15px;color:#fff;font-size:14px;outline:none;transition:border-color 0.3s}
+.email-input::placeholder{color:rgba(255,255,255,0.28)}
+.email-input:focus{border-color:#4fc3f7}
+.email-btn{background:linear-gradient(135deg,#4fc3f7,#7c4dff);border:none;border-radius:8px;padding:10px 20px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:opacity 0.3s;white-space:nowrap}
+.email-btn:hover{opacity:0.85}
+.features-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:0 20px 24px;max-width:620px}
+.feat-tag{background:rgba(79,195,247,0.07);border:1px solid rgba(79,195,247,0.22);border-radius:20px;padding:5px 13px;font-size:12px;color:rgba(255,255,255,0.6);letter-spacing:0.3px}
 </style>
 </head>
 <body>
-<div id="hdr"><div class="logo">CORTEXLE</div><div class="tl">AI-Powered Video Intelligence — Coming Soon</div></div>
-<div id="bw"><canvas id="bc"></canvas><div id="lbl"></div></div>
-<div id="dtip">⟵ Drag to rotate &nbsp;|&nbsp; Click glowing points to explore ⟶</div>
-<div id="bot">
-  <div class="cd">
-    <div class="cdu"><span class="cdn" id="cd-d">91</span><div class="cdl">Days</div></div><div class="sp">:</div>
-    <div class="cdu"><span class="cdn" id="cd-h">00</span><div class="cdl">Hours</div></div><div class="sp">:</div>
-    <div class="cdu"><span class="cdn" id="cd-m">00</span><div class="cdl">Mins</div></div><div class="sp">:</div>
-    <div class="cdu"><span class="cdn" id="cd-s">00</span><div class="cdl">Secs</div></div>
-  </div>
-  <div class="er"><input type="email" id="ei" placeholder="Enter your email"><button onclick="notify()">Notify Me</button></div>
-  <div class="tgs"><span class="tg">AI Video</span><span class="tg">Transcription</span><span class="tg">Semantic Search</span><span class="tg">Chrome Extension</span><span class="tg">Smart Notes</span></div>
+<header><div class="logo">CORTEXLE</div></header>
+<div class="hero">
+  <h1>AI Video Intelligence</h1>
+  <p>Transform any video into searchable, interactive knowledge</p>
 </div>
+<div id="brain-section">
+  <canvas id="brain-canvas"></canvas>
+  <div class="feature-label" id="feat-label"></div>
+</div>
+<div class="hint">Click a node &bull; Drag to explore</div>
+<div class="countdown-section">
+  <div class="countdown-title">Launching In</div>
+  <div class="countdown-grid">
+    <div class="countdown-item"><span class="countdown-num" id="cd-d">00</span><div class="countdown-lbl">Days</div></div>
+    <div class="countdown-item"><span class="countdown-num" id="cd-h">00</span><div class="countdown-lbl">Hours</div></div>
+    <div class="countdown-item"><span class="countdown-num" id="cd-m">00</span><div class="countdown-lbl">Mins</div></div>
+    <div class="countdown-item"><span class="countdown-num" id="cd-s">00</span><div class="countdown-lbl">Secs</div></div>
+  </div>
+</div>
+<div class="email-section">
+  <form class="email-form" onsubmit="return false">
+    <input class="email-input" type="email" placeholder="Enter your email" id="email-in"/>
+    <button class="email-btn" onclick="notifyMe()">Notify Me</button>
+  </form>
+</div>
+<div class="features-row">
+  <span class="feat-tag">AI Q&amp;A</span>
+  <span class="feat-tag">Video Processing</span>
+  <span class="feat-tag">Transcription</span>
+  <span class="feat-tag">Semantic Search</span>
+  <span class="feat-tag">Smart Notes</span>
+  <span class="feat-tag">Chrome Extension</span>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
-'use strict';
-var C=document.getElementById('bc');
-var ctx=C.getContext('2d');
-var BW=600,BH=460;
-C.width=BW;C.height=BH;
-C.style.width=BW+'px';C.style.height=BH+'px';
+  var target=new Date('2025-09-01T00:00:00Z');
+  function upd(){var now=new Date(),diff=Math.max(0,target-now);var d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);document.getElementById('cd-d').textContent=String(d).padStart(2,'0');document.getElementById('cd-h').textContent=String(h).padStart(2,'0');document.getElementById('cd-m').textContent=String(m).padStart(2,'0');document.getElementById('cd-s').textContent=String(s).padStart(2,'0');}
+  upd();setInterval(upd,1000);
+})();
+window.notifyMe=function(){var v=document.getElementById('email-in').value;if(!v||!v.includes('@'))return;alert('Thanks! We will notify you at '+v);};
+</script>
 
-// ── Rotation ──────────────────────────────────────────────────
-var rotY=0,targetRotY=0;
-var isDrag=false,dragSX=0,rotSY=0;
-var autoSpin=true;
-var actF=null;
-var lbl=document.getElementById('lbl');
-var ckx=0,cky=0;
-
-// ── Brain anatomy paths ───────────────────────────────────────
-// Scale: brain fits nicely in 600x460 canvas
-// Frontal lobe LEFT (x~90-200), Occipital RIGHT (x~470-520)
-// Top vertex y~55, base y~310 for main cerebrum
-
-// Main cerebrum - lateral profile
-var CER=[
-  // Start at frontal base (inferior frontal)
-  [138,305],
-  // Frontal lobe traces up and forward
-  [108,285],[88,262],[78,236],[76,208],[80,180],
-  [88,155],[102,132],[120,112],
-  // Frontoparietal
-  [142,96],[168,82],[198,70],[230,60],
-  // Parietal - vertex top  
-  [264,54],[300,50],[336,54],
-  // Parieto-occipital
-  [370,62],[402,74],[430,88],[452,106],
-  // Occipital
-  [466,126],[476,148],[480,172],[478,196],
-  // Temporal-occipital junction (back lower)
-  [470,218],[456,236],[438,250],[418,258],
-  // Superior temporal / parieto-temporal
-  [395,262],[370,264],[344,262],[318,266],
-  // Temporal pole region (upper temporal)
-  [292,270],[266,272],[240,268],[215,262],
-  // Sylvian fissure notch
-  [194,254],[175,242],[160,228],
-  // Frontal base back to start
-  [148,270],[140,288],[138,305]
-];
-
-// Temporal lobe (below Sylvian fissure) - integrated, not too separate
-var TEM=[
-  [160,228],// sylvian fissure point
-  [148,240],[138,256],[130,272],[124,290],
-  [120,308],[118,326],[120,344],[126,360],
-  [136,372],[150,380],[166,384],[182,382],
-  [198,376],[212,364],[222,348],[228,330],
-  [230,312],[226,295],[218,278],[206,264],
-  [194,254],[175,242],[160,228]
-];
-
-// Cerebellum (lower right, connected)
-var CERE=[
-  [430,262],[448,258],[464,258],[478,262],
-  [490,272],[496,286],[496,302],[490,318],
-  [480,330],[466,338],[450,340],[434,338],
-  [420,330],[412,318],[410,304],[412,290],
-  [418,276],[430,262]
-];
-
-// Brainstem (connects bottom of cerebrum to cerebellum area)
-var BS=[
-  [222,300],[240,294],[256,298],[268,308],
-  [274,322],[274,340],[272,358],[266,374],
-  [256,386],[242,392],[228,390],[216,382],
-  [208,368],[206,352],[208,336],[214,320],
-  [222,300]
-];
-
-// ── Nodes - distributed across entire brain ───────────────────
-// Orange hot nodes - spread ALL over the brain surface
-var ON=[ // orange nodes [x,y]
-  // Frontal lobe (left region)
-  [120,175],[145,155],[170,145],[148,200],[125,225],
-  // Central parietal
-  [200,125],[232,110],[268,105],[302,115],[200,165],
-  // Parietal
-  [240,145],[275,135],[310,140],[340,148],[370,148],
-  // Post-parietal / occipital
-  [400,150],[425,162],[448,180],[462,200],
-  // Middle band
-  [235,188],[265,178],[295,172],[328,175],[360,178],
-  [390,182],[418,195],[442,215],
-  // Lower middle
-  [180,230],[210,215],[245,210],[278,205],[310,208],
-  [342,210],[372,215],[400,222],[425,238],
-  // Upper temporal
-  [185,258],[218,248],[252,242],[285,240],[318,242],
-  [348,240],[378,244],[406,250],
-  // Temporal area
-  [152,285],[175,298],[200,308],[228,315],[256,310],
-  [284,308],[312,305],[340,302],[368,298],[395,292]
-];
-
-var BN=[ // blue/white nodes [x,y]
-  [135,195],[115,215],[92,240],[95,200],[108,168],
-  [168,120],[198,105],[228,96],[260,92],[294,92],
-  [326,96],[358,106],[385,118],[410,130],[432,148],
-  [456,168],[470,190],[474,208],[466,228],
-  [148,168],[178,172],[208,178],[238,170],[268,162],
-  [298,158],[328,162],[358,165],[388,165],[416,170],
-  [175,215],[205,208],[235,200],[265,195],[295,192],
-  [325,195],[355,198],[385,202],[412,210],[436,225],
-  [163,242],[193,238],[222,232],[252,228],[282,225],
-  [312,228],[342,230],[370,234],[396,238],[420,248],
-  [445,256],[460,270],[480,288],[484,305],[476,320],
-  [462,332],[444,338],[160,310],[182,322],[205,332],
-  [230,340],[256,335],[282,330],[308,326],[334,320],
-  [360,316],[386,310],[410,304],[432,296]
-];
-
-var nodes=[];
-ON.forEach(function(p){nodes.push({x:p[0],y:p[1],o:true,r:2.2+Math.random()*1.8,ph:Math.random()*Math.PI*2});});
-BN.forEach(function(p){nodes.push({x:p[0],y:p[1],o:false,r:1.2+Math.random()*1.4,ph:Math.random()*Math.PI*2});});
-
-// Build connections
-var conns=[];
+<script>
 (function(){
-  for(var i=0;i<nodes.length;i++){
-    for(var j=i+1;j<nodes.length;j++){
-      var dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y;
-      var d=Math.sqrt(dx*dx+dy*dy);
-      var both=nodes[i].o&&nodes[j].o;
-      var lim=both?140:70;
-      var prob=both?0.65:0.22;
-      if(d<lim&&Math.random()<prob){
-        conns.push({i:i,j:j,oo:both,mo:nodes[i].o||nodes[j].o});
+  var section=document.getElementById('brain-section');
+  var canvas=document.getElementById('brain-canvas');
+  var label=document.getElementById('feat-label');
+  var W=section.clientWidth, H=section.clientHeight;
+  canvas.width=W*window.devicePixelRatio; canvas.height=H*window.devicePixelRatio;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+
+  var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:false});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(W,H);
+  renderer.setClearColor(0x000000,1);
+
+  var scene=new THREE.Scene();
+  var camera=new THREE.PerspectiveCamera(42,W/H,0.1,100);
+  camera.position.set(0,0,4.8);
+
+  // === Brain geometry: displaced sphere matching lateral brain profile ===
+  var brainGeo=new THREE.SphereGeometry(1.0,100,70);
+  var pos=brainGeo.attributes.position;
+  for(var i=0;i<pos.count;i++){
+    var x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+    var len=Math.sqrt(x*x+y*y+z*z);
+    var nx=x/len,ny=y/len,nz=z/len;
+    // Ellipsoid base: wide left-right, medium height, thin front-back
+    var sx=1.35,sy=1.0,sz=1.0;
+    // Frontal lobe: bulge at front-left (positive Z in our coord = viewer side)
+    var frontal=0.12*Math.max(0,nz)*Math.max(0,nx+0.3)*Math.max(0,ny+0.2);
+    // Occipital: bulge back-right
+    var occip=0.10*Math.max(0,-nz)*Math.max(0,-nx+0.3)*Math.max(0,ny+0.2);
+    // Parietal: top center
+    var parietal=0.07*Math.max(0,ny-0.3)*Math.exp(-nx*nx*3);
+    // Temporal: lower side pocket
+    var temporal=0.08*Math.max(0,nz-0.3)*Math.max(0,-ny-0.1)*Math.max(0,-ny-0.0);
+    // Cerebellum: bottom-back notch
+    var cerebellum=-0.10*Math.max(0,-ny-0.3)*Math.max(0,-nx);
+    // Sulcus groove at top (central sulcus)
+    var sulcus=-0.04*Math.exp(-nx*nx*20)*Math.max(0,ny-0.5);
+    var disp=frontal+occip+parietal+temporal+cerebellum+sulcus;
+    var r=1.0+disp;
+    pos.setXYZ(i,nx*r*sx,ny*r*sy,nz*r*sz);
+  }
+  brainGeo.computeVertexNormals();
+
+  // Brain shader - dark interior, glowing blue rim
+  var brainMat=new THREE.ShaderMaterial({
+    uniforms:{
+      rimCol:{value:new THREE.Color(0.12,0.30,1.0)},
+      rimCol2:{value:new THREE.Color(0.05,0.15,0.60)},
+      innerCol:{value:new THREE.Color(0.008,0.008,0.05)},
+    },
+    vertexShader:`
+      varying vec3 vN;
+      varying vec3 vVD;
+      void main(){
+        vN=normalize(normalMatrix*normal);
+        vec4 wp=modelViewMatrix*vec4(position,1.0);
+        vVD=normalize(-wp.xyz);
+        gl_Position=projectionMatrix*wp;
       }
+    `,
+    fragmentShader:`
+      uniform vec3 rimCol;
+      uniform vec3 rimCol2;
+      uniform vec3 innerCol;
+      varying vec3 vN;
+      varying vec3 vVD;
+      void main(){
+        float facing=abs(dot(vN,vVD));
+        float rim=1.0-facing;
+        // Sharp bright rim
+        float rimHard=pow(rim,2.0);
+        float rimSoft=pow(rim,1.2);
+        vec3 col=mix(innerCol,rimCol2,rimSoft*0.7);
+        col=mix(col,rimCol,rimHard*1.1);
+        // Extra bright outer edge
+        col+=rimCol*pow(rim,3.5)*0.8;
+        gl_FragColor=vec4(col,0.95);
+      }
+    `,
+    transparent:true,
+    side:THREE.FrontSide
+  });
+
+  var brainMesh=new THREE.Mesh(brainGeo,brainMat);
+  scene.add(brainMesh);
+
+  // Dark back face (interior)
+  var backMesh=new THREE.Mesh(brainGeo,new THREE.MeshBasicMaterial({color:0x000308,side:THREE.BackSide,transparent:true,opacity:0.98}));
+  scene.add(backMesh);
+
+  // Outer glow shell
+  var glowGeo=new THREE.SphereGeometry(1.55,40,28);
+  var glowMat=new THREE.ShaderMaterial({
+    uniforms:{gc:{value:new THREE.Color(0.08,0.22,0.95)}},
+    vertexShader:`varying vec3 vN,vV;void main(){vN=normalize(normalMatrix*normal);vec4 wp=modelViewMatrix*vec4(position,1.0);vV=normalize(-wp.xyz);gl_Position=projectionMatrix*wp;}`,
+    fragmentShader:`uniform vec3 gc;varying vec3 vN,vV;void main(){float r=1.0-abs(dot(vN,vV));float a=pow(r,3.0)*0.5;gl_FragColor=vec4(gc,a);}`,
+    transparent:true,side:THREE.BackSide,depthWrite:false
+  });
+  var glowShell=new THREE.Mesh(glowGeo,glowMat);
+  scene.add(glowShell);
+
+  // === Generate nodes on brain surface ===
+  // Use rejection sampling to place nodes on the ellipsoid surface
+  function brainPos(nx,ny,nz){
+    var sx=1.35,sy=1.0,sz=1.0;
+    var frontal=0.12*Math.max(0,nz)*Math.max(0,nx+0.3)*Math.max(0,ny+0.2);
+    var occip=0.10*Math.max(0,-nz)*Math.max(0,-nx+0.3)*Math.max(0,ny+0.2);
+    var parietal=0.07*Math.max(0,ny-0.3)*Math.exp(-nx*nx*3);
+    var temporal=0.08*Math.max(0,nz-0.3)*Math.max(0,-ny-0.1);
+    var cerebellum=-0.10*Math.max(0,-ny-0.3)*Math.max(0,-nx);
+    var sulcus=-0.04*Math.exp(-nx*nx*20)*Math.max(0,ny-0.5);
+    var disp=frontal+occip+parietal+temporal+cerebellum+sulcus;
+    var r=1.0+disp;
+    return {x:nx*r*sx,y:ny*r*sy,z:nz*r*sz};
+  }
+
+  function randomSurfaceNode(){
+    // Random point on unit sphere -> project to brain surface
+    var u=Math.random()*2-1;
+    var t=Math.random()*Math.PI*2;
+    var s=Math.sqrt(1-u*u);
+    var nx=s*Math.cos(t), ny=u, nz=s*Math.sin(t);
+    var p=brainPos(nx,ny,nz);
+    // Add tiny random offset outward (1-3% of radius)
+    var scale=1.01+Math.random()*0.03;
+    return {x:p.x*scale,y:p.y*scale,z:p.z*scale};
+  }
+
+  var orangeNodes=[], blueNodes=[];
+  for(var i=0;i<58;i++) orangeNodes.push(randomSurfaceNode());
+  for(var i=0;i<70;i++) blueNodes.push(randomSurfaceNode());
+
+  // Make sprite textures
+  function makeSpriteTex(isOrange){
+    var c=document.createElement('canvas');c.width=64;c.height=64;
+    var ctx=c.getContext('2d');
+    var g=ctx.createRadialGradient(32,32,0,32,32,28);
+    if(isOrange){
+      g.addColorStop(0,'rgba(255,255,255,1)');
+      g.addColorStop(0.12,'rgba(255,200,100,1)');
+      g.addColorStop(0.3,'rgba(255,100,20,0.85)');
+      g.addColorStop(0.6,'rgba(255,60,0,0.3)');
+      g.addColorStop(1,'rgba(200,40,0,0)');
+    } else {
+      g.addColorStop(0,'rgba(255,255,255,1)');
+      g.addColorStop(0.12,'rgba(200,230,255,1)');
+      g.addColorStop(0.3,'rgba(80,160,255,0.75)');
+      g.addColorStop(0.6,'rgba(40,100,220,0.25)');
+      g.addColorStop(1,'rgba(20,60,200,0)');
     }
+    ctx.fillStyle=g;
+    ctx.beginPath();ctx.arc(32,32,28,0,Math.PI*2);ctx.fill();
+    return new THREE.CanvasTexture(c);
   }
-})();
 
-// Fibrous surface texture
-var fibers=[];
-(function(){
-  for(var i=0;i<350;i++){
-    var x=80+Math.random()*420;
-    var y=55+Math.random()*320;
-    fibers.push({x:x,y:y,len:12+Math.random()*40,angle:Math.random()*Math.PI*2,curve:(-0.5+Math.random())*0.9,op:0.03+Math.random()*0.1});
+  var orangeTex=makeSpriteTex(true);
+  var blueTex=makeSpriteTex(false);
+
+  function makePoints(nodes, tex, size){
+    var arr=[];
+    nodes.forEach(function(n){arr.push(n.x,n.y,n.z);});
+    var geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(arr,3));
+    var mat=new THREE.PointsMaterial({size:size,map:tex,transparent:true,depthTest:false,sizeAttenuation:true,alphaTest:0.02});
+    var pts=new THREE.Points(geo,mat);
+    pts.renderOrder=2;
+    return pts;
   }
-})();
 
-// Features
-var features=[
-  {id:'aiq', name:'AI Q&A',           x:145,y:178, tY:-22},
-  {id:'vid', name:'Video Processing',  x:305,y:108, tY:0 },
-  {id:'tran',name:'Transcription',     x:188,y:270, tY:-16},
-  {id:'sem', name:'Semantic Search',   x:456,y:190, tY:18 },
-  {id:'note',name:'Smart Notes',       x:450,y:300, tY:14 },
-  {id:'ext', name:'Chrome Extension',  x:242,y:376, tY:0  }
-];
-
-// ── Drawing ───────────────────────────────────────────────────
-function mkPath(pts){
-  ctx.beginPath();
-  ctx.moveTo(pts[0][0],pts[0][1]);
-  for(var i=1;i<pts.length-2;i++){
-    ctx.quadraticCurveTo(pts[i][0],pts[i][1],(pts[i][0]+pts[i+1][0])/2,(pts[i][1]+pts[i+1][1])/2);
-  }
-  ctx.quadraticCurveTo(pts[pts.length-2][0],pts[pts.length-2][1],pts[pts.length-1][0],pts[pts.length-1][1]);
-  ctx.closePath();
-}
-
-function txX(x){
-  var cos=Math.cos(rotY*Math.PI/180);
-  return BW*0.5+(x-BW*0.5)*cos;
-}
-
-function drawRegion(pts,grad,strokeCol){
-  var tp=pts.map(function(p){return[txX(p[0]),p[1]];});
-  mkPath(tp);
-  ctx.fillStyle=grad;ctx.fill();
-  mkPath(tp);
-  [
-    {w:12,c:'rgba(50,90,200,0.07)'},
-    {w:7, c:'rgba(80,130,230,0.13)'},
-    {w:3.5,c:'rgba(120,170,255,0.32)'},
-    {w:1.5,c:'rgba(190,215,255,0.8)'}
-  ].forEach(function(g){
-    ctx.strokeStyle=g.c;ctx.lineWidth=g.w;
-    ctx.shadowColor='rgba(100,160,255,0.8)';ctx.shadowBlur=g.w>4?12:6;
-    ctx.stroke();ctx.shadowBlur=0;
-  });
-}
-
-function draw(){
-  ctx.clearRect(0,0,BW,BH);
-  var cos=Math.cos(rotY*Math.PI/180);
-  var absCos=Math.abs(cos);
-
-  // Dark interior gradient
-  var dg=ctx.createRadialGradient(BW*0.48,BH*0.42,10,BW*0.48,BH*0.42,280);
-  dg.addColorStop(0,'rgba(5,10,35,0.98)');
-  dg.addColorStop(0.6,'rgba(3,6,22,0.98)');
-  dg.addColorStop(1,'rgba(1,3,12,0.98)');
-
-  // Draw sub-regions first (behind main cerebrum)
-  drawRegion(BS,dg);
-  drawRegion(CERE,dg);
-  drawRegion(TEM,dg);
-
-  // Main cerebrum clipped
-  var tp=CER.map(function(p){return[txX(p[0]),p[1]];});
-  ctx.save();
-  mkPath(tp);ctx.clip();
-
-  // Interior fill
-  ctx.fillStyle=dg;ctx.fillRect(0,0,BW,BH);
-
-  // Fibrous texture (surface web)
-  fibers.forEach(function(f){
-    var fx=txX(f.x);
-    var ex=fx+Math.cos(f.angle)*f.len*absCos;
-    var ey=f.y+Math.sin(f.angle)*f.len;
-    var cpx=fx+(ex-fx)*0.5-Math.sin(f.angle)*f.len*f.curve*absCos;
-    var cpy=f.y+(ey-f.y)*0.5+Math.cos(f.angle)*f.len*f.curve;
-    ctx.beginPath();ctx.moveTo(fx,f.y);
-    ctx.quadraticCurveTo(cpx,cpy,ex,ey);
-    ctx.strokeStyle='rgba(70,130,255,'+f.op+')';
-    ctx.lineWidth=0.5;ctx.stroke();
-  });
+  var orangePts=makePoints(orangeNodes,orangeTex,0.10);
+  var bluePts=makePoints(blueNodes,blueTex,0.08);
+  scene.add(orangePts);
+  scene.add(bluePts);
 
   // Connections
-  var t=Date.now()/1000;
-  conns.forEach(function(c){
-    var ni=nodes[c.i],nj=nodes[c.j];
-    var nix=txX(ni.x),njx=txX(nj.x);
-    ctx.beginPath();ctx.moveTo(nix,ni.y);ctx.lineTo(njx,nj.y);
-    if(c.oo){ctx.strokeStyle='rgba(255,210,20,0.60)';ctx.lineWidth=1.1;}
-    else if(c.mo){ctx.strokeStyle='rgba(200,130,20,0.35)';ctx.lineWidth=0.7;}
-    else{ctx.strokeStyle='rgba(50,110,210,0.28)';ctx.lineWidth=0.5;}
-    ctx.stroke();
-  });
-
-  // Nodes
-  nodes.forEach(function(n){
-    var nx=txX(n.x);
-    var p=0.68+Math.sin(t*3+n.ph)*0.32;
-    var r=n.r*p;
-    if(n.o){
-      var g=ctx.createRadialGradient(nx,n.y,0,nx,n.y,r*4);
-      g.addColorStop(0,'rgba(255,225,130,0.92)');
-      g.addColorStop(0.25,'rgba(255,150,30,0.75)');
-      g.addColorStop(0.6,'rgba(230,80,10,0.35)');
-      g.addColorStop(1,'rgba(180,40,0,0)');
-      ctx.fillStyle=g;ctx.beginPath();ctx.arc(nx,n.y,r*4,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='rgba(255,240,180,0.95)';
-      ctx.beginPath();ctx.arc(nx,n.y,r*0.7,0,Math.PI*2);ctx.fill();
-    } else {
-      var g2=ctx.createRadialGradient(nx,n.y,0,nx,n.y,r*3.5);
-      g2.addColorStop(0,'rgba(210,225,255,0.88)');
-      g2.addColorStop(0.3,'rgba(130,180,255,0.55)');
-      g2.addColorStop(0.7,'rgba(60,120,220,0.22)');
-      g2.addColorStop(1,'rgba(40,80,200,0)');
-      ctx.fillStyle=g2;ctx.beginPath();ctx.arc(nx,n.y,r*3.5,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='rgba(220,235,255,0.88)';
-      ctx.beginPath();ctx.arc(nx,n.y,r*0.6,0,Math.PI*2);ctx.fill();
+  function makeLines(nodes, color, opacity, maxDist, prob){
+    var arr=[];
+    for(var i=0;i<nodes.length;i++){
+      var a=nodes[i];
+      for(var j=i+1;j<nodes.length;j++){
+        var b=nodes[j];
+        var dx=a.x-b.x,dy=a.y-b.y,dz=a.z-b.z;
+        if(Math.sqrt(dx*dx+dy*dy+dz*dz)<maxDist && Math.random()<prob){
+          arr.push(a.x,a.y,a.z,b.x,b.y,b.z);
+        }
+      }
     }
-  });
+    var geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(arr,3));
+    var mat=new THREE.LineBasicMaterial({color:color,transparent:true,opacity:opacity,depthTest:false});
+    var ls=new THREE.LineSegments(geo,mat);
+    ls.renderOrder=1;
+    return ls;
+  }
 
-  ctx.restore(); // end clip
+  var yellowLines=makeLines(orangeNodes,0xddcc00,0.55,0.75,0.4);
+  var blueLines=makeLines(blueNodes,0x2288ff,0.30,0.60,0.32);
+  scene.add(yellowLines);
+  scene.add(blueLines);
 
-  // Cerebrum outline glow
-  var tp2=CER.map(function(p){return[txX(p[0]),p[1]];});
-  [
-    {w:18,c:'rgba(40,80,200,0.06)'},
-    {w:11,c:'rgba(70,120,230,0.12)'},
-    {w:5.5,c:'rgba(110,160,255,0.25)'},
-    {w:2.5,c:'rgba(160,200,255,0.55)'},
-    {w:1.2,c:'rgba(210,228,255,0.92)'}
-  ].forEach(function(g){
-    mkPath(tp2);
-    ctx.strokeStyle=g.c;ctx.lineWidth=g.w;
-    ctx.shadowColor='rgba(120,180,255,0.9)';ctx.shadowBlur=g.w>8?18:8;
-    ctx.stroke();ctx.shadowBlur=0;
-  });
+  // Surface fiber web
+  (function(){
+    var arr=[];
+    for(var f=0;f<500;f++){
+      var u=Math.random()*2-1,t=Math.random()*Math.PI*2;
+      var s=Math.sqrt(1-u*u);
+      var nx=s*Math.cos(t),ny=u,nz=s*Math.sin(t);
+      var p=brainPos(nx,ny,nz);
+      var r0=1.02+Math.random()*0.02;
+      var x0=p.x*r0,y0=p.y*r0,z0=p.z*r0;
+      // tangent direction
+      var tang=new THREE.Vector3(-Math.sin(t),0,Math.cos(t));
+      var tang2=new THREE.Vector3(-u*Math.cos(t),Math.sqrt(1-u*u),-u*Math.sin(t)).normalize();
+      var mixA=Math.random(),mixB=Math.random();
+      var len=0.08+Math.random()*0.18;
+      var ex=tang.x*mixA*len+tang2.x*mixB*len;
+      var ey=tang.y*mixA*len+tang2.y*mixB*len;
+      var ez=tang.z*mixA*len+tang2.z*mixB*len;
+      arr.push(x0,y0,z0,x0+ex,y0+ey,z0+ez);
+    }
+    var geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(arr,3));
+    var mat=new THREE.LineBasicMaterial({color:0x1a44bb,transparent:true,opacity:0.20,depthTest:false});
+    var ls=new THREE.LineSegments(geo,mat);
+    ls.renderOrder=1;
+    scene.add(ls);
+    // store for rotation
+    scene._fibers=ls;
+  })();
 
-  // Hotspot dots
-  features.forEach(function(f,i){
-    var isA=actF&&actF.id===f.id;
-    var fx=txX(f.x);
-    var p2=0.78+Math.sin(t*3.5+i*1.1)*0.22;
-    // Outer pulse
-    ctx.beginPath();ctx.arc(fx,f.y,13*p2,0,Math.PI*2);
-    ctx.fillStyle=isA?'rgba(255,80,20,0.12)':'rgba(74,240,252,0.08)';ctx.fill();
-    // Ring
-    ctx.beginPath();ctx.arc(fx,f.y,7.5,0,Math.PI*2);
-    ctx.strokeStyle=isA?'rgba(255,130,60,0.9)':'rgba(74,240,252,0.85)';ctx.lineWidth=1.5;
-    ctx.fillStyle=isA?'rgba(255,80,20,0.18)':'rgba(74,240,252,0.1)';
-    ctx.fill();ctx.stroke();
-    // Center
-    ctx.beginPath();ctx.arc(fx,f.y,3.8,0,Math.PI*2);
-    ctx.fillStyle=isA?'#ff6b35':'#4af0fc';
-    ctx.shadowColor=isA?'rgba(255,100,50,1)':'rgba(74,240,252,1)';
-    ctx.shadowBlur=16;ctx.fill();ctx.shadowBlur=0;
-  });
-}
+  // === Feature hotspots ===
+  // Positions in brain local space (normalized direction * surface offset)
+  var features=[
+    {name:'AI Q&A',           dir:new THREE.Vector3( 0.75, 0.30, 0.75)},  // Frontal: front-left-up
+    {name:'Video Processing', dir:new THREE.Vector3( 0.0,  0.85, 0.45)},  // Parietal: top-center
+    {name:'Transcription',    dir:new THREE.Vector3( 0.50,-0.20, 0.90)},  // Temporal: front-low-side
+    {name:'Semantic Search',  dir:new THREE.Vector3(-0.80, 0.20, 0.40)},  // Occipital: back-up
+    {name:'Smart Notes',      dir:new THREE.Vector3(-0.50,-0.65, 0.30)},  // Cerebellum: back-bottom
+    {name:'Chrome Extension', dir:new THREE.Vector3( 0.10,-0.95, 0.10)}   // Brainstem: bottom-center
+  ];
 
-// ── Events ────────────────────────────────────────────────────
-C.addEventListener('mousedown',function(e){isDrag=true;dragSX=e.clientX;rotSY=targetRotY;ckx=e.clientX;cky=e.clientY;autoSpin=false;},{passive:true});
-document.addEventListener('mousemove',function(e){if(!isDrag)return;targetRotY=Math.max(-80,Math.min(80,rotSY+(e.clientX-dragSX)*0.38));});
-document.addEventListener('mouseup',function(){isDrag=false;});
-C.addEventListener('touchstart',function(e){isDrag=true;dragSX=e.touches[0].clientX;rotSY=targetRotY;ckx=dragSX;cky=e.touches[0].clientY;autoSpin=false;e.preventDefault();},{passive:false});
-document.addEventListener('touchmove',function(e){if(!isDrag)return;targetRotY=Math.max(-80,Math.min(80,rotSY+(e.touches[0].clientX-dragSX)*0.38));e.preventDefault();},{passive:false});
-document.addEventListener('touchend',function(){isDrag=false;});
-
-C.addEventListener('click',function(e){
-  if(Math.abs(e.clientX-ckx)>6||Math.abs(e.clientY-cky)>6)return;
-  var rect=C.getBoundingClientRect();
-  var mx=(e.clientX-rect.left)*(BW/rect.width);
-  var my=(e.clientY-rect.top)*(BH/rect.height);
-  var hit=null,minD=9999;
+  // Compute actual 3D surface positions for each feature
   features.forEach(function(f){
-    var fx=txX(f.x);
-    var d=Math.sqrt((mx-fx)*(mx-fx)+(my-f.y)*(my-f.y));
-    if(d<24&&d<minD){minD=d;hit=f;}
+    var d=f.dir.normalize();
+    var p=brainPos(d.x,d.y,d.z);
+    f.pos=new THREE.Vector3(p.x*1.05,p.y*1.05,p.z*1.05);
   });
-  if(hit){
-    if(actF&&actF.id===hit.id){actF=null;lbl.classList.remove('show');autoSpin=true;}
-    else{actF=hit;lbl.textContent=hit.name;lbl.classList.add('show');targetRotY=hit.tY;}
-  } else {actF=null;lbl.classList.remove('show');}
-});
 
-// ── Main loop ─────────────────────────────────────────────────
-function loop(){
-  if(autoSpin&&!isDrag)targetRotY+=0.14;
-  rotY+=(targetRotY-rotY)*0.08;
-  draw();
-}
-setInterval(loop,16);
+  // Hotspot sprite
+  function makeHotspotTex(){
+    var c=document.createElement('canvas');c.width=64;c.height=64;
+    var ctx=c.getContext('2d');
+    var g=ctx.createRadialGradient(32,32,1,32,32,26);
+    g.addColorStop(0,'rgba(255,255,255,1)');
+    g.addColorStop(0.18,'rgba(255,180,80,1)');
+    g.addColorStop(0.45,'rgba(255,80,10,0.7)');
+    g.addColorStop(0.8,'rgba(200,40,0,0.2)');
+    g.addColorStop(1,'rgba(180,20,0,0)');
+    ctx.fillStyle=g;
+    ctx.beginPath();ctx.arc(32,32,26,0,Math.PI*2);ctx.fill();
+    // Ring
+    ctx.strokeStyle='rgba(255,180,60,0.9)';
+    ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.arc(32,32,20,0,Math.PI*2);ctx.stroke();
+    return new THREE.CanvasTexture(c);
+  }
+  var hotTex=makeHotspotTex();
 
-// Countdown
-var tgt=new Date();tgt.setDate(tgt.getDate()+91);
-function tick(){var d=Math.max(0,tgt-new Date());document.getElementById('cd-d').textContent=String(Math.floor(d/86400000)).padStart(2,'0');document.getElementById('cd-h').textContent=String(Math.floor((d%86400000)/3600000)).padStart(2,'0');document.getElementById('cd-m').textContent=String(Math.floor((d%3600000)/60000)).padStart(2,'0');document.getElementById('cd-s').textContent=String(Math.floor((d%60000)/1000)).padStart(2,'0');}
-tick();setInterval(tick,1000);
-window.notify=function(){var e=document.getElementById('ei').value;if(e&&e.includes('@')){alert('Thanks! We will notify you at '+e);document.getElementById('ei').value='';}};
-function txX(x){var cos=Math.cos(rotY*Math.PI/180);return BW*0.5+(x-BW*0.5)*cos;}
+  var hotspotObjs=[];
+  features.forEach(function(f,idx){
+    var geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.Float32BufferAttribute([f.pos.x,f.pos.y,f.pos.z],3));
+    var mat=new THREE.PointsMaterial({size:0.14,map:hotTex,transparent:true,depthTest:false,sizeAttenuation:true});
+    var pt=new THREE.Points(geo,mat);
+    pt.renderOrder=4;
+    pt.userData={fi:idx};
+    scene.add(pt);
+    hotspotObjs.push(pt);
+  });
+
+  // Pulse rings
+  var pulseRings=[];
+  features.forEach(function(f,idx){
+    var pts=[];
+    var segs=32;
+    for(var s=0;s<=segs;s++){var a=s/segs*Math.PI*2;pts.push(Math.cos(a)*0.08,Math.sin(a)*0.08,0);}
+    var geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
+    var mat=new THREE.LineBasicMaterial({color:0xff8833,transparent:true,opacity:0.6,depthTest:false});
+    var ring=new THREE.LineLoop(geo,mat);
+    ring.position.copy(f.pos);
+    ring.renderOrder=3;
+    ring.userData={phase:idx*1.1};
+    scene.add(ring);
+    pulseRings.push(ring);
+  });
+
+  // Group everything for rotation
+  var brainGroup=new THREE.Group();
+  // Re-add all objects to group
+  scene.children.slice().forEach(function(o){scene.remove(o);brainGroup.add(o);});
+  scene.add(brainGroup);
+
+  // === Interaction ===
+  var rotY=0.25, rotX=-0.05;
+  var targetRotY=0.25, targetRotX=-0.05;
+  var isDragging=false, lastMX=0, lastMY=0;
+  var autoSpin=true;
+  var labelTimer=null;
+
+  canvas.addEventListener('mousedown',function(e){
+    isDragging=true; lastMX=e.clientX; lastMY=e.clientY;
+    autoSpin=false;
+    handleClick(e.clientX,e.clientY);
+  });
+  document.addEventListener('mousemove',function(e){
+    if(!isDragging)return;
+    var dx=e.clientX-lastMX,dy=e.clientY-lastMY;
+    targetRotY+=dx*0.008;
+    targetRotX=Math.max(-0.9,Math.min(0.9,targetRotX+dy*0.005));
+    lastMX=e.clientX;lastMY=e.clientY;
+  });
+  document.addEventListener('mouseup',function(){isDragging=false;});
+
+  canvas.addEventListener('touchstart',function(e){
+    e.preventDefault();isDragging=true;autoSpin=false;
+    lastMX=e.touches[0].clientX;lastMY=e.touches[0].clientY;
+    handleClick(e.touches[0].clientX,e.touches[0].clientY);
+  },{passive:false});
+  document.addEventListener('touchmove',function(e){
+    if(!isDragging)return;
+    var dx=e.touches[0].clientX-lastMX,dy=e.touches[0].clientY-lastMY;
+    targetRotY+=dx*0.008;
+    targetRotX=Math.max(-0.9,Math.min(0.9,targetRotX+dy*0.005));
+    lastMX=e.touches[0].clientX;lastMY=e.touches[0].clientY;
+  },{passive:false});
+  document.addEventListener('touchend',function(){isDragging=false;});
+
+  var raycaster=new THREE.Raycaster();
+  raycaster.params.Points={threshold:0.15};
+  var mouse2D=new THREE.Vector2();
+
+  function handleClick(cx,cy){
+    var rect=canvas.getBoundingClientRect();
+    mouse2D.x=((cx-rect.left)/rect.width)*2-1;
+    mouse2D.y=-((cy-rect.top)/rect.height)*2+1;
+    raycaster.setFromCamera(mouse2D,camera);
+    var hits=raycaster.intersectObjects(hotspotObjs,false);
+    if(hits.length>0){
+      var fi=hits[0].object.userData.fi;
+      var f=features[fi];
+      // Rotate brain so this feature faces camera (bring Z toward viewer)
+      targetRotY=-Math.atan2(f.pos.x,f.pos.z)+0.0;
+      targetRotX=-Math.atan2(f.pos.y,Math.sqrt(f.pos.x*f.pos.x+f.pos.z*f.pos.z))*0.5;
+      showLabel(f.name);
+    } else {
+      hideLabel();
+    }
+  }
+
+  function showLabel(name){
+    if(labelTimer)clearTimeout(labelTimer);
+    label.textContent=name;
+    label.classList.add('visible');
+    labelTimer=setTimeout(hideLabel,3500);
+  }
+  function hideLabel(){label.classList.remove('visible');}
+
+  var clock=new THREE.Clock();
+  function animate(){
+    requestAnimationFrame(animate);
+    var t=clock.getElapsedTime();
+    if(autoSpin) targetRotY+=0.0025;
+    rotY+=(targetRotY-rotY)*0.055;
+    rotX+=(targetRotX-rotX)*0.055;
+    brainGroup.rotation.y=rotY;
+    brainGroup.rotation.x=rotX;
+
+    // Pulse rings face camera
+    pulseRings.forEach(function(r,i){
+      r.lookAt(camera.position);
+      var ph=(t*1.5+r.userData.phase)%(Math.PI*2);
+      var sc=0.9+Math.sin(ph)*0.45;
+      r.scale.set(sc,sc,sc);
+      r.material.opacity=0.3+Math.sin(ph)*0.4;
+    });
+
+    renderer.render(scene,camera);
+  }
+  animate();
+
+  window.addEventListener('resize',function(){
+    W=section.clientWidth;H=section.clientHeight;
+    camera.aspect=W/H;camera.updateProjectionMatrix();
+    renderer.setSize(W,H);
+  });
 })();
 </script>
 </body>
