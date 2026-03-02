@@ -7,9 +7,12 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:'Helvetica Neue',Arial,sans-serif}
-#main{display:flex;width:100vw;height:100vh;position:relative}
-#globe-wrap{width:50vw;height:100vh;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative}
-#globe-canvas{display:block;cursor:grab;position:absolute;inset:0}
+#main{display:flex;width:100vw;height:100vh;align-items:center}
+/* Left column: centers the globe vertically */
+#left-col{width:52vw;height:100vh;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative}
+/* Globe wrap is a square so sphere looks right */
+#globe-wrap{width:min(48vw,90vh);height:min(48vw,90vh);position:relative;flex-shrink:0}
+#globe-canvas{display:block;cursor:grab;position:absolute;inset:0;width:100%!important;height:100%!important}
 #globe-canvas:active{cursor:grabbing}
 .icon-node{position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(15,28,80,0.82);border:1.5px solid rgba(80,150,255,0.55);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.28s ease;z-index:10;backdrop-filter:blur(6px);box-shadow:0 0 14px rgba(60,120,255,0.18)}
 .icon-node:hover{border-color:rgba(120,180,255,0.9);box-shadow:0 0 24px rgba(80,140,255,0.45);background:rgba(20,40,120,0.9)}
@@ -18,6 +21,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
 .icon-node:hover svg,.icon-node.active svg{stroke:#aaccff}
 .node-label{position:absolute;font-size:8px;letter-spacing:2.5px;color:rgba(100,150,220,0.7);text-transform:uppercase;white-space:nowrap;pointer-events:none;text-shadow:0 0 8px rgba(60,120,200,0.5)}
 #connectors-svg{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:visible}
+/* Right panel */
 #right-panel{flex:1;height:100vh;position:relative;overflow:hidden;z-index:5}
 #branding{position:absolute;top:26%;left:16px;right:36px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;z-index:20}
 #logo-txt{font-size:10px;letter-spacing:8px;color:#6688ee;text-transform:uppercase;opacity:.7}
@@ -41,9 +45,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
 </head>
 <body>
 <div id="main">
-  <div id="globe-wrap">
-    <canvas id="globe-canvas"></canvas>
-    <svg id="connectors-svg"></svg>
+  <div id="left-col">
+    <div id="globe-wrap">
+      <canvas id="globe-canvas"></canvas>
+      <svg id="connectors-svg"></svg>
+    </div>
   </div>
   <div id="right-panel">
     <div id="branding">
@@ -118,13 +124,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
 (function(){
   const wrap=document.getElementById('globe-wrap');
   const canvas=document.getElementById('globe-canvas');
-  const W=wrap.offsetWidth,H=wrap.offsetHeight;
+  const SZ=wrap.offsetWidth;
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-  renderer.setSize(W,H);
+  renderer.setSize(SZ,SZ);
   const scene=new THREE.Scene();
-  const camera=new THREE.PerspectiveCamera(32,W/H,0.1,100);
-  camera.position.set(0,0,4.2);
+  const camera=new THREE.PerspectiveCamera(42,1,0.1,100);
+  camera.position.set(0,0,3.2);
   const R=1.0;
   const sphereMat=new THREE.ShaderMaterial({
     uniforms:{time:{value:0}},
@@ -163,7 +169,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
   window.addEventListener('mousemove',e=>{if(!isDrag)return;const dx=e.clientX-prevM.x,dy=e.clientY-prevM.y;vx=dx*0.008;vy=dy*0.008;globe.rotation.y+=vx;globe.rotation.x+=vy;lg.rotation.y+=vx;lg.rotation.x+=vy;prevM={x:e.clientX,y:e.clientY};});
   function animate(){requestAnimationFrame(animate);sphereMat.uniforms.time.value+=0.01;if(!isDrag){vx*=0.96;vy*=0.96;globe.rotation.y+=0.003+vx;globe.rotation.x+=vy;lg.rotation.y+=0.003+vx;lg.rotation.x+=vy;}renderer.render(scene,camera);}
   animate();
-  window.addEventListener('resize',()=>{const W2=wrap.offsetWidth,H2=wrap.offsetHeight;camera.aspect=W2/H2;camera.updateProjectionMatrix();renderer.setSize(W2,H2);});
+  window.addEventListener('resize',()=>{const SZ2=wrap.offsetWidth;camera.aspect=1;camera.updateProjectionMatrix();renderer.setSize(SZ2,SZ2);});
   const features=[
     {name:'AI Q&A',desc:'Instant answers from your videos',icon:'brain',angleDeg:118},
     {name:'Video Processing',desc:'Frame-by-frame intelligence',icon:'video',angleDeg:155},
@@ -186,8 +192,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
   let activeIdx=-1;
   const nodeEls=[];
   features.forEach((f,i)=>{
-    const cx=wrap.offsetWidth/2,cy2=wrap.offsetHeight/2;
-    const r=wrap.offsetWidth*0.42,re=wrap.offsetWidth*0.22;
+    const cx=SZ/2,cy2=SZ/2;
+    const r=SZ*0.46,re=SZ*0.24;
     const a=(f.angleDeg-90)*Math.PI/180;
     const px=cx+r*Math.cos(a),py=cy2+r*Math.sin(a);
     const ex=cx+re*Math.cos(a),ey=cy2+re*Math.sin(a);
@@ -197,7 +203,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#040818;font-family:
     node.innerHTML='<svg viewBox="0 0 24 24">'+ICONS[f.icon]+'</svg>';
     const lbl=document.createElement('div');
     lbl.className='node-label';
-    const isLeft=px<wrap.offsetWidth*0.5;
+    const isLeft=px<SZ*0.5;
     lbl.style.left=isLeft?(px-22-8)+'px':(px+22+8)+'px';
     lbl.style.top=(py-6)+'px';
     lbl.style.transform=isLeft?'translateX(-100%)':'none';
