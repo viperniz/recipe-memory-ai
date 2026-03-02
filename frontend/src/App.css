@@ -15771,23 +15771,44 @@ button.timestamp-link {
   pointer-events: none;
 }
 
-/* Three.js sphere canvas */
-.cs-sphere-canvas {
+/* Brain video — left half */
+.cs-brain-wrap {
   position: fixed;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 52%;
+  height: 100%;
   z-index: 1;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-/* Hex SVG overlay */
-.cs-hex-svg {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 5;
-  pointer-events: none;
-  overflow: visible;
+.cs-brain-glow {
+  position: absolute;
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(10,50,180,0.25) 0%, rgba(6,28,140,0.10) 40%, transparent 70%);
+  filter: blur(40px);
+  animation: csBrainPulse 4s ease-in-out infinite;
+}
+
+.cs-brain-video {
+  position: relative;
+  width: 90%;
+  max-width: 550px;
+  height: auto;
+  object-fit: contain;
+  z-index: 2;
+  filter: drop-shadow(0 0 60px rgba(80,160,255,0.3));
+}
+
+@keyframes csBrainPulse {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
 }
 
 /* Logo top-left */
@@ -16009,8 +16030,15 @@ button.timestamp-link {
     display: none;
   }
 
-  .cs-hex-svg {
-    display: none;
+  .cs-brain-wrap {
+    position: relative;
+    width: 100%;
+    height: 40vh;
+  }
+
+  .cs-brain-video {
+    width: 70%;
+    max-width: 300px;
   }
 
   .cs-ui {
