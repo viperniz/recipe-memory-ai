@@ -1,4 +1,5 @@
-// Brain neuron nodes (normalized 0–1 coordinates) forming a side-profile brain shape
+// v2 - enhanced visualization data
+// // Brain neuron nodes (normalized 0–1 coordinates) forming a side-profile brain shape
 // x, y are in normalized space; rendered at canvas scale
 
 export const NODES = [
