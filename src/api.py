@@ -771,6 +771,12 @@ async def add_to_waitlist(req: WaitlistRequest, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "You're on the list! We'll notify you when we launch.", "already_exists": False}
 
+@app.get("/api/waitlist/count")
+async def get_waitlist_count(db: Session = Depends(get_db)):
+    """Get waitlist signup count (public, no auth required)"""
+    count = db.query(WaitlistEmail).count()
+    return {"count": count}
+
 @app.get("/api/waitlist")
 async def get_waitlist(
     current_user: User = Depends(get_current_active_user),
