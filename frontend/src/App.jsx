@@ -121,7 +121,7 @@ function AppRoutes() {
     <Routes>
       {/* Coming soon page (replaces landing for pre-launch) */}
       <Route path="/" element={<ComingSoonRoute />} />
-      <Route path="/landing" element={<AdminRoute><LandingPage /></AdminRoute>} />
+      <Route path="/landing" element={<LandingPage />} />
 
       {/* Auth routes */}
       <Route
