@@ -15816,7 +15816,7 @@ button.timestamp-link {
   font-size: clamp(13px, 1.4vw, 16px);
   font-weight: 300;
   letter-spacing: 5px;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.55);
   text-transform: uppercase;
   margin: 0;
 }
@@ -15878,7 +15878,7 @@ button.timestamp-link {
   font-size: 11px;
   font-weight: 300;
   letter-spacing: 2px;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.45);
   text-transform: uppercase;
   cursor: default;
 }
@@ -15921,7 +15921,7 @@ button.timestamp-link {
   font-size: 11px;
   font-weight: 400;
   letter-spacing: 5px;
-  color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.3);
   text-transform: uppercase;
   margin: 0 0 clamp(40px, 5vw, 64px);
 }
@@ -15990,7 +15990,7 @@ button.timestamp-link {
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 4px;
-  color: rgba(255,255,255,0.35);
+  color: rgba(255,255,255,0.5);
   text-transform: uppercase;
   margin-bottom: 32px;
   padding: 6px 16px;
@@ -16033,7 +16033,7 @@ button.timestamp-link {
 .cs-hero-sub {
   font-size: clamp(15px, 1.5vw, 20px);
   font-weight: 300;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.55);
   letter-spacing: 1px;
   line-height: 1.7;
   margin: 0;
@@ -16066,7 +16066,7 @@ button.timestamp-link {
   font-size: 12px;
   font-weight: 400;
   letter-spacing: 4px;
-  color: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.2);
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -16098,7 +16098,7 @@ button.timestamp-link {
 .cs-vision-body p {
   font-size: clamp(15px, 1.3vw, 17px);
   font-weight: 300;
-  color: rgba(255,255,255,0.35);
+  color: rgba(255,255,255,0.5);
   line-height: 1.8;
   margin: 0 0 24px;
 }
@@ -16165,7 +16165,7 @@ button.timestamp-link {
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 3px;
-  color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.35);
   text-transform: uppercase;
 }
 
@@ -16214,7 +16214,7 @@ button.timestamp-link {
 .cs-pillar-num {
   font-size: clamp(40px, 4vw, 56px);
   font-weight: 200;
-  color: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.07);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -16241,14 +16241,14 @@ button.timestamp-link {
 .cs-pillar-sub {
   font-size: clamp(13px, 1vw, 14px);
   font-weight: 300;
-  color: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.4);
   margin: 0 0 16px;
   font-style: italic;
 }
 .cs-pillar-desc {
   font-size: clamp(13px, 1vw, 14px);
   font-weight: 300;
-  color: rgba(255,255,255,0.35);
+  color: rgba(255,255,255,0.5);
   line-height: 1.7;
   margin: 0;
 }
@@ -16299,7 +16299,7 @@ button.timestamp-link {
 .cs-step-num {
   font-size: clamp(12px, 1vw, 14px);
   font-weight: 300;
-  color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.3);
   letter-spacing: 2px;
   font-variant-numeric: tabular-nums;
 }
@@ -16315,7 +16315,7 @@ button.timestamp-link {
 .cs-step-desc {
   font-size: clamp(13px, 1vw, 15px);
   font-weight: 300;
-  color: rgba(255,255,255,0.35);
+  color: rgba(255,255,255,0.5);
   line-height: 1.7;
   margin: 0;
 }
@@ -16340,7 +16340,7 @@ button.timestamp-link {
   letter-spacing: 4px;
   text-transform: uppercase;
 }
-.cs-comp-header .cs-comp-old { color: rgba(255,255,255,0.15); }
+.cs-comp-header .cs-comp-old { color: rgba(255,255,255,0.3); }
 .cs-comp-header .cs-comp-new { color: rgba(56,189,248,0.7); }
 .cs-comp-grid {
   display: flex;
@@ -16358,7 +16358,7 @@ button.timestamp-link {
 .cs-comp-row .cs-comp-old {
   font-size: clamp(13px, 1vw, 15px);
   font-weight: 300;
-  color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.3);
   line-height: 1.6;
   text-decoration: line-through;
   text-decoration-color: rgba(255,255,255,0.08);
@@ -16411,7 +16411,7 @@ button.timestamp-link {
   outline: none;
   transition: border-color 0.3s, box-shadow 0.3s;
 }
-.cs-wl-input::placeholder { color: rgba(255,255,255,0.15); }
+.cs-wl-input::placeholder { color: rgba(255,255,255,0.3); }
 .cs-wl-input:focus {
   border-color: rgba(56,189,248,0.3);
   box-shadow: 0 0 20px rgba(56,189,248,0.05);
@@ -16448,7 +16448,7 @@ button.timestamp-link {
 .cs-wl-count {
   font-size: 13px;
   font-weight: 300;
-  color: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.4);
   margin-top: 16px;
   letter-spacing: 0.5px;
 }
@@ -16478,13 +16478,13 @@ button.timestamp-link {
 .cs-cd-sep {
   font-size: clamp(24px, 3vw, 40px);
   font-weight: 200;
-  color: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.25);
   margin-top: -8px;
 }
 .cs-cd-label {
   font-size: 9px;
   letter-spacing: 4px;
-  color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.3);
   margin-top: 10px;
   text-transform: uppercase;
   font-weight: 300;
@@ -16492,7 +16492,7 @@ button.timestamp-link {
 .cs-launch-date {
   font-size: 13px;
   font-weight: 300;
-  color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.3);
   letter-spacing: 2px;
   margin: 0;
 }
@@ -16510,10 +16510,10 @@ button.timestamp-link {
   border-top: 1px solid rgba(255,255,255,0.04);
   font-size: 12px;
   font-weight: 300;
-  color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.3);
   letter-spacing: 1px;
 }
-.cs-footer-links { color: rgba(255,255,255,0.15); }
+.cs-footer-links { color: rgba(255,255,255,0.3); }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 768px) {

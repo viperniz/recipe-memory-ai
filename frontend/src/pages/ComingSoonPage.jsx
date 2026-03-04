@@ -160,6 +160,7 @@ function NeuralTracer({ containerRef }) {
     const ctx = c.getContext('2d')
     const DPR = Math.min(window.devicePixelRatio || 1, 2)
     let animId
+    let started = false
 
     // Colors for tracers
     const COLORS = [
@@ -209,10 +210,10 @@ function NeuralTracer({ containerRef }) {
         this.path = p.pts
         this.color = COLORS[Math.floor(Math.random() * COLORS.length)]
         this.t = 0
-        this.speed = 0.003 + Math.random() * 0.005
-        this.size = 1.5 + Math.random() * 2
+        this.speed = 0.002 + Math.random() * 0.004
+        this.size = 2.5 + Math.random() * 2.5
         this.trail = []
-        this.trailLen = 12 + Math.floor(Math.random() * 12)
+        this.trailLen = 16 + Math.floor(Math.random() * 16)
         // Random direction
         this.dir = Math.random() > 0.5 ? 1 : -1
         if (this.dir < 0) this.t = 1
@@ -234,8 +235,8 @@ function NeuralTracer({ containerRef }) {
         // Draw trail
         for (let i = 0; i < this.trail.length; i++) {
           const p = this.trail[i]
-          const alpha = (1 - i / this.trail.length) * 0.6
-          const size = this.size * (1 - i / this.trail.length * 0.6)
+          const alpha = (1 - i / this.trail.length) * 0.85
+          const size = this.size * (1 - i / this.trail.length * 0.5)
           ctx.beginPath()
           ctx.arc(p.x * w, p.y * h, size, 0, Math.PI * 2)
           ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`
@@ -247,12 +248,13 @@ function NeuralTracer({ containerRef }) {
           const head = this.trail[0]
           const grd = ctx.createRadialGradient(
             head.x * w, head.y * h, 0,
-            head.x * w, head.y * h, this.size * 6
+            head.x * w, head.y * h, this.size * 8
           )
-          grd.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.4)`)
+          grd.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.6)`)
+          grd.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, 0.15)`)
           grd.addColorStop(1, 'transparent')
           ctx.fillStyle = grd
-          ctx.fillRect(head.x * w - this.size * 6, head.y * h - this.size * 6, this.size * 12, this.size * 12)
+          ctx.fillRect(head.x * w - this.size * 8, head.y * h - this.size * 8, this.size * 16, this.size * 16)
         }
       }
     }
@@ -267,7 +269,7 @@ function NeuralTracer({ containerRef }) {
 
     // Create staggered tracers
     const tracers = []
-    const TRACER_COUNT = 8
+    const TRACER_COUNT = 12
     for (let i = 0; i < TRACER_COUNT; i++) {
       const tr = new Tracer()
       tr.t = Math.random() // stagger start positions
@@ -275,34 +277,45 @@ function NeuralTracer({ containerRef }) {
     }
 
     function resize() {
-      const rect = container.getBoundingClientRect()
-      c.width = Math.round(rect.width * DPR)
-      c.height = Math.round(rect.height * DPR)
-      c.style.width = rect.width + 'px'
-      c.style.height = rect.height + 'px'
+      // Use the image inside the container for dimensions (it drives the height)
+      const img = container.querySelector('img')
+      const w = img ? img.offsetWidth : container.offsetWidth
+      const h = img ? img.offsetHeight : container.offsetHeight
+      if (w < 10 || h < 10) return false // not ready yet
+      c.width = Math.round(w * DPR)
+      c.height = Math.round(h * DPR)
+      c.style.width = w + 'px'
+      c.style.height = h + 'px'
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
+      return true
     }
 
-    resize()
-
     function animate() {
-      const rect = container.getBoundingClientRect()
-      ctx.clearRect(0, 0, rect.width, rect.height)
+      if (!started) {
+        started = resize()
+        if (!started) { animId = requestAnimationFrame(animate); return }
+      }
+      const w = parseFloat(c.style.width) || 0
+      const h = parseFloat(c.style.height) || 0
+      if (w < 10) { animId = requestAnimationFrame(animate); return }
+
+      ctx.clearRect(0, 0, w, h)
 
       for (const tr of tracers) {
         tr.update()
-        tr.draw(ctx, rect.width, rect.height)
+        tr.draw(ctx, w, h)
       }
 
       animId = requestAnimationFrame(animate)
     }
 
     animId = requestAnimationFrame(animate)
-    window.addEventListener('resize', resize)
+    const onResize = () => { resize() }
+    window.addEventListener('resize', onResize)
 
     return () => {
       cancelAnimationFrame(animId)
-      window.removeEventListener('resize', resize)
+      window.removeEventListener('resize', onResize)
     }
   }, [containerRef])
 
