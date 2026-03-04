@@ -165,41 +165,39 @@ function NeuralTracer({ containerRef }) {
     let started = false
 
     // Neural pathways — cubic bezier curves in relative 0-1 coords
+    // Constrained inside the brain (mask ellipse 55% 55% at 50% 48%)
+    // Visible brain area roughly: X 0.30–0.70, Y 0.25–0.65
     const PATHWAYS = [
-      // Left hemisphere — frontal to occipital
-      [{ x: 0.30, y: 0.25 }, { x: 0.25, y: 0.40 }, { x: 0.30, y: 0.55 }, { x: 0.38, y: 0.70 }],
-      // Right hemisphere — frontal to occipital
-      [{ x: 0.70, y: 0.25 }, { x: 0.75, y: 0.40 }, { x: 0.70, y: 0.55 }, { x: 0.62, y: 0.70 }],
-      // Corpus callosum (cross-hemisphere)
-      [{ x: 0.30, y: 0.38 }, { x: 0.42, y: 0.35 }, { x: 0.58, y: 0.35 }, { x: 0.70, y: 0.38 }],
-      // Left temporal arc
-      [{ x: 0.22, y: 0.35 }, { x: 0.18, y: 0.48 }, { x: 0.22, y: 0.58 }, { x: 0.32, y: 0.65 }],
-      // Right temporal arc
-      [{ x: 0.78, y: 0.35 }, { x: 0.82, y: 0.48 }, { x: 0.78, y: 0.58 }, { x: 0.68, y: 0.65 }],
-      // Central vertical (brain stem)
-      [{ x: 0.50, y: 0.28 }, { x: 0.48, y: 0.42 }, { x: 0.52, y: 0.58 }, { x: 0.50, y: 0.75 }],
-      // Left frontal loop
-      [{ x: 0.35, y: 0.22 }, { x: 0.28, y: 0.30 }, { x: 0.32, y: 0.42 }, { x: 0.42, y: 0.38 }],
-      // Right frontal loop
-      [{ x: 0.65, y: 0.22 }, { x: 0.72, y: 0.30 }, { x: 0.68, y: 0.42 }, { x: 0.58, y: 0.38 }],
-      // Deep cross — left low to right high
-      [{ x: 0.28, y: 0.55 }, { x: 0.40, y: 0.45 }, { x: 0.55, y: 0.35 }, { x: 0.68, y: 0.28 }],
-      // Deep cross — right low to left high
-      [{ x: 0.72, y: 0.55 }, { x: 0.60, y: 0.45 }, { x: 0.45, y: 0.35 }, { x: 0.32, y: 0.28 }],
-      // Left inner spiral
-      [{ x: 0.38, y: 0.30 }, { x: 0.30, y: 0.45 }, { x: 0.38, y: 0.55 }, { x: 0.45, y: 0.45 }],
-      // Right inner spiral
-      [{ x: 0.62, y: 0.30 }, { x: 0.70, y: 0.45 }, { x: 0.62, y: 0.55 }, { x: 0.55, y: 0.45 }],
-      // Upper arc left
-      [{ x: 0.35, y: 0.18 }, { x: 0.25, y: 0.22 }, { x: 0.22, y: 0.32 }, { x: 0.28, y: 0.42 }],
-      // Upper arc right
-      [{ x: 0.65, y: 0.18 }, { x: 0.75, y: 0.22 }, { x: 0.78, y: 0.32 }, { x: 0.72, y: 0.42 }],
-      // Lower connector
-      [{ x: 0.38, y: 0.62 }, { x: 0.44, y: 0.68 }, { x: 0.56, y: 0.68 }, { x: 0.62, y: 0.62 }],
-      // Central hub radial 1
-      [{ x: 0.50, y: 0.40 }, { x: 0.42, y: 0.38 }, { x: 0.35, y: 0.42 }, { x: 0.30, y: 0.50 }],
-      // Central hub radial 2
-      [{ x: 0.50, y: 0.40 }, { x: 0.58, y: 0.38 }, { x: 0.65, y: 0.42 }, { x: 0.70, y: 0.50 }],
+      // Left hemisphere — frontal curve
+      [{ x: 0.36, y: 0.28 }, { x: 0.32, y: 0.34 }, { x: 0.33, y: 0.42 }, { x: 0.37, y: 0.48 }],
+      // Left hemisphere — mid fold
+      [{ x: 0.34, y: 0.36 }, { x: 0.30, y: 0.44 }, { x: 0.32, y: 0.52 }, { x: 0.38, y: 0.56 }],
+      // Left hemisphere — lower curve
+      [{ x: 0.38, y: 0.48 }, { x: 0.34, y: 0.54 }, { x: 0.37, y: 0.60 }, { x: 0.43, y: 0.62 }],
+      // Right hemisphere — frontal curve
+      [{ x: 0.64, y: 0.28 }, { x: 0.68, y: 0.34 }, { x: 0.67, y: 0.42 }, { x: 0.63, y: 0.48 }],
+      // Right hemisphere — mid fold
+      [{ x: 0.66, y: 0.36 }, { x: 0.70, y: 0.44 }, { x: 0.68, y: 0.52 }, { x: 0.62, y: 0.56 }],
+      // Right hemisphere — lower curve
+      [{ x: 0.62, y: 0.48 }, { x: 0.66, y: 0.54 }, { x: 0.63, y: 0.60 }, { x: 0.57, y: 0.62 }],
+      // Corpus callosum — cross hemisphere
+      [{ x: 0.37, y: 0.40 }, { x: 0.44, y: 0.37 }, { x: 0.56, y: 0.37 }, { x: 0.63, y: 0.40 }],
+      // Central fissure — top to mid
+      [{ x: 0.50, y: 0.26 }, { x: 0.49, y: 0.34 }, { x: 0.51, y: 0.44 }, { x: 0.50, y: 0.52 }],
+      // Central fissure — mid to bottom
+      [{ x: 0.50, y: 0.50 }, { x: 0.49, y: 0.56 }, { x: 0.50, y: 0.60 }, { x: 0.50, y: 0.64 }],
+      // Left frontal inner fold
+      [{ x: 0.42, y: 0.30 }, { x: 0.38, y: 0.36 }, { x: 0.40, y: 0.44 }, { x: 0.46, y: 0.42 }],
+      // Right frontal inner fold
+      [{ x: 0.58, y: 0.30 }, { x: 0.62, y: 0.36 }, { x: 0.60, y: 0.44 }, { x: 0.54, y: 0.42 }],
+      // Left deep connector
+      [{ x: 0.40, y: 0.44 }, { x: 0.42, y: 0.50 }, { x: 0.44, y: 0.56 }, { x: 0.48, y: 0.58 }],
+      // Right deep connector
+      [{ x: 0.60, y: 0.44 }, { x: 0.58, y: 0.50 }, { x: 0.56, y: 0.56 }, { x: 0.52, y: 0.58 }],
+      // Cross — left upper to right mid
+      [{ x: 0.38, y: 0.34 }, { x: 0.44, y: 0.40 }, { x: 0.54, y: 0.44 }, { x: 0.60, y: 0.48 }],
+      // Cross — right upper to left mid
+      [{ x: 0.62, y: 0.34 }, { x: 0.56, y: 0.40 }, { x: 0.46, y: 0.44 }, { x: 0.40, y: 0.48 }],
     ]
 
     // Pre-sample each pathway into polyline points for drawing line segments
@@ -231,32 +229,31 @@ function NeuralTracer({ containerRef }) {
       'rgba(192,132,252,',  // violet
     ]
 
-    // Each tracer is a glowing segment traveling along a pathway
+    // Each tracer is a thin glowing line segment traveling along a pathway
     class Tracer {
       constructor(staggerT) {
         this.pathIdx = Math.floor(Math.random() * PATHWAYS.length)
         this.color = COLORS[Math.floor(Math.random() * COLORS.length)]
-        this.speed = 0.0015 + Math.random() * 0.003  // fraction per frame
-        this.segLen = 0.12 + Math.random() * 0.18     // length of lit segment (0-1)
+        this.speed = 0.0012 + Math.random() * 0.0025
+        this.segLen = 0.15 + Math.random() * 0.20     // length of lit segment
         this.dir = Math.random() > 0.5 ? 1 : -1
         this.head = staggerT != null ? staggerT : Math.random()
-        this.lineWidth = 1.5 + Math.random() * 1.5
+        this.lineWidth = 0.6 + Math.random() * 0.8    // thin lines
         this.pulsePhase = Math.random() * Math.PI * 2
       }
 
       reset() {
         this.pathIdx = Math.floor(Math.random() * PATHWAYS.length)
         this.color = COLORS[Math.floor(Math.random() * COLORS.length)]
-        this.speed = 0.0015 + Math.random() * 0.003
-        this.segLen = 0.12 + Math.random() * 0.18
+        this.speed = 0.0012 + Math.random() * 0.0025
+        this.segLen = 0.15 + Math.random() * 0.20
         this.dir = Math.random() > 0.5 ? 1 : -1
         this.head = this.dir > 0 ? -this.segLen : 1 + this.segLen
-        this.lineWidth = 1.5 + Math.random() * 1.5
+        this.lineWidth = 0.6 + Math.random() * 0.8
       }
 
-      update(time) {
+      update() {
         this.head += this.speed * this.dir
-        // Reset when fully off the path
         if (this.dir > 0 && this.head > 1 + this.segLen + 0.05) this.reset()
         if (this.dir < 0 && this.head < -this.segLen - 0.05) this.reset()
         this.pulsePhase += 0.03
@@ -269,12 +266,11 @@ function NeuralTracer({ containerRef }) {
         const tMax = Math.max(this.head, tail)
         const pulse = 0.7 + 0.3 * Math.sin(this.pulsePhase)
 
-        // Draw the glowing tracer line — multiple passes for glow effect
+        // Draw tracer as a continuous line with soft glow — 3 passes
         const passes = [
-          { width: this.lineWidth * 6, alpha: 0.06 * pulse },   // outer glow
-          { width: this.lineWidth * 3, alpha: 0.15 * pulse },   // mid glow
-          { width: this.lineWidth * 1.5, alpha: 0.5 * pulse },  // core glow
-          { width: this.lineWidth, alpha: 0.95 * pulse },        // bright core
+          { width: this.lineWidth * 5, alpha: 0.05 * pulse },  // soft outer glow
+          { width: this.lineWidth * 2, alpha: 0.25 * pulse },  // mid glow
+          { width: this.lineWidth, alpha: 0.85 * pulse },       // bright core line
         ]
 
         for (const pass of passes) {
@@ -282,73 +278,32 @@ function NeuralTracer({ containerRef }) {
           ctx.lineCap = 'round'
           ctx.lineJoin = 'round'
 
-          // Build a path from the visible segment with per-point alpha gradient
-          let didBegin = false
-          for (let i = 0; i < poly.length; i++) {
+          // Draw segment-by-segment with edge fading
+          for (let i = 1; i < poly.length; i++) {
             const t = i / SAMPLES
-            if (t < tMin || t > tMax) continue
+            const tPrev = (i - 1) / SAMPLES
+            if (tPrev > tMax || t < tMin) continue
 
-            const px = poly[i].x * w
-            const py = poly[i].y * h
+            // Fade at edges of tracer segment
+            const mid = (t + tPrev) / 2
+            const segPos = (mid - tMin) / (tMax - tMin)
+            const edgeFade = Math.min(segPos * 3.5, (1 - segPos) * 3.5, 1)
 
-            // Fade at edges of segment
-            const segPos = (t - tMin) / (tMax - tMin) // 0..1 within segment
-            const edgeFade = Math.min(segPos * 4, (1 - segPos) * 4, 1)
-
-            if (!didBegin) {
-              // Start a new sub-path for this segment
-              ctx.beginPath()
-              ctx.moveTo(px, py)
-              ctx.strokeStyle = this.color + (pass.alpha * edgeFade) + ')'
-              didBegin = true
-            } else {
-              // For each small segment, draw with fading alpha
-              ctx.beginPath()
-              const prevT = (i - 1) / SAMPLES
-              if (prevT >= tMin) {
-                ctx.moveTo(poly[i-1].x * w, poly[i-1].y * h)
-              } else {
-                ctx.moveTo(px, py)
-              }
-              ctx.lineTo(px, py)
-              ctx.strokeStyle = this.color + (pass.alpha * edgeFade) + ')'
-              ctx.stroke()
-            }
+            ctx.beginPath()
+            ctx.moveTo(poly[i-1].x * w, poly[i-1].y * h)
+            ctx.lineTo(poly[i].x * w, poly[i].y * h)
+            ctx.strokeStyle = this.color + (pass.alpha * Math.max(0, edgeFade)) + ')'
+            ctx.stroke()
           }
-        }
-
-        // Draw a bright head dot at the leading edge
-        const headT = Math.max(0, Math.min(1, this.head))
-        const headIdx = Math.round(headT * SAMPLES)
-        if (headIdx >= 0 && headIdx < poly.length) {
-          const hx = poly[headIdx].x * w
-          const hy = poly[headIdx].y * h
-
-          // Radial glow around head
-          const glowR = this.lineWidth * 12
-          const grd = ctx.createRadialGradient(hx, hy, 0, hx, hy, glowR)
-          grd.addColorStop(0, this.color + (0.7 * pulse) + ')')
-          grd.addColorStop(0.3, this.color + (0.2 * pulse) + ')')
-          grd.addColorStop(1, this.color + '0)')
-          ctx.fillStyle = grd
-          ctx.beginPath()
-          ctx.arc(hx, hy, glowR, 0, Math.PI * 2)
-          ctx.fill()
-
-          // Bright center dot
-          ctx.beginPath()
-          ctx.arc(hx, hy, this.lineWidth * 1.5, 0, Math.PI * 2)
-          ctx.fillStyle = this.color + (0.95 * pulse) + ')'
-          ctx.fill()
         }
       }
     }
 
-    // Draw all pathways as faint static lines (the neural network)
+    // Draw all pathways as very faint static lines (the neural network skeleton)
     function drawPathwayNetwork(ctx, w, h) {
-      ctx.lineWidth = 0.8
+      ctx.lineWidth = 0.5
       ctx.lineCap = 'round'
-      ctx.strokeStyle = 'rgba(100, 160, 220, 0.08)'
+      ctx.strokeStyle = 'rgba(120, 180, 240, 0.04)'
 
       for (const poly of pathPolylines) {
         ctx.beginPath()
@@ -357,16 +312,6 @@ function NeuralTracer({ containerRef }) {
           ctx.lineTo(poly[i].x * w, poly[i].y * h)
         }
         ctx.stroke()
-      }
-
-      // Draw small nodes at pathway endpoints and intersections
-      ctx.fillStyle = 'rgba(100, 180, 240, 0.12)'
-      const nodes = new Set()
-      for (const pts of PATHWAYS) {
-        const k0 = `${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`
-        const k1 = `${pts[3].x.toFixed(2)},${pts[3].y.toFixed(2)}`
-        if (!nodes.has(k0)) { nodes.add(k0); ctx.beginPath(); ctx.arc(pts[0].x * w, pts[0].y * h, 2.5, 0, Math.PI*2); ctx.fill() }
-        if (!nodes.has(k1)) { nodes.add(k1); ctx.beginPath(); ctx.arc(pts[3].x * w, pts[3].y * h, 2.5, 0, Math.PI*2); ctx.fill() }
       }
     }
 
@@ -408,7 +353,7 @@ function NeuralTracer({ containerRef }) {
 
       // Draw each moving tracer
       for (const tr of tracers) {
-        tr.update(time)
+        tr.update()
         tr.draw(ctx, w, h)
       }
 
