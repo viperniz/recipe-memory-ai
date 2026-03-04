@@ -26,12 +26,120 @@ function SplitChars({ text, className = '' }) {
 }
 
 // =============================================
+// Film Grain Overlay (SVG noise)
+// =============================================
+function FilmGrain() {
+  return (
+    <div className="cs-grain" aria-hidden="true">
+      <svg>
+        <filter id="cs-noise">
+          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
+          <feColorMatrix type="saturate" values="0" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#cs-noise)" opacity="1" />
+      </svg>
+    </div>
+  )
+}
+
+// =============================================
+// Ambient Particles (Canvas)
+// =============================================
+function AmbientParticles() {
+  const canvasRef = useRef(null)
+
+  useEffect(() => {
+    const c = canvasRef.current
+    if (!c) return
+    const ctx = c.getContext('2d')
+    const DPR = Math.min(window.devicePixelRatio || 1, 2)
+    let animId
+
+    const particles = []
+    const COUNT = 80
+
+    function resize() {
+      c.width = Math.round(window.innerWidth * DPR)
+      c.height = Math.round(document.documentElement.scrollHeight * DPR)
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
+    }
+
+    function init() {
+      resize()
+      particles.length = 0
+      const pageH = document.documentElement.scrollHeight
+      for (let i = 0; i < COUNT; i++) {
+        particles.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * pageH,
+          r: Math.random() * 1.5 + 0.3,
+          a: Math.random() * 0.3 + 0.05,
+          dx: (Math.random() - 0.5) * 0.15,
+          dy: (Math.random() - 0.5) * 0.1,
+          phase: Math.random() * Math.PI * 2,
+        })
+      }
+    }
+
+    init()
+
+    function draw() {
+      const now = Date.now() * 0.001
+      const pageH = document.documentElement.scrollHeight
+      ctx.clearRect(0, 0, window.innerWidth, pageH)
+
+      for (const p of particles) {
+        p.x += p.dx
+        p.y += p.dy
+        if (p.x < 0) p.x = window.innerWidth
+        if (p.x > window.innerWidth) p.x = 0
+        if (p.y < 0) p.y = pageH
+        if (p.y > pageH) p.y = 0
+
+        const pulse = 0.5 + 0.5 * Math.sin(now * 0.8 + p.phase)
+        ctx.globalAlpha = p.a * pulse
+        ctx.fillStyle = '#fff'
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      ctx.globalAlpha = 1
+      animId = requestAnimationFrame(draw)
+    }
+
+    animId = requestAnimationFrame(draw)
+
+    const onResize = () => init()
+    window.addEventListener('resize', onResize)
+
+    return () => {
+      cancelAnimationFrame(animId)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [])
+
+  return <canvas ref={canvasRef} className="cs-particles" />
+}
+
+// =============================================
 // Loading Screen
 // =============================================
 function LoadingScreen({ onDone }) {
   const ref = useRef(null)
+  const barRef = useRef(null)
 
   useEffect(() => {
+    // Animate progress bar
+    gsap.fromTo(
+      barRef.current,
+      { scaleX: 0 },
+      {
+        scaleX: 1,
+        duration: 1.4,
+        ease: 'power2.inOut',
+      }
+    )
+
     const timer = setTimeout(() => {
       gsap.to(ref.current, {
         opacity: 0,
@@ -39,18 +147,23 @@ function LoadingScreen({ onDone }) {
         ease: 'power2.inOut',
         onComplete: onDone,
       })
-    }, 1500)
+    }, 1600)
     return () => clearTimeout(timer)
   }, [onDone])
 
   return (
     <div ref={ref} className="cs-loader">
-      <p className="cs-loader-text">
-        Initializing Cortexle
-        <span className="cs-loader-dot">.</span>
-        <span className="cs-loader-dot">.</span>
-        <span className="cs-loader-dot">.</span>
-      </p>
+      <div className="cs-loader-inner">
+        <p className="cs-loader-text">
+          Initializing Cortexle
+          <span className="cs-loader-dot">.</span>
+          <span className="cs-loader-dot">.</span>
+          <span className="cs-loader-dot">.</span>
+        </p>
+        <div className="cs-loader-bar">
+          <div ref={barRef} className="cs-loader-bar-fill" />
+        </div>
+      </div>
     </div>
   )
 }
@@ -89,6 +202,13 @@ function Navbar({ heroRef }) {
   return (
     <nav ref={navRef} className="cs-navbar">
       <span className="cs-navbar-logo">CORTEXLE</span>
+      <div className="cs-navbar-links">
+        <span className="cs-navbar-link">Vision</span>
+        <span className="cs-navbar-sep">/</span>
+        <span className="cs-navbar-link">Framework</span>
+        <span className="cs-navbar-sep">/</span>
+        <span className="cs-navbar-link">Process</span>
+      </div>
       <button className="cs-navbar-cta" onClick={scrollToWaitlist}>
         Join Waitlist
       </button>
@@ -97,12 +217,14 @@ function Navbar({ heroRef }) {
 }
 
 // =============================================
-// Hero Section
+// Hero Section (with brain image)
 // =============================================
 function HeroSection({ loaded, heroRef }) {
   const headingRef = useRef(null)
   const dividerRef = useRef(null)
   const subRef = useRef(null)
+  const brainRef = useRef(null)
+  const badgeRef = useRef(null)
 
   useEffect(() => {
     if (!loaded) return
@@ -118,7 +240,7 @@ function HeroSection({ loaded, heroRef }) {
             opacity: 1,
             duration: 0.8,
             stagger: 0.02,
-            ease: 'power3.out',
+            ease: 'power4.out',
           }
         )
       }
@@ -134,6 +256,32 @@ function HeroSection({ loaded, heroRef }) {
         { opacity: 0, y: 20 },
         { opacity: 1, y: 0, duration: 0.8, delay: 0.8, ease: 'power2.out' }
       )
+
+      // Brain image reveals with scale + fade
+      gsap.fromTo(
+        brainRef.current,
+        { opacity: 0, scale: 0.85 },
+        { opacity: 1, scale: 1, duration: 1.4, delay: 0.4, ease: 'power2.out' }
+      )
+
+      // Badge slides in
+      gsap.fromTo(
+        badgeRef.current,
+        { opacity: 0, y: 15 },
+        { opacity: 1, y: 0, duration: 0.6, delay: 1.2, ease: 'power2.out' }
+      )
+
+      // Parallax brain on scroll
+      gsap.to(brainRef.current, {
+        yPercent: -15,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: heroRef.current,
+          start: 'top top',
+          end: 'bottom top',
+          scrub: true,
+        },
+      })
     }, heroRef)
 
     return () => ctx.revert()
@@ -141,22 +289,63 @@ function HeroSection({ loaded, heroRef }) {
 
   return (
     <section ref={heroRef} className="cs-hero">
-      <h1 ref={headingRef} className="cs-hero-heading">
-        <SplitChars text="YOUR AI-POWERED SECOND BRAIN" className="cs-hero-line" />
-      </h1>
-      <div ref={dividerRef} className="cs-hero-divider" />
-      <p ref={subRef} className="cs-hero-sub">
-        Process any video. Extract knowledge. Remember everything.
-      </p>
+      <div ref={brainRef} className="cs-hero-brain">
+        <img
+          src="/images/brain-hero.webp"
+          alt=""
+          className="cs-hero-brain-img"
+          draggable="false"
+        />
+        <div className="cs-hero-brain-glow" />
+      </div>
+      <div className="cs-hero-content">
+        <div ref={badgeRef} className="cs-hero-badge">
+          <span className="cs-hero-badge-dot" />
+          AI-POWERED KNOWLEDGE ENGINE
+        </div>
+        <h1 ref={headingRef} className="cs-hero-heading">
+          <SplitChars text="YOUR SECOND BRAIN" className="cs-hero-line" />
+        </h1>
+        <div ref={dividerRef} className="cs-hero-divider" />
+        <p ref={subRef} className="cs-hero-sub">
+          Process any video. Extract knowledge.<br />Remember everything.
+        </p>
+      </div>
     </section>
   )
 }
 
 // =============================================
-// Vision Section
+// Infinite Marquee
+// =============================================
+const MARQUEE_ITEMS = [
+  'VISION AI', 'SMART NOTES', 'SEMANTIC SEARCH', 'AI CHAT',
+  'FLASHCARDS', 'MIND MAPS', 'STUDY GUIDES', 'EXPORT ANYWHERE',
+  'YOUTUBE', 'LOCAL FILES', 'COLLECTIONS', 'KNOWLEDGE BASE',
+]
+
+function Marquee() {
+  const items = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS]
+  return (
+    <div className="cs-marquee">
+      <div className="cs-marquee-track">
+        {items.map((item, i) => (
+          <span key={i} className="cs-marquee-item">
+            {item}
+            <span className="cs-marquee-dot" />
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// =============================================
+// Vision Section (with brain-neural parallax)
 // =============================================
 function VisionSection() {
   const sectionRef = useRef(null)
+  const imgRef = useRef(null)
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -197,25 +386,121 @@ function VisionSection() {
           }
         )
       }
+
+      // Parallax on the image break
+      if (imgRef.current) {
+        gsap.fromTo(
+          imgRef.current,
+          { yPercent: -10 },
+          {
+            yPercent: 10,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: imgRef.current.parentElement,
+              start: 'top bottom',
+              end: 'bottom top',
+              scrub: true,
+            },
+          }
+        )
+      }
     }, sectionRef)
 
     return () => ctx.revert()
   }, [])
 
   return (
-    <section ref={sectionRef} className="cs-vision">
-      <blockquote className="cs-vision-quote">
-        <SplitChars text="The knowledge you consume already exists within reach. Most of it is lost — buried in hours of video you'll never rewatch." />
-      </blockquote>
-      <div className="cs-vision-body">
-        <p>
-          We believe the future belongs to those who can recall what they've learned — instantly, effortlessly, and in context. Not through memorization, but through intelligent systems that work alongside your curiosity.
-        </p>
-        <p>
-          Cortexle transforms passive video consumption into structured, searchable intelligence. Every lecture, tutorial, and documentary becomes part of your permanent knowledge base.
-        </p>
+    <>
+      <section ref={sectionRef} className="cs-vision">
+        <blockquote className="cs-vision-quote">
+          <SplitChars text="The knowledge you consume already exists within reach. Most of it is lost — buried in hours of video you'll never rewatch." />
+        </blockquote>
+        <div className="cs-vision-body">
+          <p>
+            We believe the future belongs to those who can recall what they've learned — instantly, effortlessly, and in context. Not through memorization, but through intelligent systems that work alongside your curiosity.
+          </p>
+          <p>
+            Cortexle transforms passive video consumption into structured, searchable intelligence. Every lecture, tutorial, and documentary becomes part of your permanent knowledge base.
+          </p>
+        </div>
+      </section>
+
+      {/* Full-bleed parallax image break */}
+      <div className="cs-img-break">
+        <img
+          ref={imgRef}
+          src="/brain-neural.jpg"
+          alt=""
+          className="cs-img-break-src"
+          draggable="false"
+        />
+        <div className="cs-img-break-overlay" />
       </div>
-    </section>
+    </>
+  )
+}
+
+// =============================================
+// Stats Marquee (animated counters)
+// =============================================
+function StatsBar() {
+  const ref = useRef(null)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    if (!ref.current) return
+    const ctx = gsap.context(() => {
+      ScrollTrigger.create({
+        trigger: ref.current,
+        start: 'top 85%',
+        once: true,
+        onEnter: () => setVisible(true),
+      })
+    }, ref)
+    return () => ctx.revert()
+  }, [])
+
+  return (
+    <div ref={ref} className="cs-stats">
+      <StatItem label="Formats Supported" value={50} suffix="+" visible={visible} />
+      <StatItem label="Faster Than Rewatching" value={10} suffix="x" visible={visible} />
+      <StatItem label="AI Accuracy" value={98} suffix="%" visible={visible} />
+      <StatItem label="Hours Saved Per Week" value={12} suffix="+" visible={visible} />
+    </div>
+  )
+}
+
+function StatItem({ label, value, suffix, visible }) {
+  const numRef = useRef(null)
+
+  useEffect(() => {
+    if (!visible || !numRef.current) return
+    gsap.fromTo(
+      numRef.current,
+      { innerText: 0 },
+      {
+        innerText: value,
+        duration: 2,
+        ease: 'power2.out',
+        snap: { innerText: 1 },
+        onUpdate() {
+          if (numRef.current) {
+            numRef.current.textContent = Math.round(
+              parseFloat(numRef.current.style.getPropertyValue('--v') || numRef.current.innerText)
+            )
+          }
+        },
+      }
+    )
+  }, [visible, value])
+
+  return (
+    <div className="cs-stat">
+      <span className="cs-stat-num">
+        <span ref={numRef}>{visible ? value : 0}</span>{suffix}
+      </span>
+      <span className="cs-stat-label">{label}</span>
+    </div>
   )
 }
 
@@ -225,24 +510,28 @@ function VisionSection() {
 const PILLARS = [
   {
     num: '01',
+    icon: '👁',
     title: 'VISION AI',
     sub: 'See What Others Miss',
     desc: 'Captures diagrams, slides, code, and visual content directly from video frames — information that transcripts alone would never reveal.',
   },
   {
     num: '02',
+    icon: '🧠',
     title: 'SMART NOTES',
     sub: 'Memory That Never Fades',
     desc: 'AI-generated summaries, key points, and structured notes that distill hours of content into actionable knowledge.',
   },
   {
     num: '03',
+    icon: '🔍',
     title: 'SEMANTIC SEARCH',
     sub: 'Find Anything, Instantly',
-    desc: 'Search in plain English across your entire video library. Find concepts, not just keywords — even across hundreds of hours of content.',
+    desc: 'Search in plain English across your entire video library. Find concepts, not just keywords — even across hundreds of hours.',
   },
   {
     num: '04',
+    icon: '💬',
     title: 'AI CHAT',
     sub: 'Your Knowledge, Conversational',
     desc: 'Ask questions about any video and receive cited, contextual answers drawn from your personal knowledge base.',
@@ -258,13 +547,14 @@ function PillarsSection() {
       if (cards?.length) {
         gsap.fromTo(
           cards,
-          { opacity: 0, y: 40 },
+          { opacity: 0, y: 60, scale: 0.96 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.6,
-            stagger: 0.15,
-            ease: 'power2.out',
+            scale: 1,
+            duration: 0.7,
+            stagger: 0.12,
+            ease: 'power3.out',
             scrollTrigger: {
               trigger: sectionRef.current,
               start: 'top 80%',
@@ -283,10 +573,14 @@ function PillarsSection() {
       <div className="cs-pillars-grid">
         {PILLARS.map((p) => (
           <div key={p.num} className="cs-pillar">
-            <span className="cs-pillar-num">{p.num}</span>
+            <div className="cs-pillar-header">
+              <span className="cs-pillar-num">{p.num}</span>
+              <span className="cs-pillar-icon">{p.icon}</span>
+            </div>
             <h3 className="cs-pillar-title">{p.title}</h3>
             <p className="cs-pillar-sub">{p.sub}</p>
             <p className="cs-pillar-desc">{p.desc}</p>
+            <div className="cs-pillar-glow" />
           </div>
         ))}
       </div>
@@ -329,13 +623,13 @@ function ProcessSection() {
       if (steps?.length) {
         gsap.fromTo(
           steps,
-          { opacity: 0, y: 30 },
+          { opacity: 0, x: -30 },
           {
             opacity: 1,
-            y: 0,
+            x: 0,
             duration: 0.6,
             stagger: 0.15,
-            ease: 'power2.out',
+            ease: 'power3.out',
             scrollTrigger: {
               trigger: sectionRef.current,
               start: 'top 80%',
@@ -361,6 +655,7 @@ function ProcessSection() {
             <div className="cs-step-right">
               <p className="cs-step-desc">{s.desc}</p>
             </div>
+            <div className="cs-step-progress" />
           </div>
         ))}
       </div>
@@ -372,26 +667,11 @@ function ProcessSection() {
 // Comparison Section
 // =============================================
 const COMPARISONS = [
-  {
-    old: 'Manual timestamps and notes',
-    new: 'AI-extracted structured knowledge',
-  },
-  {
-    old: 'Keyword search fails on concepts',
-    new: 'Semantic search understands meaning',
-  },
-  {
-    old: 'Rewatch entire videos for one detail',
-    new: 'Instant answers from your knowledge base',
-  },
-  {
-    old: 'Content trapped in one platform',
-    new: 'Export anywhere: Markdown, Notion, PDF',
-  },
-  {
-    old: 'Transcripts miss visual content',
-    new: 'Vision AI reads what\'s on screen',
-  },
+  { old: 'Manual timestamps and notes', new: 'AI-extracted structured knowledge' },
+  { old: 'Keyword search fails on concepts', new: 'Semantic search understands meaning' },
+  { old: 'Rewatch entire videos for one detail', new: 'Instant answers from your knowledge base' },
+  { old: 'Content trapped in one platform', new: 'Export anywhere: Markdown, Notion, PDF' },
+  { old: 'Transcripts miss visual content', new: 'Vision AI reads what\'s on screen' },
 ]
 
 function ComparisonSection() {
@@ -471,11 +751,14 @@ function Countdown({ target }) {
 
   return (
     <div className="cs-countdown">
-      {blocks.map((b) => (
-        <div key={b.label} className="cs-cd-block">
-          <span className="cs-cd-num">{String(b.val).padStart(2, '0')}</span>
-          <span className="cs-cd-label">{b.label}</span>
-        </div>
+      {blocks.map((b, i) => (
+        <React.Fragment key={b.label}>
+          <div className="cs-cd-block">
+            <span className="cs-cd-num">{String(b.val).padStart(2, '0')}</span>
+            <span className="cs-cd-label">{b.label}</span>
+          </div>
+          {i < blocks.length - 1 && <span className="cs-cd-sep">:</span>}
+        </React.Fragment>
       ))}
     </div>
   )
@@ -635,11 +918,15 @@ export default function ComingSoonPage() {
 
   return (
     <div className="cs-page">
+      <FilmGrain />
+      <AmbientParticles />
       {!loaded && <LoadingScreen onDone={handleLoaderDone} />}
       <Navbar heroRef={heroRef} />
       <main>
         <HeroSection loaded={loaded} heroRef={heroRef} />
+        <Marquee />
         <VisionSection />
+        <StatsBar />
         <PillarsSection />
         <ProcessSection />
         <ComparisonSection />
