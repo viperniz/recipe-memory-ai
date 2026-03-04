@@ -149,6 +149,8 @@ function AmbientParticles() {
 
 // =============================================
 // Neural Tracer Canvas (overlays on brain image)
+// Draws visible neural pathways with glowing light
+// pulses that travel along them like electrical signals
 // =============================================
 function NeuralTracer({ containerRef }) {
   const canvasRef = useRef(null)
@@ -162,126 +164,224 @@ function NeuralTracer({ containerRef }) {
     let animId
     let started = false
 
-    // Colors for tracers
-    const COLORS = [
-      { r: 34, g: 211, b: 238 },   // cyan
-      { r: 167, g: 139, b: 250 },  // purple
-      { r: 255, g: 255, b: 255 },  // white
-      { r: 56, g: 189, b: 248 },   // sky blue
-      { r: 192, g: 132, b: 252 },  // violet
-    ]
-
-    // Neural pathways — defined as cubic bezier curves (relative 0-1 coords within the brain)
-    // These trace through the interior of the brain shape
+    // Neural pathways — cubic bezier curves in relative 0-1 coords
     const PATHWAYS = [
       // Left hemisphere — frontal to occipital
-      { pts: [{ x: 0.30, y: 0.25 }, { x: 0.25, y: 0.40 }, { x: 0.30, y: 0.55 }, { x: 0.38, y: 0.70 }] },
+      [{ x: 0.30, y: 0.25 }, { x: 0.25, y: 0.40 }, { x: 0.30, y: 0.55 }, { x: 0.38, y: 0.70 }],
       // Right hemisphere — frontal to occipital
-      { pts: [{ x: 0.70, y: 0.25 }, { x: 0.75, y: 0.40 }, { x: 0.70, y: 0.55 }, { x: 0.62, y: 0.70 }] },
+      [{ x: 0.70, y: 0.25 }, { x: 0.75, y: 0.40 }, { x: 0.70, y: 0.55 }, { x: 0.62, y: 0.70 }],
       // Corpus callosum (cross-hemisphere)
-      { pts: [{ x: 0.30, y: 0.38 }, { x: 0.42, y: 0.35 }, { x: 0.58, y: 0.35 }, { x: 0.70, y: 0.38 }] },
+      [{ x: 0.30, y: 0.38 }, { x: 0.42, y: 0.35 }, { x: 0.58, y: 0.35 }, { x: 0.70, y: 0.38 }],
       // Left temporal arc
-      { pts: [{ x: 0.22, y: 0.35 }, { x: 0.18, y: 0.48 }, { x: 0.22, y: 0.58 }, { x: 0.32, y: 0.65 }] },
+      [{ x: 0.22, y: 0.35 }, { x: 0.18, y: 0.48 }, { x: 0.22, y: 0.58 }, { x: 0.32, y: 0.65 }],
       // Right temporal arc
-      { pts: [{ x: 0.78, y: 0.35 }, { x: 0.82, y: 0.48 }, { x: 0.78, y: 0.58 }, { x: 0.68, y: 0.65 }] },
+      [{ x: 0.78, y: 0.35 }, { x: 0.82, y: 0.48 }, { x: 0.78, y: 0.58 }, { x: 0.68, y: 0.65 }],
       // Central vertical (brain stem)
-      { pts: [{ x: 0.50, y: 0.28 }, { x: 0.48, y: 0.42 }, { x: 0.52, y: 0.58 }, { x: 0.50, y: 0.75 }] },
+      [{ x: 0.50, y: 0.28 }, { x: 0.48, y: 0.42 }, { x: 0.52, y: 0.58 }, { x: 0.50, y: 0.75 }],
       // Left frontal loop
-      { pts: [{ x: 0.35, y: 0.22 }, { x: 0.28, y: 0.30 }, { x: 0.32, y: 0.42 }, { x: 0.42, y: 0.38 }] },
+      [{ x: 0.35, y: 0.22 }, { x: 0.28, y: 0.30 }, { x: 0.32, y: 0.42 }, { x: 0.42, y: 0.38 }],
       // Right frontal loop
-      { pts: [{ x: 0.65, y: 0.22 }, { x: 0.72, y: 0.30 }, { x: 0.68, y: 0.42 }, { x: 0.58, y: 0.38 }] },
+      [{ x: 0.65, y: 0.22 }, { x: 0.72, y: 0.30 }, { x: 0.68, y: 0.42 }, { x: 0.58, y: 0.38 }],
       // Deep cross — left low to right high
-      { pts: [{ x: 0.28, y: 0.55 }, { x: 0.40, y: 0.45 }, { x: 0.55, y: 0.35 }, { x: 0.68, y: 0.28 }] },
+      [{ x: 0.28, y: 0.55 }, { x: 0.40, y: 0.45 }, { x: 0.55, y: 0.35 }, { x: 0.68, y: 0.28 }],
       // Deep cross — right low to left high
-      { pts: [{ x: 0.72, y: 0.55 }, { x: 0.60, y: 0.45 }, { x: 0.45, y: 0.35 }, { x: 0.32, y: 0.28 }] },
+      [{ x: 0.72, y: 0.55 }, { x: 0.60, y: 0.45 }, { x: 0.45, y: 0.35 }, { x: 0.32, y: 0.28 }],
       // Left inner spiral
-      { pts: [{ x: 0.38, y: 0.30 }, { x: 0.30, y: 0.45 }, { x: 0.38, y: 0.55 }, { x: 0.45, y: 0.45 }] },
+      [{ x: 0.38, y: 0.30 }, { x: 0.30, y: 0.45 }, { x: 0.38, y: 0.55 }, { x: 0.45, y: 0.45 }],
       // Right inner spiral
-      { pts: [{ x: 0.62, y: 0.30 }, { x: 0.70, y: 0.45 }, { x: 0.62, y: 0.55 }, { x: 0.55, y: 0.45 }] },
+      [{ x: 0.62, y: 0.30 }, { x: 0.70, y: 0.45 }, { x: 0.62, y: 0.55 }, { x: 0.55, y: 0.45 }],
+      // Upper arc left
+      [{ x: 0.35, y: 0.18 }, { x: 0.25, y: 0.22 }, { x: 0.22, y: 0.32 }, { x: 0.28, y: 0.42 }],
+      // Upper arc right
+      [{ x: 0.65, y: 0.18 }, { x: 0.75, y: 0.22 }, { x: 0.78, y: 0.32 }, { x: 0.72, y: 0.42 }],
+      // Lower connector
+      [{ x: 0.38, y: 0.62 }, { x: 0.44, y: 0.68 }, { x: 0.56, y: 0.68 }, { x: 0.62, y: 0.62 }],
+      // Central hub radial 1
+      [{ x: 0.50, y: 0.40 }, { x: 0.42, y: 0.38 }, { x: 0.35, y: 0.42 }, { x: 0.30, y: 0.50 }],
+      // Central hub radial 2
+      [{ x: 0.50, y: 0.40 }, { x: 0.58, y: 0.38 }, { x: 0.65, y: 0.42 }, { x: 0.70, y: 0.50 }],
     ]
 
+    // Pre-sample each pathway into polyline points for drawing line segments
+    const SAMPLES = 60
+    const pathPolylines = PATHWAYS.map(pts => {
+      const line = []
+      for (let i = 0; i <= SAMPLES; i++) {
+        const t = i / SAMPLES
+        line.push(cubicBezier(t, pts))
+      }
+      return line
+    })
+
+    function cubicBezier(t, pts) {
+      const u = 1 - t
+      return {
+        x: u*u*u*pts[0].x + 3*u*u*t*pts[1].x + 3*u*t*t*pts[2].x + t*t*t*pts[3].x,
+        y: u*u*u*pts[0].y + 3*u*u*t*pts[1].y + 3*u*t*t*pts[2].y + t*t*t*pts[3].y,
+      }
+    }
+
+    // Tracer colors
+    const COLORS = [
+      'rgba(34,211,238,',   // cyan
+      'rgba(120,160,255,',  // blue
+      'rgba(167,139,250,',  // purple
+      'rgba(255,255,255,',  // white
+      'rgba(56,189,248,',   // sky
+      'rgba(192,132,252,',  // violet
+    ]
+
+    // Each tracer is a glowing segment traveling along a pathway
     class Tracer {
-      constructor() {
-        this.reset()
+      constructor(staggerT) {
+        this.pathIdx = Math.floor(Math.random() * PATHWAYS.length)
+        this.color = COLORS[Math.floor(Math.random() * COLORS.length)]
+        this.speed = 0.0015 + Math.random() * 0.003  // fraction per frame
+        this.segLen = 0.12 + Math.random() * 0.18     // length of lit segment (0-1)
+        this.dir = Math.random() > 0.5 ? 1 : -1
+        this.head = staggerT != null ? staggerT : Math.random()
+        this.lineWidth = 1.5 + Math.random() * 1.5
+        this.pulsePhase = Math.random() * Math.PI * 2
       }
 
       reset() {
-        const p = PATHWAYS[Math.floor(Math.random() * PATHWAYS.length)]
-        this.path = p.pts
+        this.pathIdx = Math.floor(Math.random() * PATHWAYS.length)
         this.color = COLORS[Math.floor(Math.random() * COLORS.length)]
-        this.t = 0
-        this.speed = 0.002 + Math.random() * 0.004
-        this.size = 2.5 + Math.random() * 2.5
-        this.trail = []
-        this.trailLen = 16 + Math.floor(Math.random() * 16)
-        // Random direction
+        this.speed = 0.0015 + Math.random() * 0.003
+        this.segLen = 0.12 + Math.random() * 0.18
         this.dir = Math.random() > 0.5 ? 1 : -1
-        if (this.dir < 0) this.t = 1
+        this.head = this.dir > 0 ? -this.segLen : 1 + this.segLen
+        this.lineWidth = 1.5 + Math.random() * 1.5
       }
 
-      update() {
-        this.t += this.speed * this.dir
-        if (this.dir > 0 && this.t > 1) { this.reset(); return }
-        if (this.dir < 0 && this.t < 0) { this.reset(); return }
-
-        const pos = cubicBezier(this.t, this.path)
-        this.trail.unshift({ x: pos.x, y: pos.y })
-        if (this.trail.length > this.trailLen) this.trail.pop()
+      update(time) {
+        this.head += this.speed * this.dir
+        // Reset when fully off the path
+        if (this.dir > 0 && this.head > 1 + this.segLen + 0.05) this.reset()
+        if (this.dir < 0 && this.head < -this.segLen - 0.05) this.reset()
+        this.pulsePhase += 0.03
       }
 
       draw(ctx, w, h) {
-        const { r, g, b } = this.color
+        const poly = pathPolylines[this.pathIdx]
+        const tail = this.head - this.segLen * this.dir
+        const tMin = Math.min(this.head, tail)
+        const tMax = Math.max(this.head, tail)
+        const pulse = 0.7 + 0.3 * Math.sin(this.pulsePhase)
 
-        // Draw trail
-        for (let i = 0; i < this.trail.length; i++) {
-          const p = this.trail[i]
-          const alpha = (1 - i / this.trail.length) * 0.85
-          const size = this.size * (1 - i / this.trail.length * 0.5)
+        // Draw the glowing tracer line — multiple passes for glow effect
+        const passes = [
+          { width: this.lineWidth * 6, alpha: 0.06 * pulse },   // outer glow
+          { width: this.lineWidth * 3, alpha: 0.15 * pulse },   // mid glow
+          { width: this.lineWidth * 1.5, alpha: 0.5 * pulse },  // core glow
+          { width: this.lineWidth, alpha: 0.95 * pulse },        // bright core
+        ]
+
+        for (const pass of passes) {
+          ctx.lineWidth = pass.width
+          ctx.lineCap = 'round'
+          ctx.lineJoin = 'round'
+
+          // Build a path from the visible segment with per-point alpha gradient
+          let didBegin = false
+          for (let i = 0; i < poly.length; i++) {
+            const t = i / SAMPLES
+            if (t < tMin || t > tMax) continue
+
+            const px = poly[i].x * w
+            const py = poly[i].y * h
+
+            // Fade at edges of segment
+            const segPos = (t - tMin) / (tMax - tMin) // 0..1 within segment
+            const edgeFade = Math.min(segPos * 4, (1 - segPos) * 4, 1)
+
+            if (!didBegin) {
+              // Start a new sub-path for this segment
+              ctx.beginPath()
+              ctx.moveTo(px, py)
+              ctx.strokeStyle = this.color + (pass.alpha * edgeFade) + ')'
+              didBegin = true
+            } else {
+              // For each small segment, draw with fading alpha
+              ctx.beginPath()
+              const prevT = (i - 1) / SAMPLES
+              if (prevT >= tMin) {
+                ctx.moveTo(poly[i-1].x * w, poly[i-1].y * h)
+              } else {
+                ctx.moveTo(px, py)
+              }
+              ctx.lineTo(px, py)
+              ctx.strokeStyle = this.color + (pass.alpha * edgeFade) + ')'
+              ctx.stroke()
+            }
+          }
+        }
+
+        // Draw a bright head dot at the leading edge
+        const headT = Math.max(0, Math.min(1, this.head))
+        const headIdx = Math.round(headT * SAMPLES)
+        if (headIdx >= 0 && headIdx < poly.length) {
+          const hx = poly[headIdx].x * w
+          const hy = poly[headIdx].y * h
+
+          // Radial glow around head
+          const glowR = this.lineWidth * 12
+          const grd = ctx.createRadialGradient(hx, hy, 0, hx, hy, glowR)
+          grd.addColorStop(0, this.color + (0.7 * pulse) + ')')
+          grd.addColorStop(0.3, this.color + (0.2 * pulse) + ')')
+          grd.addColorStop(1, this.color + '0)')
+          ctx.fillStyle = grd
           ctx.beginPath()
-          ctx.arc(p.x * w, p.y * h, size, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`
+          ctx.arc(hx, hy, glowR, 0, Math.PI * 2)
+          ctx.fill()
+
+          // Bright center dot
+          ctx.beginPath()
+          ctx.arc(hx, hy, this.lineWidth * 1.5, 0, Math.PI * 2)
+          ctx.fillStyle = this.color + (0.95 * pulse) + ')'
           ctx.fill()
         }
+      }
+    }
 
-        // Head glow
-        if (this.trail.length > 0) {
-          const head = this.trail[0]
-          const grd = ctx.createRadialGradient(
-            head.x * w, head.y * h, 0,
-            head.x * w, head.y * h, this.size * 8
-          )
-          grd.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.6)`)
-          grd.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, 0.15)`)
-          grd.addColorStop(1, 'transparent')
-          ctx.fillStyle = grd
-          ctx.fillRect(head.x * w - this.size * 8, head.y * h - this.size * 8, this.size * 16, this.size * 16)
+    // Draw all pathways as faint static lines (the neural network)
+    function drawPathwayNetwork(ctx, w, h) {
+      ctx.lineWidth = 0.8
+      ctx.lineCap = 'round'
+      ctx.strokeStyle = 'rgba(100, 160, 220, 0.08)'
+
+      for (const poly of pathPolylines) {
+        ctx.beginPath()
+        ctx.moveTo(poly[0].x * w, poly[0].y * h)
+        for (let i = 1; i < poly.length; i++) {
+          ctx.lineTo(poly[i].x * w, poly[i].y * h)
         }
+        ctx.stroke()
+      }
+
+      // Draw small nodes at pathway endpoints and intersections
+      ctx.fillStyle = 'rgba(100, 180, 240, 0.12)'
+      const nodes = new Set()
+      for (const pts of PATHWAYS) {
+        const k0 = `${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`
+        const k1 = `${pts[3].x.toFixed(2)},${pts[3].y.toFixed(2)}`
+        if (!nodes.has(k0)) { nodes.add(k0); ctx.beginPath(); ctx.arc(pts[0].x * w, pts[0].y * h, 2.5, 0, Math.PI*2); ctx.fill() }
+        if (!nodes.has(k1)) { nodes.add(k1); ctx.beginPath(); ctx.arc(pts[3].x * w, pts[3].y * h, 2.5, 0, Math.PI*2); ctx.fill() }
       }
     }
 
-    function cubicBezier(t, pts) {
-      const t2 = 1 - t
-      return {
-        x: t2 * t2 * t2 * pts[0].x + 3 * t2 * t2 * t * pts[1].x + 3 * t2 * t * t * pts[2].x + t * t * t * pts[3].x,
-        y: t2 * t2 * t2 * pts[0].y + 3 * t2 * t2 * t * pts[1].y + 3 * t2 * t * t * pts[2].y + t * t * t * pts[3].y,
-      }
-    }
-
-    // Create staggered tracers
+    // Create tracers — staggered along different pathways
     const tracers = []
-    const TRACER_COUNT = 12
+    const TRACER_COUNT = 16
     for (let i = 0; i < TRACER_COUNT; i++) {
-      const tr = new Tracer()
-      tr.t = Math.random() // stagger start positions
-      tracers.push(tr)
+      tracers.push(new Tracer(Math.random()))
     }
 
     function resize() {
-      // Use the image inside the container for dimensions (it drives the height)
       const img = container.querySelector('img')
       const w = img ? img.offsetWidth : container.offsetWidth
       const h = img ? img.offsetHeight : container.offsetHeight
-      if (w < 10 || h < 10) return false // not ready yet
+      if (w < 10 || h < 10) return false
       c.width = Math.round(w * DPR)
       c.height = Math.round(h * DPR)
       c.style.width = w + 'px'
@@ -290,6 +390,7 @@ function NeuralTracer({ containerRef }) {
       return true
     }
 
+    let time = 0
     function animate() {
       if (!started) {
         started = resize()
@@ -300,9 +401,14 @@ function NeuralTracer({ containerRef }) {
       if (w < 10) { animId = requestAnimationFrame(animate); return }
 
       ctx.clearRect(0, 0, w, h)
+      time++
 
+      // Draw faint static pathway network
+      drawPathwayNetwork(ctx, w, h)
+
+      // Draw each moving tracer
       for (const tr of tracers) {
-        tr.update()
+        tr.update(time)
         tr.draw(ctx, w, h)
       }
 
