@@ -635,12 +635,14 @@ function VisionSection() {
       const words = quoteRef.current?.querySelectorAll('.cs-reveal-word')
       if (words?.length) {
         // Set initial dim state
-        gsap.set(words, { opacity: 0.15 })
+        gsap.set(words, { opacity: 0.15, color: 'rgba(255,255,255,0.5)' })
 
         if (!isMobile) {
-          // Pinned scroll-scrubbed word-by-word reveal
+          // Pinned scroll-scrubbed word-by-word neon blue reveal
           gsap.to(words, {
             opacity: 1,
+            color: '#22d3ee',
+            textShadow: '0 0 20px rgba(34,211,238,0.4), 0 0 40px rgba(34,211,238,0.12)',
             stagger: { each: 0.6 / words.length },
             ease: 'none',
             scrollTrigger: {
@@ -651,11 +653,9 @@ function VisionSection() {
               pin: true,
               anticipatePin: 1,
               onLeave: () => {
-                // Ensure all words fully lit after pin releases
-                gsap.set(words, { opacity: 1 })
+                gsap.set(words, { opacity: 1, color: '#22d3ee', textShadow: '0 0 20px rgba(34,211,238,0.4), 0 0 40px rgba(34,211,238,0.12)' })
               },
               onRefresh: () => {
-                // Sync Lenis after pin-spacer insertion
                 const lenis = getLenis()
                 if (lenis) lenis.resize()
               },
@@ -664,7 +664,7 @@ function VisionSection() {
         } else {
           // Mobile: one-shot reveal fallback
           gsap.to(words, {
-            opacity: 1, duration: 0.5, stagger: 0.03, ease: 'power2.out',
+            opacity: 1, color: '#22d3ee', duration: 0.5, stagger: 0.03, ease: 'power2.out',
             scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
           })
         }
@@ -836,9 +836,70 @@ function PillarsSection() {
     const ctx = gsap.context(() => {
       const cards = sectionRef.current?.querySelectorAll('.cs-pillar')
       if (cards?.length) {
-        gsap.fromTo(cards, { opacity: 0, y: 60, scale: 0.96 }, {
-          opacity: 1, y: 0, scale: 1, duration: 0.7, stagger: 0.12, ease: 'power3.out',
-          scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
+        // Scroll-scrubbed one-at-a-time card reveal
+        cards.forEach(card => {
+          gsap.fromTo(card, { opacity: 0, y: 60, scale: 0.96 }, {
+            opacity: 1, y: 0, scale: 1,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: card,
+              start: 'top 90%',
+              end: 'top 55%',
+              scrub: 0.5,
+            },
+          })
+
+          // Border glow neon blue as card scrolls into view
+          gsap.fromTo(card,
+            { borderColor: 'rgba(255,255,255,0.05)', boxShadow: '0 0 0 rgba(34,211,238,0)' },
+            {
+              borderColor: 'rgba(34,211,238,0.3)',
+              boxShadow: '0 0 15px rgba(34,211,238,0.06), inset 0 0 15px rgba(34,211,238,0.03)',
+              ease: 'none',
+              scrollTrigger: {
+                trigger: card,
+                start: 'top 75%',
+                end: 'bottom 30%',
+                scrub: 0.5,
+              },
+            }
+          )
+
+          // Number highlights neon blue
+          const num = card.querySelector('.cs-pillar-num')
+          if (num) {
+            gsap.fromTo(num,
+              { color: 'rgba(255,255,255,0.07)' },
+              {
+                color: 'rgba(34,211,238,0.35)',
+                textShadow: '0 0 30px rgba(34,211,238,0.15)',
+                ease: 'none',
+                scrollTrigger: {
+                  trigger: card,
+                  start: 'top 80%',
+                  end: 'top 50%',
+                  scrub: 0.5,
+                },
+              }
+            )
+          }
+
+          // Word-by-word reading on descriptions
+          const cWords = card.querySelectorAll('.cs-pillar-desc .cs-reveal-word')
+          if (cWords?.length) {
+            gsap.set(cWords, { opacity: 0.15 })
+            gsap.to(cWords, {
+              opacity: 1,
+              stagger: { each: 0.5 / cWords.length },
+              ease: 'none',
+              scrollTrigger: {
+                trigger: card,
+                start: 'top 65%',
+                end: 'bottom 40%',
+                scrub: 0.5,
+              },
+            })
+          }
         })
       }
 
@@ -856,25 +917,6 @@ function PillarsSection() {
           },
         })
       }
-
-      // Word-by-word reading on pillar descriptions
-      const pillarCards = sectionRef.current?.querySelectorAll('.cs-pillar')
-      pillarCards?.forEach(card => {
-        const cWords = card.querySelectorAll('.cs-pillar-desc .cs-reveal-word')
-        if (!cWords?.length) return
-        gsap.set(cWords, { opacity: 0.15 })
-        gsap.to(cWords, {
-          opacity: 1,
-          stagger: { each: 0.5 / cWords.length },
-          ease: 'none',
-          scrollTrigger: {
-            trigger: card,
-            start: 'top 70%',
-            end: 'bottom 40%',
-            scrub: 0.5,
-          },
-        })
-      })
 
       // Background "CORTEXLE" watermark horizontal scrub (Effect #5)
       if (bgTextRef.current && !isMobile) {
@@ -934,30 +976,87 @@ function ProcessSection() {
     const ctx = gsap.context(() => {
       const steps = sectionRef.current?.querySelectorAll('.cs-process-step')
       if (steps?.length) {
-        gsap.fromTo(steps, { opacity: 0, x: -30 }, {
-          opacity: 1, x: 0, duration: 0.6, stagger: 0.15, ease: 'power3.out',
-          scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
+        steps.forEach(step => {
+          // Scroll-scrubbed step reveal — one at a time
+          gsap.fromTo(step, { opacity: 0, x: -30 }, {
+            opacity: 1, x: 0,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: step,
+              start: 'top 90%',
+              end: 'top 65%',
+              scrub: 0.5,
+            },
+          })
+
+          // Step number highlights neon blue
+          const num = step.querySelector('.cs-step-num')
+          if (num) {
+            gsap.to(num, {
+              color: '#22d3ee',
+              textShadow: '0 0 12px rgba(34,211,238,0.4)',
+              ease: 'none',
+              scrollTrigger: {
+                trigger: step,
+                start: 'top 80%',
+                end: 'top 55%',
+                scrub: 0.5,
+              },
+            })
+          }
+
+          // Step title highlights neon blue
+          const title = step.querySelector('.cs-step-title')
+          if (title) {
+            gsap.to(title, {
+              color: '#22d3ee',
+              textShadow: '0 0 15px rgba(34,211,238,0.3)',
+              ease: 'none',
+              scrollTrigger: {
+                trigger: step,
+                start: 'top 80%',
+                end: 'top 55%',
+                scrub: 0.5,
+              },
+            })
+          }
+
+          // Progress line fills neon blue
+          const progress = step.querySelector('.cs-step-progress')
+          if (progress) {
+            gsap.fromTo(progress,
+              { scaleX: 0 },
+              {
+                scaleX: 1,
+                ease: 'none',
+                scrollTrigger: {
+                  trigger: step,
+                  start: 'top 75%',
+                  end: 'bottom 50%',
+                  scrub: 0.5,
+                },
+              }
+            )
+          }
+
+          // Word-by-word reading on descriptions
+          const sWords = step.querySelectorAll('.cs-step-desc .cs-reveal-word')
+          if (sWords?.length) {
+            gsap.set(sWords, { opacity: 0.15 })
+            gsap.to(sWords, {
+              opacity: 1,
+              stagger: { each: 0.5 / sWords.length },
+              ease: 'none',
+              scrollTrigger: {
+                trigger: step,
+                start: 'top 70%',
+                end: 'bottom 50%',
+                scrub: 0.5,
+              },
+            })
+          }
         })
       }
-
-      // Word-by-word reading on process step descriptions
-      const procSteps = sectionRef.current?.querySelectorAll('.cs-process-step')
-      procSteps?.forEach(step => {
-        const sWords = step.querySelectorAll('.cs-step-desc .cs-reveal-word')
-        if (!sWords?.length) return
-        gsap.set(sWords, { opacity: 0.15 })
-        gsap.to(sWords, {
-          opacity: 1,
-          stagger: { each: 0.5 / sWords.length },
-          ease: 'none',
-          scrollTrigger: {
-            trigger: step,
-            start: 'top 75%',
-            end: 'bottom 50%',
-            scrub: 0.5,
-          },
-        })
-      })
 
       // Section label y-parallax (Effect #3)
       const label = sectionRef.current?.querySelector('.cs-section-label')
