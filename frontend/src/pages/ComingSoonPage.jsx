@@ -55,6 +55,23 @@ function SplitChars({ text, className = '' }) {
 }
 
 // =============================================
+// SplitWords — wraps each word in a span
+// =============================================
+function SplitWords({ text, className = '' }) {
+  const words = text.split(' ')
+  return (
+    <span className={className}>
+      {words.map((word, wi) => (
+        <React.Fragment key={wi}>
+          <span className="cs-reveal-word">{word}</span>
+          {wi < words.length - 1 && <span className="cs-reveal-word">&nbsp;</span>}
+        </React.Fragment>
+      ))}
+    </span>
+  )
+}
+
+// =============================================
 // Film Grain Overlay
 // =============================================
 function FilmGrain() {
@@ -417,8 +434,15 @@ function LoadingScreen({ onDone }) {
 // =============================================
 // Navbar
 // =============================================
+const NAV_SECTIONS = [
+  { label: 'Vision', id: 'cs-vision' },
+  { label: 'Framework', id: 'cs-pillars' },
+  { label: 'Process', id: 'cs-process' },
+]
+
 function Navbar({ heroRef }) {
   const navRef = useRef(null)
+  const [activeId, setActiveId] = useState('')
 
   useEffect(() => {
     if (!heroRef?.current || !navRef.current) return
@@ -429,13 +453,25 @@ function Navbar({ heroRef }) {
         onEnter: () => navRef.current?.classList.add('cs-scrolled'),
         onLeaveBack: () => navRef.current?.classList.remove('cs-scrolled'),
       })
+
+      // Track active section for nav highlighting
+      NAV_SECTIONS.forEach(({ id }) => {
+        const el = document.getElementById(id)
+        if (!el) return
+        ScrollTrigger.create({
+          trigger: el,
+          start: 'top center',
+          end: 'bottom center',
+          onToggle: ({ isActive }) => { if (isActive) setActiveId(id) },
+        })
+      })
     })
     return () => ctx.revert()
   }, [heroRef])
 
-  const scrollToWaitlist = () => {
+  const scrollTo = (id) => {
     const lenis = getLenis()
-    const target = document.querySelector('#cs-waitlist')
+    const target = document.getElementById(id)
     if (lenis && target) {
       lenis.scrollTo(target, { offset: -60 })
     } else if (target) {
@@ -447,13 +483,19 @@ function Navbar({ heroRef }) {
     <nav ref={navRef} className="cs-navbar">
       <span className="cs-navbar-logo">CORTEXLE</span>
       <div className="cs-navbar-links">
-        <span className="cs-navbar-link">Vision</span>
-        <span className="cs-navbar-sep">/</span>
-        <span className="cs-navbar-link">Framework</span>
-        <span className="cs-navbar-sep">/</span>
-        <span className="cs-navbar-link">Process</span>
+        {NAV_SECTIONS.map((s, i) => (
+          <React.Fragment key={s.id}>
+            <span
+              className={`cs-navbar-link${activeId === s.id ? ' cs-navbar-link--active' : ''}`}
+              onClick={() => scrollTo(s.id)}
+            >
+              {s.label}
+            </span>
+            {i < NAV_SECTIONS.length - 1 && <span className="cs-navbar-sep">/</span>}
+          </React.Fragment>
+        ))}
       </div>
-      <button className="cs-navbar-cta" onClick={scrollToWaitlist}>
+      <button className="cs-navbar-cta" onClick={() => scrollTo('cs-waitlist')}>
         Join Waitlist
       </button>
     </nav>
@@ -543,28 +585,151 @@ function Marquee() {
 }
 
 // =============================================
+// Guide Line — neon scroll progress indicator
+// =============================================
+function GuideLine({ mainRef }) {
+  const lineRef = useRef(null)
+  const fillRef = useRef(null)
+  const glowRef = useRef(null)
+
+  useEffect(() => {
+    if (!mainRef?.current || !lineRef.current) return
+    const isMobile = window.matchMedia('(max-width: 768px)').matches
+    if (isMobile) return
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: mainRef.current,
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: 0.3,
+        },
+      })
+      tl.fromTo(fillRef.current, { height: '0%' }, { height: '100%', ease: 'none' }, 0)
+      tl.fromTo(glowRef.current, { top: '0%' }, { top: '100%', ease: 'none' }, 0)
+    })
+    return () => ctx.revert()
+  }, [mainRef])
+
+  return (
+    <div ref={lineRef} className="cs-guide-line" aria-hidden="true">
+      <div ref={fillRef} className="cs-guide-fill" />
+      <div ref={glowRef} className="cs-guide-glow" />
+    </div>
+  )
+}
+
+// =============================================
 // Vision Section
 // =============================================
 function VisionSection() {
   const sectionRef = useRef(null)
+  const quoteRef = useRef(null)
+  const bodyRef = useRef(null)
   const imgRef = useRef(null)
 
   useEffect(() => {
+    const isMobile = window.matchMedia('(max-width: 768px)').matches
     const ctx = gsap.context(() => {
-      const chars = sectionRef.current?.querySelectorAll('.cs-vision-quote .cs-char')
-      if (chars?.length) {
-        gsap.fromTo(chars, { opacity: 0, yPercent: 60 }, {
-          opacity: 1, yPercent: 0, duration: 0.5, stagger: 0.008, ease: 'power2.out',
-          scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
-        })
+      const words = quoteRef.current?.querySelectorAll('.cs-reveal-word')
+      if (words?.length) {
+        // Set initial dim state
+        gsap.set(words, { opacity: 0.15 })
+
+        if (!isMobile) {
+          // Pinned scroll-scrubbed word-by-word reveal
+          gsap.to(words, {
+            opacity: 1,
+            stagger: { each: 0.6 / words.length },
+            ease: 'none',
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: 'top top',
+              end: '+=80%',
+              scrub: 0.6,
+              pin: true,
+              anticipatePin: 1,
+              onLeave: () => {
+                // Ensure all words fully lit after pin releases
+                gsap.set(words, { opacity: 1 })
+              },
+              onRefresh: () => {
+                // Sync Lenis after pin-spacer insertion
+                const lenis = getLenis()
+                if (lenis) lenis.resize()
+              },
+            },
+          })
+        } else {
+          // Mobile: one-shot reveal fallback
+          gsap.to(words, {
+            opacity: 1, duration: 0.5, stagger: 0.03, ease: 'power2.out',
+            scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
+          })
+        }
       }
-      const paras = sectionRef.current?.querySelectorAll('.cs-vision-body p')
+
+      // Body paragraphs — one-shot fade-in + word-by-word reading
+      const paras = bodyRef.current?.querySelectorAll('p')
       if (paras?.length) {
         gsap.fromTo(paras, { opacity: 0, y: 30 }, {
           opacity: 1, y: 0, duration: 0.7, stagger: 0.2, ease: 'power2.out',
-          scrollTrigger: { trigger: sectionRef.current, start: 'top 65%' },
+          scrollTrigger: { trigger: bodyRef.current, start: 'top 75%' },
+        })
+
+        // Word-by-word reading effect
+        paras.forEach((p) => {
+          const pWords = p.querySelectorAll('.cs-reveal-word')
+          if (!pWords?.length) return
+          gsap.set(pWords, { opacity: 0.15 })
+          gsap.to(pWords, {
+            opacity: 1,
+            stagger: { each: 0.6 / pWords.length },
+            ease: 'none',
+            scrollTrigger: {
+              trigger: p,
+              start: 'top 70%',
+              end: 'bottom 40%',
+              scrub: 0.5,
+            },
+          })
+        })
+
+        // Staggered depth parallax (Effect #4)
+        if (!isMobile) {
+          paras.forEach((p, i) => {
+            const yFrom = i === 0 ? 5 : 10
+            const yTo = i === 0 ? -5 : -10
+            gsap.fromTo(p, { yPercent: yFrom }, {
+              yPercent: yTo,
+              ease: 'none',
+              scrollTrigger: {
+                trigger: p,
+                start: 'top bottom',
+                end: 'bottom top',
+                scrub: true,
+              },
+            })
+          })
+        }
+      }
+
+      // Section label y-parallax (Effect #3)
+      const label = sectionRef.current?.querySelector('.cs-section-label')
+      if (label && !isMobile) {
+        gsap.to(label, {
+          yPercent: -30,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
         })
       }
+
       if (imgRef.current) {
         gsap.fromTo(imgRef.current, { yPercent: -10 }, {
           yPercent: 10, ease: 'none',
@@ -572,21 +737,27 @@ function VisionSection() {
         })
       }
     }, sectionRef)
+
+    // Refresh ScrollTrigger and Lenis after pin-spacer insertion
+    ScrollTrigger.refresh()
+    const lenis = getLenis()
+    if (lenis) lenis.resize()
+
     return () => ctx.revert()
   }, [])
 
   return (
     <>
-      <section ref={sectionRef} className="cs-vision">
-        <blockquote className="cs-vision-quote">
-          <SplitChars text="The knowledge you consume already exists within reach. Most of it is lost — buried in hours of video you'll never rewatch." />
+      <section ref={sectionRef} id="cs-vision" className="cs-vision">
+        <blockquote ref={quoteRef} className="cs-vision-quote">
+          <SplitWords text="The knowledge you consume already exists within reach. Most of it is lost — buried in hours of video you'll never rewatch." />
         </blockquote>
-        <div className="cs-vision-body">
+        <div ref={bodyRef} className="cs-vision-body">
           <p>
-            We believe the future belongs to those who can recall what they've learned — instantly, effortlessly, and in context. Not through memorization, but through intelligent systems that work alongside your curiosity.
+            <SplitWords text="We believe the future belongs to those who can recall what they've learned — instantly, effortlessly, and in context. Not through memorization, but through intelligent systems that work alongside your curiosity." />
           </p>
           <p>
-            Cortexle transforms passive video consumption into structured, searchable intelligence. Every lecture, tutorial, and documentary becomes part of your permanent knowledge base.
+            <SplitWords text="Cortexle transforms passive video consumption into structured, searchable intelligence. Every lecture, tutorial, and documentary becomes part of your permanent knowledge base." />
           </p>
         </div>
       </section>
@@ -658,8 +829,10 @@ const PILLARS = [
 
 function PillarsSection() {
   const sectionRef = useRef(null)
+  const bgTextRef = useRef(null)
 
   useEffect(() => {
+    const isMobile = window.matchMedia('(max-width: 768px)').matches
     const ctx = gsap.context(() => {
       const cards = sectionRef.current?.querySelectorAll('.cs-pillar')
       if (cards?.length) {
@@ -668,12 +841,61 @@ function PillarsSection() {
           scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
         })
       }
+
+      // Section label y-parallax (Effect #3)
+      const label = sectionRef.current?.querySelector('.cs-section-label')
+      if (label && !isMobile) {
+        gsap.to(label, {
+          yPercent: -30,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
+        })
+      }
+
+      // Word-by-word reading on pillar descriptions
+      const pillarCards = sectionRef.current?.querySelectorAll('.cs-pillar')
+      pillarCards?.forEach(card => {
+        const cWords = card.querySelectorAll('.cs-pillar-desc .cs-reveal-word')
+        if (!cWords?.length) return
+        gsap.set(cWords, { opacity: 0.15 })
+        gsap.to(cWords, {
+          opacity: 1,
+          stagger: { each: 0.5 / cWords.length },
+          ease: 'none',
+          scrollTrigger: {
+            trigger: card,
+            start: 'top 70%',
+            end: 'bottom 40%',
+            scrub: 0.5,
+          },
+        })
+      })
+
+      // Background "CORTEXLE" watermark horizontal scrub (Effect #5)
+      if (bgTextRef.current && !isMobile) {
+        gsap.fromTo(bgTextRef.current, { xPercent: -15 }, {
+          xPercent: 15,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
+        })
+      }
     }, sectionRef)
     return () => ctx.revert()
   }, [])
 
   return (
-    <section ref={sectionRef} className="cs-pillars">
+    <section ref={sectionRef} id="cs-pillars" className="cs-pillars cs-bg-text-wrap">
+      <span ref={bgTextRef} className="cs-bg-text" aria-hidden="true">CORTEXLE</span>
       <p className="cs-section-label">THE CORTEXLE FRAMEWORK</p>
       <div className="cs-pillars-grid">
         {PILLARS.map((p) => (
@@ -684,7 +906,7 @@ function PillarsSection() {
             </div>
             <h3 className="cs-pillar-title">{p.title}</h3>
             <p className="cs-pillar-sub">{p.sub}</p>
-            <p className="cs-pillar-desc">{p.desc}</p>
+            <p className="cs-pillar-desc"><SplitWords text={p.desc} /></p>
             <div className="cs-pillar-glow" />
           </div>
         ))}
@@ -708,6 +930,7 @@ function ProcessSection() {
   const imgRef = useRef(null)
 
   useEffect(() => {
+    const isMobile = window.matchMedia('(max-width: 768px)').matches
     const ctx = gsap.context(() => {
       const steps = sectionRef.current?.querySelectorAll('.cs-process-step')
       if (steps?.length) {
@@ -716,6 +939,41 @@ function ProcessSection() {
           scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
         })
       }
+
+      // Word-by-word reading on process step descriptions
+      const procSteps = sectionRef.current?.querySelectorAll('.cs-process-step')
+      procSteps?.forEach(step => {
+        const sWords = step.querySelectorAll('.cs-step-desc .cs-reveal-word')
+        if (!sWords?.length) return
+        gsap.set(sWords, { opacity: 0.15 })
+        gsap.to(sWords, {
+          opacity: 1,
+          stagger: { each: 0.5 / sWords.length },
+          ease: 'none',
+          scrollTrigger: {
+            trigger: step,
+            start: 'top 75%',
+            end: 'bottom 50%',
+            scrub: 0.5,
+          },
+        })
+      })
+
+      // Section label y-parallax (Effect #3)
+      const label = sectionRef.current?.querySelector('.cs-section-label')
+      if (label && !isMobile) {
+        gsap.to(label, {
+          yPercent: -30,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
+        })
+      }
+
       if (imgRef.current) {
         gsap.fromTo(imgRef.current, { yPercent: -8 }, {
           yPercent: 8, ease: 'none',
@@ -728,7 +986,7 @@ function ProcessSection() {
 
   return (
     <>
-      <section ref={sectionRef} className="cs-process">
+      <section ref={sectionRef} id="cs-process" className="cs-process">
         <p className="cs-section-label">HOW IT WORKS</p>
         <div className="cs-process-steps">
           {STEPS.map((s) => (
@@ -738,7 +996,7 @@ function ProcessSection() {
                 <span className="cs-step-title">{s.title}</span>
               </div>
               <div className="cs-step-right">
-                <p className="cs-step-desc">{s.desc}</p>
+                <p className="cs-step-desc"><SplitWords text={s.desc} /></p>
               </div>
               <div className="cs-step-progress" />
             </div>
@@ -769,6 +1027,7 @@ function ComparisonSection() {
   const sectionRef = useRef(null)
 
   useEffect(() => {
+    const isMobile = window.matchMedia('(max-width: 768px)').matches
     const ctx = gsap.context(() => {
       const rows = sectionRef.current?.querySelectorAll('.cs-comp-row')
       if (rows?.length) {
@@ -776,13 +1035,46 @@ function ComparisonSection() {
           opacity: 1, y: 0, duration: 0.5, stagger: 0.12, ease: 'power2.out',
           scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
         })
+
+        // Word-by-word reading on comparison rows
+        rows.forEach(row => {
+          const rWords = row.querySelectorAll('.cs-reveal-word')
+          if (!rWords?.length) return
+          gsap.set(rWords, { opacity: 0.15 })
+          gsap.to(rWords, {
+            opacity: 1,
+            stagger: { each: 0.4 / rWords.length },
+            ease: 'none',
+            scrollTrigger: {
+              trigger: row,
+              start: 'top 80%',
+              end: 'bottom 50%',
+              scrub: 0.5,
+            },
+          })
+        })
+      }
+
+      // Section label y-parallax (Effect #3)
+      const label = sectionRef.current?.querySelector('.cs-section-label')
+      if (label && !isMobile) {
+        gsap.to(label, {
+          yPercent: -30,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
+        })
       }
     }, sectionRef)
     return () => ctx.revert()
   }, [])
 
   return (
-    <section ref={sectionRef} className="cs-comparison">
+    <section ref={sectionRef} id="cs-comparison" className="cs-comparison">
       <p className="cs-section-label">A DIFFERENT APPROACH</p>
       <div className="cs-comp-header">
         <span className="cs-comp-old">THE OLD WAY</span>
@@ -791,8 +1083,8 @@ function ComparisonSection() {
       <div className="cs-comp-grid">
         {COMPARISONS.map((c, i) => (
           <div key={i} className="cs-comp-row">
-            <span className="cs-comp-old">{c.old}</span>
-            <span className="cs-comp-new">{c.new}</span>
+            <span className="cs-comp-old"><SplitWords text={c.old} /></span>
+            <span className="cs-comp-new"><SplitWords text={c.new} /></span>
           </div>
         ))}
       </div>
@@ -861,12 +1153,17 @@ function WaitlistSection() {
   }, [submitted])
 
   useEffect(() => {
+    const isMobile = window.matchMedia('(max-width: 768px)').matches
     const ctx = gsap.context(() => {
       const chars = sectionRef.current?.querySelectorAll('.cs-wl-heading .cs-char')
       if (chars?.length) {
         gsap.fromTo(chars, { opacity: 0, yPercent: 60 }, {
-          opacity: 1, yPercent: 0, duration: 0.5, stagger: 0.01, ease: 'power2.out',
-          scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
+          opacity: 1, yPercent: 0,
+          stagger: { each: 0.3 / chars.length },
+          ease: 'power2.out',
+          scrollTrigger: isMobile
+            ? { trigger: sectionRef.current, start: 'top 80%' }
+            : { trigger: sectionRef.current, start: 'top 85%', end: 'top 35%', scrub: 0.5 },
         })
       }
       const form = sectionRef.current?.querySelector('.cs-wl-form')
@@ -874,6 +1171,21 @@ function WaitlistSection() {
         gsap.fromTo(form, { opacity: 0, y: 30 }, {
           opacity: 1, y: 0, duration: 0.7, delay: 0.3, ease: 'power2.out',
           scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
+        })
+      }
+
+      // Section label y-parallax (Effect #3)
+      const label = sectionRef.current?.querySelector('.cs-section-label')
+      if (label && !isMobile) {
+        gsap.to(label, {
+          yPercent: -30,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
         })
       }
     }, sectionRef)
@@ -956,6 +1268,7 @@ function FooterSection() {
 export default function ComingSoonPage() {
   const [loaded, setLoaded] = useState(false)
   const heroRef = useRef(null)
+  const mainRef = useRef(null)
   useLenis()
 
   const handleLoaderDone = useCallback(() => setLoaded(true), [])
@@ -964,9 +1277,10 @@ export default function ComingSoonPage() {
     <div className="cs-page">
       <FilmGrain />
       <AmbientParticles />
+      <GuideLine mainRef={mainRef} />
       {!loaded && <LoadingScreen onDone={handleLoaderDone} />}
       <Navbar heroRef={heroRef} />
-      <main>
+      <main ref={mainRef}>
         <HeroSection loaded={loaded} heroRef={heroRef} />
         <Marquee />
         <VisionSection />

@@ -15880,7 +15880,14 @@ button.timestamp-link {
   letter-spacing: 2px;
   color: rgba(255,255,255,0.45);
   text-transform: uppercase;
-  cursor: default;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+.cs-navbar-link:hover {
+  color: rgba(255,255,255,0.7);
+}
+.cs-navbar-link--active {
+  color: rgba(34,211,238,0.9);
 }
 .cs-navbar-sep {
   font-size: 11px;
@@ -15924,6 +15931,7 @@ button.timestamp-link {
   color: rgba(255,255,255,0.3);
   text-transform: uppercase;
   margin: 0 0 clamp(40px, 5vw, 64px);
+  will-change: transform;
 }
 
 /* ---------- Hero ---------- */
@@ -16101,6 +16109,7 @@ button.timestamp-link {
   color: rgba(255,255,255,0.5);
   line-height: 1.8;
   margin: 0 0 24px;
+  will-change: transform, opacity;
 }
 .cs-vision-body p:last-child { margin-bottom: 0; }
 
@@ -16515,6 +16524,73 @@ button.timestamp-link {
 }
 .cs-footer-links { color: rgba(255,255,255,0.3); }
 
+/* ---------- Guide Line ---------- */
+.cs-guide-line {
+  position: fixed;
+  left: clamp(16px, 2.5vw, 36px);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255,255,255,0.04);
+  z-index: 100;
+  pointer-events: none;
+}
+.cs-guide-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0%;
+  background: linear-gradient(to bottom, rgba(34,211,238,0.15), rgba(34,211,238,0.45));
+  box-shadow: 0 0 4px rgba(34,211,238,0.2);
+}
+.cs-guide-glow {
+  position: absolute;
+  top: 0%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22d3ee;
+  box-shadow: 0 0 10px rgba(34,211,238,0.9), 0 0 25px rgba(34,211,238,0.4), 0 0 50px rgba(34,211,238,0.15);
+}
+.cs-guide-glow::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(40vw, 300px);
+  height: 1px;
+  background: linear-gradient(to right, rgba(34,211,238,0.12), rgba(34,211,238,0.03) 40%, transparent);
+  pointer-events: none;
+}
+
+/* ---------- Parallax Text Effects ---------- */
+.cs-reveal-word {
+  display: inline-block;
+}
+.cs-bg-text-wrap {
+  position: relative;
+  overflow: hidden;
+}
+.cs-bg-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(120px, 18vw, 280px);
+  font-weight: 200;
+  letter-spacing: 0.15em;
+  color: rgba(255,255,255,0.03);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+  will-change: transform;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 768px) {
   .cs-navbar-links { display: none; }
@@ -16538,4 +16614,6 @@ button.timestamp-link {
   .cs-wl-btn { border-radius: 4px; }
   .cs-stats { flex-wrap: wrap; gap: 24px 40px; }
   .cs-footer { flex-direction: column; gap: 8px; text-align: center; }
+  .cs-bg-text { display: none; }
+  .cs-guide-line { display: none; }
 }
