@@ -731,10 +731,36 @@ function VisionSection() {
       }
 
       if (imgRef.current) {
+        const imgBreak = imgRef.current.parentElement
         gsap.fromTo(imgRef.current, { yPercent: -10 }, {
           yPercent: 10, ease: 'none',
-          scrollTrigger: { trigger: imgRef.current.parentElement, start: 'top bottom', end: 'bottom top', scrub: true },
+          scrollTrigger: { trigger: imgBreak, start: 'top bottom', end: 'bottom top', scrub: true },
         })
+
+        // Neon blue sweep on image break
+        const neonOverlay = imgBreak?.querySelector('.cs-img-break-neon')
+        if (neonOverlay) {
+          gsap.fromTo(neonOverlay, { opacity: 0 }, {
+            opacity: 1,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: imgBreak,
+              start: 'top 70%',
+              end: 'top 20%',
+              scrub: 0.5,
+            },
+          })
+          gsap.fromTo(neonOverlay, { opacity: 1 }, {
+            opacity: 0,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: imgBreak,
+              start: 'bottom 70%',
+              end: 'bottom 30%',
+              scrub: 0.5,
+            },
+          })
+        }
       }
     }, sectionRef)
 
@@ -765,6 +791,7 @@ function VisionSection() {
       <div className="cs-img-break">
         <img ref={imgRef} src="/brain-neural.jpg" alt="" className="cs-img-break-src" draggable="false" />
         <div className="cs-img-break-overlay" />
+        <div className="cs-img-break-neon" />
       </div>
     </>
   )
@@ -1074,10 +1101,36 @@ function ProcessSection() {
       }
 
       if (imgRef.current) {
+        const imgBreak = imgRef.current.parentElement
         gsap.fromTo(imgRef.current, { yPercent: -8 }, {
           yPercent: 8, ease: 'none',
-          scrollTrigger: { trigger: imgRef.current.parentElement, start: 'top bottom', end: 'bottom top', scrub: true },
+          scrollTrigger: { trigger: imgBreak, start: 'top bottom', end: 'bottom top', scrub: true },
         })
+
+        // Neon blue sweep on image break
+        const neonOverlay = imgBreak?.querySelector('.cs-img-break-neon')
+        if (neonOverlay) {
+          gsap.fromTo(neonOverlay, { opacity: 0 }, {
+            opacity: 1,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: imgBreak,
+              start: 'top 70%',
+              end: 'top 20%',
+              scrub: 0.5,
+            },
+          })
+          gsap.fromTo(neonOverlay, { opacity: 1 }, {
+            opacity: 0,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: imgBreak,
+              start: 'bottom 70%',
+              end: 'bottom 30%',
+              scrub: 0.5,
+            },
+          })
+        }
       }
     }, sectionRef)
     return () => ctx.revert()
@@ -1106,6 +1159,7 @@ function ProcessSection() {
       <div className="cs-img-break cs-img-break--alt">
         <img ref={imgRef} src="/images/abstract-nodes.jpg" alt="" className="cs-img-break-src" draggable="false" />
         <div className="cs-img-break-overlay" />
+        <div className="cs-img-break-neon" />
       </div>
     </>
   )

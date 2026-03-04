@@ -16129,6 +16129,25 @@ button.timestamp-link {
   display: block;
   filter: saturate(0.5) brightness(0.6);
 }
+.cs-img-break-neon {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, transparent 0%, rgba(34,211,238,0.08) 30%, rgba(34,211,238,0.12) 50%, rgba(34,211,238,0.08) 70%, transparent 100%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 2;
+  will-change: opacity;
+}
+.cs-img-break-neon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-top: 1px solid rgba(34,211,238,0.2);
+  border-bottom: 1px solid rgba(34,211,238,0.2);
+  box-shadow: inset 0 1px 30px rgba(34,211,238,0.06), inset 0 -1px 30px rgba(34,211,238,0.06);
+}
 .cs-img-break-overlay {
   position: absolute;
   inset: 0;
