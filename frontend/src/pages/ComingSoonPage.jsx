@@ -972,7 +972,8 @@ const STEPS = [
 function ProcessSection() {
   const sectionRef = useRef(null)
   const imgRef = useRef(null)
-    const canvasRef = useRef(null)
+  const glowSharpRef = useRef(null)
+  const glowSoftRef = useRef(null)
 
   useEffect(() => {
     const isMobile = window.matchMedia('(max-width: 768px)').matches
@@ -1078,145 +1079,48 @@ function ProcessSection() {
 
       if (imgRef.current) {
         const imgBreak = imgRef.current.parentElement
+        // Parallax vertical drift
         gsap.fromTo(imgRef.current, { yPercent: -8 }, {
           yPercent: 8, ease: 'none',
           scrollTrigger: { trigger: imgBreak, start: 'top bottom', end: 'bottom top', scrub: true },
         })
 
-        // Image filter: dim → bright cyan as sweep passes
+        // Base image: dim → subtly brighter as you scroll in
         gsap.fromTo(imgRef.current,
-          { filter: 'saturate(0.5) brightness(0.6)' },
+          { filter: 'brightness(0.3) saturate(0.2)' },
           {
-            filter: 'saturate(2) brightness(1)',
+            filter: 'brightness(0.65) saturate(0.5)',
             ease: 'none',
-            scrollTrigger: { trigger: imgBreak, start: 'top 70%', end: 'bottom 30%', scrub: 0.5 },
+            scrollTrigger: { trigger: imgBreak, start: 'top 80%', end: 'bottom 30%', scrub: 0.5 },
           }
         )
 
-        // Neon sweep overlay — gradient sweeps from top to bottom
-        const neonOverlay = imgBreak?.querySelector('.cs-img-break-neon')
-        if (neonOverlay) {
-          gsap.fromTo(neonOverlay,
-            { backgroundPosition: '0% 100%' },
+        // Sharp glow layer — colorized bright edges, screen blend
+        if (glowSharpRef.current) {
+          gsap.fromTo(glowSharpRef.current,
+            { opacity: 0 },
             {
-              backgroundPosition: '0% 0%',
+              opacity: 0.7,
               ease: 'none',
-              scrollTrigger: { trigger: imgBreak, start: 'top 80%', end: 'bottom 20%', scrub: 0.5 },
+              scrollTrigger: { trigger: imgBreak, start: 'top 75%', end: 'bottom 35%', scrub: 0.5 },
             }
           )
         }
 
-        // Bright scan line sweeps across
-        const scanline = imgBreak?.querySelector('.cs-img-break-scanline')
-        if (scanline) {
-          gsap.fromTo(scanline,
-            { top: '-5%' },
+        // Soft glow layer — blurred halo around edges, screen blend
+        if (glowSoftRef.current) {
+          gsap.fromTo(glowSoftRef.current,
+            { opacity: 0 },
             {
-              top: '105%',
+              opacity: 0.4,
               ease: 'none',
-              scrollTrigger: { trigger: imgBreak, start: 'top 80%', end: 'bottom 20%', scrub: 0.5 },
+              scrollTrigger: { trigger: imgBreak, start: 'top 70%', end: 'bottom 35%', scrub: 0.5 },
             }
           )
         }
       }
     }, sectionRef)
     return () => ctx.revert()
-  }, [])
-  // Canvas scroll-reveal: neon-blue outline glow as user scrolls
-  useEffect(() => {
-    const canvas = canvasRef.current
-    const img = imgRef.current
-    if (!canvas || !img) return
-
-    const ctx2d = canvas.getContext('2d')
-    let revealFraction = 0
-    let rafId = null
-
-    const setup = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const w = canvas.offsetWidth
-      const h = canvas.offsetHeight
-      canvas.width = w * dpr
-      canvas.height = h * dpr
-      ctx2d.scale(dpr, dpr)
-      draw()
-    }
-
-        const draw = () => {
-      const w = canvas.offsetWidth
-      const h = canvas.offsetHeight
-      ctx2d.clearRect(0, 0, w, h)
-      if (revealFraction <= 0) return
-
-      // Use offscreen canvas for pixel manipulation
-      const off = document.createElement('canvas')
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      off.width = Math.round(w * dpr)
-      off.height = Math.round(h * dpr)
-      const offCtx = off.getContext('2d')
-      offCtx.drawImage(img, 0, 0, off.width, off.height)
-      const data = offCtx.getImageData(0, 0, off.width, off.height)
-      const px = data.data
-
-      // Extract bright pixels (lines) — re-color them neon cyan
-      for (let i = 0; i < px.length; i += 4) {
-        const r = px[i], g = px[i+1], b = px[i+2]
-        // Luminance relative to teal background
-        // Teal bg ≈ r<80, g>120, b>130 → low luminance relative to white
-        const lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255
-        // Lines are bright white/light → lum > 0.55
-        if (lum > 0.18) {
-          const t = Math.min(1, (lum - 0.18) / 0.30)  // ramp
-          px[i]   = Math.round(34 * t)   // neon cyan R
-          px[i+1] = Math.round(211 * t)  // neon cyan G
-          px[i+2] = Math.round(238 * t)  // neon cyan B
-          px[i+3] = Math.round(255 * t)  // alpha
-        } else {
-          px[i+3] = 0  // fully transparent (black bg shows through)
-        }
-      }
-      offCtx.putImageData(data, 0, 0)
-
-      // Clip to top revealFraction and draw
-      ctx2d.save()
-      ctx2d.beginPath()
-      ctx2d.rect(0, 0, w, h * revealFraction)
-      ctx2d.clip()
-      ctx2d.drawImage(off, 0, 0, w, h)
-      ctx2d.restore()
-    }
-
-    const onScroll = () => {
-      const rect = canvas.getBoundingClientRect()
-      const vh = window.innerHeight
-      // 0 when top of canvas hits bottom of viewport; 1 when bottom of canvas hits top
-      const entered = (vh - rect.top) / (vh + rect.height)
-      revealFraction = Math.max(0, Math.min(1, entered))
-      if (rafId) cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(draw)
-    }
-
-    const onImgLoad = () => {
-      setup()
-      onScroll()
-    }
-
-    if (img.complete && img.naturalWidth) {
-      setup()
-      onScroll()
-    } else {
-      img.addEventListener('load', onImgLoad)
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', setup, { passive: true })
-
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', setup)
-      img.removeEventListener('load', onImgLoad)
-      if (rafId) cancelAnimationFrame(rafId)
-    }
   }, [])
 
   return (
@@ -1239,9 +1143,10 @@ function ProcessSection() {
         </div>
       </section>
       {/* Second parallax image break */}
-      <div className="cs-img-break cs-img-break--alt">
+      <div className="cs-img-break cs-img-break--nodes">
         <img ref={imgRef} src="/images/abstract-nodes.jpg" alt="" className="cs-img-break-src" draggable="false" />
-                <canvas ref={canvasRef} className="cs-img-break-canvas" />
+        <img ref={glowSharpRef} src="/images/abstract-nodes.jpg" alt="" className="cs-nodes-glow cs-nodes-glow--sharp" draggable="false" />
+        <img ref={glowSoftRef} src="/images/abstract-nodes.jpg" alt="" className="cs-nodes-glow cs-nodes-glow--soft" draggable="false" />
       </div>
     </>
   )
