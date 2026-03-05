@@ -16132,21 +16132,40 @@ button.timestamp-link {
 .cs-img-break-neon {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(to bottom, transparent 0%, rgba(34,211,238,0.08) 30%, rgba(34,211,238,0.12) 50%, rgba(34,211,238,0.08) 70%, transparent 100%);
+  background: linear-gradient(
+    to bottom,
+    rgba(34,211,238,0.12) 0%,
+    rgba(34,211,238,0.18) 40%,
+    rgba(34,211,238,0.30) 44%,
+    rgba(56,189,248,0.60) 48%,
+    rgba(34,211,238,0.80) 50%,
+    rgba(56,189,248,0.60) 52%,
+    rgba(34,211,238,0.30) 56%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-size: 100% 400%;
+  background-position: 0% 100%;
   mix-blend-mode: screen;
   pointer-events: none;
-  opacity: 0;
   z-index: 2;
-  will-change: opacity;
+  will-change: background-position;
 }
-.cs-img-break-neon::after {
-  content: '';
+.cs-img-break-scanline {
   position: absolute;
-  inset: 0;
-  border-top: 1px solid rgba(34,211,238,0.2);
-  border-bottom: 1px solid rgba(34,211,238,0.2);
-  box-shadow: inset 0 1px 30px rgba(34,211,238,0.06), inset 0 -1px 30px rgba(34,211,238,0.06);
+  left: 0;
+  right: 0;
+  top: -5%;
+  height: 2px;
+  background: #22d3ee;
+  box-shadow:
+    0 0 8px 2px rgba(34,211,238,0.9),
+    0 0 25px 5px rgba(34,211,238,0.5),
+    0 0 60px 10px rgba(34,211,238,0.25),
+    0 0 120px 20px rgba(34,211,238,0.1);
+  pointer-events: none;
+  z-index: 3;
+  will-change: top;
 }
 .cs-img-break-overlay {
   position: absolute;
