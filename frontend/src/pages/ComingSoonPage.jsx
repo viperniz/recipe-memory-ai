@@ -1165,8 +1165,8 @@ function ProcessSection() {
         // Teal bg ≈ r<80, g>120, b>130 → low luminance relative to white
         const lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255
         // Lines are bright white/light → lum > 0.55
-        if (lum > 0.55) {
-          const t = (lum - 0.55) / 0.45  // 0..1 ramp
+        if (lum > 0.18) {
+          const t = Math.min(1, (lum - 0.18) / 0.30)  // ramp
           px[i]   = Math.round(34 * t)   // neon cyan R
           px[i+1] = Math.round(211 * t)  // neon cyan G
           px[i+2] = Math.round(238 * t)  // neon cyan B
