@@ -736,42 +736,6 @@ function VisionSection() {
           yPercent: 10, ease: 'none',
           scrollTrigger: { trigger: imgBreak, start: 'top bottom', end: 'bottom top', scrub: true },
         })
-
-        // Image filter: dim → bright cyan as sweep passes
-        gsap.fromTo(imgRef.current,
-          { filter: 'saturate(0.5) brightness(0.6)' },
-          {
-            filter: 'saturate(2) brightness(1)',
-            ease: 'none',
-            scrollTrigger: { trigger: imgBreak, start: 'top 70%', end: 'bottom 30%', scrub: 0.5 },
-          }
-        )
-
-        // Neon sweep overlay — gradient sweeps from top to bottom
-        const neonOverlay = imgBreak?.querySelector('.cs-img-break-neon')
-        if (neonOverlay) {
-          gsap.fromTo(neonOverlay,
-            { backgroundPosition: '0% 100%' },
-            {
-              backgroundPosition: '0% 0%',
-              ease: 'none',
-              scrollTrigger: { trigger: imgBreak, start: 'top 80%', end: 'bottom 20%', scrub: 0.5 },
-            }
-          )
-        }
-
-        // Bright scan line sweeps across
-        const scanline = imgBreak?.querySelector('.cs-img-break-scanline')
-        if (scanline) {
-          gsap.fromTo(scanline,
-            { top: '-5%' },
-            {
-              top: '105%',
-              ease: 'none',
-              scrollTrigger: { trigger: imgBreak, start: 'top 80%', end: 'bottom 20%', scrub: 0.5 },
-            }
-          )
-        }
       }
     }, sectionRef)
 
@@ -802,8 +766,6 @@ function VisionSection() {
       <div className="cs-img-break">
         <img ref={imgRef} src="/brain-neural.jpg" alt="" className="cs-img-break-src" draggable="false" />
         <div className="cs-img-break-overlay" />
-        <div className="cs-img-break-neon" />
-        <div className="cs-img-break-scanline" />
       </div>
     </>
   )
