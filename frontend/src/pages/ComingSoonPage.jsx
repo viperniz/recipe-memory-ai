@@ -968,9 +968,11 @@ const STEPS = [
   { num: '04', title: 'REMEMBER', desc: 'Your personal knowledge base grows with every video you process. Nothing is ever lost.' },
 ]
 
+
 function ProcessSection() {
   const sectionRef = useRef(null)
   const imgRef = useRef(null)
+    const canvasRef = useRef(null)
 
   useEffect(() => {
     const isMobile = window.matchMedia('(max-width: 768px)').matches
@@ -1120,6 +1122,81 @@ function ProcessSection() {
     }, sectionRef)
     return () => ctx.revert()
   }, [])
+  // Canvas scroll-reveal: neon-blue outline glow as user scrolls
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const img = imgRef.current
+    if (!canvas || !img) return
+
+    const ctx2d = canvas.getContext('2d')
+    let revealFraction = 0
+    let rafId = null
+
+    const setup = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const w = canvas.offsetWidth
+      const h = canvas.offsetHeight
+      canvas.width = w * dpr
+      canvas.height = h * dpr
+      ctx2d.scale(dpr, dpr)
+      draw()
+    }
+
+    const draw = () => {
+      const w = canvas.offsetWidth
+      const h = canvas.offsetHeight
+      ctx2d.clearRect(0, 0, w, h)
+      if (revealFraction <= 0) return
+
+      // Draw source image clipped to top revealFraction
+      ctx2d.save()
+      ctx2d.beginPath()
+      ctx2d.rect(0, 0, w, h * revealFraction)
+      ctx2d.clip()
+
+      // Draw the full image (black bg + lines)
+      ctx2d.drawImage(img, 0, 0, w, h)
+
+      // Tint revealed lines to neon cyan
+      ctx2d.globalCompositeOperation = 'source-atop'
+      ctx2d.fillStyle = 'rgba(34,211,238,0.6)'
+      ctx2d.fillRect(0, 0, w, h)
+
+      ctx2d.restore()
+    }
+
+    const onScroll = () => {
+      const rect = canvas.getBoundingClientRect()
+      const vh = window.innerHeight
+      // 0 when top of canvas hits bottom of viewport; 1 when bottom of canvas hits top
+      const entered = (vh - rect.top) / (vh + rect.height)
+      revealFraction = Math.max(0, Math.min(1, entered))
+      if (rafId) cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(draw)
+    }
+
+    const onImgLoad = () => {
+      setup()
+      onScroll()
+    }
+
+    if (img.complete && img.naturalWidth) {
+      setup()
+      onScroll()
+    } else {
+      img.addEventListener('load', onImgLoad)
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', setup, { passive: true })
+
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', setup)
+      img.removeEventListener('load', onImgLoad)
+      if (rafId) cancelAnimationFrame(rafId)
+    }
+  }, [])
 
   return (
     <>
@@ -1143,9 +1220,7 @@ function ProcessSection() {
       {/* Second parallax image break */}
       <div className="cs-img-break cs-img-break--alt">
         <img ref={imgRef} src="/images/abstract-nodes.jpg" alt="" className="cs-img-break-src" draggable="false" />
-        <div className="cs-img-break-overlay" />
-        <div className="cs-img-break-neon" />
-        <div className="cs-img-break-scanline" />
+                <canvas ref={canvasRef} className="cs-img-break-canvas" />
       </div>
     </>
   )

@@ -16179,7 +16179,20 @@ button.timestamp-link {
   filter: saturate(0.4) brightness(0.5);
   object-position: center 50%;
 }
-
+.cs-img-break--alt {
+  background-color: #000;
+}
+.cs-img-break--alt .cs-img-break-src {
+  opacity: 0;
+}
+.cs-img-break-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
 /* ---------- Stats ---------- */
 .cs-stats {
   position: relative;
