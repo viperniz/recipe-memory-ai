@@ -769,6 +769,12 @@ async def add_to_waitlist(req: WaitlistRequest, db: Session = Depends(get_db)):
     entry = WaitlistEmail(email=email)
     db.add(entry)
     db.commit()
+    # Send confirmation email (non-blocking)
+    try:
+        from email_service import send_waitlist_confirmation_email
+        send_waitlist_confirmation_email(email)
+    except Exception:
+        pass
     return {"message": "You're on the list! We'll notify you when we launch.", "already_exists": False}
 
 @app.get("/api/waitlist/count")

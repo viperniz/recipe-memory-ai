@@ -266,3 +266,41 @@ def send_low_credit_warning(email: str, name: str, remaining: int, tier: str) ->
     except Exception as e:
         logger.error(f"Failed to send low credit warning: {e}")
         return False
+
+
+def send_waitlist_confirmation_email(to_email: str) -> bool:
+    """Send a thank-you confirmation email to a waitlist signup."""
+    if not RESEND_API_KEY:
+        logger.warning(f"RESEND_API_KEY not set. Waitlist confirmation for {to_email}")
+        return False
+
+    try:
+        import resend
+        resend.api_key = RESEND_API_KEY
+
+        resend.Emails.send({
+            "from": FROM_EMAIL,
+            "to": [to_email],
+            "subject": "You're on the Cortexle early access list",
+            "html": f"""
+<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background: #0a0a0a; color: #f5f5f5; border-radius: 12px;">
+  <p style="font-size: 13px; letter-spacing: 0.1em; color: #22d3ee; text-transform: uppercase; margin-bottom: 8px;">CORTEXLE</p>
+  <h2 style="color: #ffffff; font-size: 22px; margin-bottom: 16px;">You're on the list.</h2>
+  <p style="color: #a1a1aa; font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
+    Thanks for your interest in Cortexle. We're building a new way to learn from video — and you'll be among the first to experience it.
+  </p>
+  <p style="color: #a1a1aa; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
+    When we launch, we'll send your early access code directly to this email. We'll also keep you in the loop if anything changes with our timeline.
+  </p>
+  <p style="color: #52525b; font-size: 13px; margin-top: 32px; border-top: 1px solid #27272a; padding-top: 16px;">
+    cortexle.com &mdash; Launching September 2026
+  </p>
+</div>
+"""
+        })
+        logger.info(f"Waitlist confirmation sent to {to_email}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to send waitlist confirmation: {e}")
+        return False
