@@ -1142,26 +1142,47 @@ function ProcessSection() {
       draw()
     }
 
-    const draw = () => {
+        const draw = () => {
       const w = canvas.offsetWidth
       const h = canvas.offsetHeight
       ctx2d.clearRect(0, 0, w, h)
       if (revealFraction <= 0) return
 
-      // Draw source image clipped to top revealFraction
+      // Use offscreen canvas for pixel manipulation
+      const off = document.createElement('canvas')
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      off.width = Math.round(w * dpr)
+      off.height = Math.round(h * dpr)
+      const offCtx = off.getContext('2d')
+      offCtx.drawImage(img, 0, 0, off.width, off.height)
+      const data = offCtx.getImageData(0, 0, off.width, off.height)
+      const px = data.data
+
+      // Extract bright pixels (lines) — re-color them neon cyan
+      for (let i = 0; i < px.length; i += 4) {
+        const r = px[i], g = px[i+1], b = px[i+2]
+        // Luminance relative to teal background
+        // Teal bg ≈ r<80, g>120, b>130 → low luminance relative to white
+        const lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255
+        // Lines are bright white/light → lum > 0.55
+        if (lum > 0.55) {
+          const t = (lum - 0.55) / 0.45  // 0..1 ramp
+          px[i]   = Math.round(34 * t)   // neon cyan R
+          px[i+1] = Math.round(211 * t)  // neon cyan G
+          px[i+2] = Math.round(238 * t)  // neon cyan B
+          px[i+3] = Math.round(255 * t)  // alpha
+        } else {
+          px[i+3] = 0  // fully transparent (black bg shows through)
+        }
+      }
+      offCtx.putImageData(data, 0, 0)
+
+      // Clip to top revealFraction and draw
       ctx2d.save()
       ctx2d.beginPath()
       ctx2d.rect(0, 0, w, h * revealFraction)
       ctx2d.clip()
-
-      // Draw the full image (black bg + lines)
-      ctx2d.drawImage(img, 0, 0, w, h)
-
-      // Tint revealed lines to neon cyan
-      ctx2d.globalCompositeOperation = 'source-atop'
-      ctx2d.fillStyle = 'rgba(34,211,238,0.6)'
-      ctx2d.fillRect(0, 0, w, h)
-
+      ctx2d.drawImage(off, 0, 0, w, h)
       ctx2d.restore()
     }
 
