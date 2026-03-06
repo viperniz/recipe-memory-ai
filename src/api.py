@@ -296,6 +296,19 @@ class ProfileUpdateRequest(BaseModel):
     full_name: Optional[str] = None
 
 
+@app.get("/api/auth/validate-invite")
+async def validate_invite(code: str, db: Session = Depends(get_db)):
+    """Validate a beta invite code and return the associated email."""
+    from database import WaitlistEmail
+    entry = db.query(WaitlistEmail).filter(
+        WaitlistEmail.beta_code == code,
+        WaitlistEmail.invited == True
+    ).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Invalid or expired invite code")
+    return {"email": entry.email, "valid": True}
+
+
 # =============================================
 # Auth Endpoints
 # =============================================
@@ -307,8 +320,23 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
+        # Beta gate check
+        from database import WaitlistEmail
+        waitlist_entry = db.query(WaitlistEmail).filter(
+            WaitlistEmail.email == user_data.email,
+            WaitlistEmail.invited == True
+        ).first()
+        if not waitlist_entry:
+            raise HTTPException(status_code=403, detail="waitlist")
+
+        # Bind beta code to user after creation
+
     # Create user
     user = AuthService.create_user(db, user_data)
+        # Bind beta code to this user account
+        if waitlist_entry:
+            user.beta_code = waitlist_entry.beta_code
+            db.commit()
 
     # Process referral if code provided
     if user_data.referral_code:
@@ -340,6 +368,19 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
 
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account is deactivated")
+
+        # Beta gate: allow if grandfathered OR has a bound beta code OR has a waitlist invite
+        if not user.beta_grandfathered and not user.beta_code:
+            from database import WaitlistEmail
+            waitlist_entry = db.query(WaitlistEmail).filter(
+                WaitlistEmail.email == credentials.email,
+                WaitlistEmail.invited == True
+            ).first()
+            if not waitlist_entry:
+                raise HTTPException(status_code=403, detail="waitlist")
+            # Bind code on first login after invite
+            user.beta_code = waitlist_entry.beta_code
+            db.commit()
 
     # Get subscription tier
     tier = AuthService.get_user_tier(db, user.id)
@@ -477,6 +518,20 @@ async def google_login(
     user = AuthService.get_or_create_google_user(db, google_info)
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account is deactivated")
+
+        # Beta gate for Google login
+        google_email = google_info.get("email", "")
+        if not user.beta_grandfathered and not user.beta_code:
+            from database import WaitlistEmail
+            waitlist_entry = db.query(WaitlistEmail).filter(
+                WaitlistEmail.email == google_email,
+                WaitlistEmail.invited == True
+            ).first()
+            if not waitlist_entry:
+                raise HTTPException(status_code=403, detail="waitlist")
+            # Bind code on first Google login
+            user.beta_code = waitlist_entry.beta_code
+            db.commit()
 
     # Process referral for new Google signups
     if is_new and request.referral_code:

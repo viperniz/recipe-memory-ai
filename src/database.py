@@ -73,6 +73,8 @@ class User(Base):
     is_edu_verified = Column(Boolean, default=False)
     deleted_at = Column(DateTime, nullable=True)
     referral_code = Column(String(8), unique=True, nullable=True, index=True)
+    beta_code = Column(String(20), nullable=True)
+    beta_grandfathered = Column(Boolean, default=False)
 
     # Relationships
     subscription = relationship("Subscription", back_populates="user", uselist=False)

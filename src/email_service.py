@@ -300,7 +300,7 @@ def send_waitlist_confirmation_email(to_email: str, beta_code: str) -> bool:
   <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 16px 24px; text-align: center; margin-bottom: 24px;">
     <span style="font-family: monospace; font-size: 22px; font-weight: 700; letter-spacing: 0.15em; color: #22d3ee;">{beta_code}</span>
   </div>
-  <a href="{app_url}/app?beta={beta_code}" style="display: inline-block; padding: 12px 28px; background: #22d3ee; color: #0a0a0a; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; margin-bottom: 24px;">
+              <a href="{app_url}/join?code={beta_code}" style="display: inline-block; padding: 12px 28px; background: #6366f1; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; letter-spacing: 0.02em;">
     Activate Access
   </a>
   <p style="color: #52525b; font-size: 13px; line-height: 1.6;">

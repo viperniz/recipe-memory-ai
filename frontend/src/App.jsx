@@ -20,6 +20,7 @@ import PrivacyPage from './pages/PrivacyPage'
 import ExtensionCallbackPage from './pages/ExtensionCallbackPage'
 import TeamPage from './pages/TeamPage'
 import ComingSoonPage from './pages/ComingSoonPage'
+import JoinPage from './pages/JoinPage'
 import NotFoundPage from './pages/NotFoundPage'
 import './App.css'
 
@@ -124,6 +125,7 @@ function AppRoutes() {
       <Route path="/landing" element={<LandingPage />} />
 
       {/* Auth routes */}
+              <Route path="/join" element={<JoinPage />} />
       <Route
         path="/login"
         element={

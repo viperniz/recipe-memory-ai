@@ -47,9 +47,12 @@ function LoginPage() {
           try {
             await googleLogin(response.credential)
             navigate(postLoginPath)
-          } catch (err) {
-            setServerError(err.message || 'Google login failed')
+                    if (err.message === 'waitlist') {
+            navigate('/waiting-list?status=waitlist');
+          } else {
+            setServerError(err.message || 'Google login failed');
           }
+            }
         },
         ux_mode: 'popup',
         cancel_on_tap_outside: false
@@ -91,7 +94,11 @@ function LoginPage() {
       await login(data.email, data.password)
       navigate(postLoginPath)
     } catch (err) {
-      setServerError(err.message || 'Login failed. Please check your credentials.')
+              if (err.message === 'waitlist') {
+          navigate('/waiting-list?status=waitlist');
+        } else {
+          setServerError(err.message || 'Login failed. Please check your credentials.');
+        }
     }
   }
 
