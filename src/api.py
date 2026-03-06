@@ -789,65 +789,65 @@ async def get_waitlist(
     entries = db.query(WaitlistEmail).order_by(WaitlistEmail.created_at.desc()).all()
     return {
         "count": len(entries),
-        "emails": [{"email": e.email, "created_at": e.created_at.isoformat(), "invited": e.invited, "beta_code": e.beta_code, "invited_at": e.invited_at.isoformat() if e.invited_at else None} for e in entries]"
+        "emails": [{"email": e.email, "created_at": e.created_at.isoformat(), "invited": e.invited, "beta_code": e.beta_code, "invited_at": e.invited_at.isoformat() if e.invited_at else None} for e in entries]
     }
 
 
 @app.post("/api/waitlist/{email}/invite")
 async def invite_waitlist_user(
     email: str,
-        current_user: User = Depends(get_current_active_user),
-            db: Session = Depends(get_db)
-            ):
-                """Assign a unique beta code to a waitlist user and send them an invite email (admin only)."""
-                    import secrets
-                        import string
-                            from datetime import datetime
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Assign a unique beta code to a waitlist user and send them an invite email (admin only)."""
+    import secrets
+    import string
+    from datetime import datetime
 
-                                if not getattr(current_user, 'is_superuser', False):
-                                        raise HTTPException(status_code=403, detail="Admin access required")
+    if not getattr(current_user, 'is_superuser', False):
+        raise HTTPException(status_code=403, detail="Admin access required")
 
-                                            email = email.strip().lower()
-                                                entry = db.query(WaitlistEmail).filter(WaitlistEmail.email == email).first()
-                                                    if not entry:
-                                                            raise HTTPException(status_code=404, detail="Email not found on waitlist")
+    email = email.strip().lower()
+    entry = db.query(WaitlistEmail).filter(WaitlistEmail.email == email).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Email not found on waitlist")
 
-                                                                if entry.invited:
-                                                                        return {
-                                                                                    "message": f"{email} has already been invited.",
-                                                                                                "beta_code": entry.beta_code,
-                                                                                                            "already_invited": True
-                                                                                                                    }
+    if entry.invited:
+        return {
+            "message": f"{email} has already been invited.",
+            "beta_code": entry.beta_code,
+            "already_invited": True
+        }
 
-                                                                                                                        # Generate a unique 8-char alphanumeric beta code
-                                                                                                                            alphabet = string.ascii_uppercase + string.digits
-                                                                                                                                while True:
-                                                                                                                                        code = "BETA-" + "".join(secrets.choice(alphabet) for _ in range(8))
-                                                                                                                                                existing = db.query(WaitlistEmail).filter(WaitlistEmail.beta_code == code).first()
-                                                                                                                                                        if not existing:
-                                                                                                                                                                    break
+    # Generate a unique 8-char alphanumeric beta code
+    alphabet = string.ascii_uppercase + string.digits
+    while True:
+        code = "BETA-" + "".join(secrets.choice(alphabet) for _ in range(8))
+        existing = db.query(WaitlistEmail).filter(WaitlistEmail.beta_code == code).first()
+        if not existing:
+            break
 
-                                                                                                                                                                        entry.beta_code = code
-                                                                                                                                                                            entry.invited = True
-                                                                                                                                                                                entry.invited_at = datetime.utcnow()
-                                                                                                                                                                                    db.commit()
+    entry.beta_code = code
+    entry.invited = True
+    entry.invited_at = datetime.utcnow()
+    db.commit()
 
-                                                                                                                                                                                        # Send invite email with beta code
-                                                                                                                                                                                            try:
-                                                                                                                                                                                                    from email_service import send_waitlist_confirmation_email
-                                                                                                                                                                                                            send_waitlist_confirmation_email(email, code)
-                                                                                                                                                                                                                except Exception as e:
-                                                                                                                                                                                                                        # Log but don't fail — code is saved even if email fails
-                                                                                                                                                                                                                                pass
+    # Send invite email with beta code
+    try:
+        from email_service import send_waitlist_confirmation_email
+        send_waitlist_confirmation_email(email, code)
+    except Exception as e:
+        # Log but don't fail - code is saved even if email fails
+        pass
 
-                                                                                                                                                                                                                                    return {
-                                                                                                                                                                                                                                            "message": f"Invite sent to {email}",
-                                                                                                                                                                                                                                                    "beta_code": code,
-                                                                                                                                                                                                                                                            "already_invited": False
-                                                                                                                                                                                                                                                                }
+    return {
+        "message": f"Invite sent to {email}",
+        "beta_code": code,
+        "already_invited": False
+    }
 
 
-                                                                                                                                                                                                                                                                
+
 @app.get("/api/health")
 async def health_check():
     """
