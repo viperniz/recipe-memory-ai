@@ -268,39 +268,46 @@ def send_low_credit_warning(email: str, name: str, remaining: int, tier: str) ->
         return False
 
 
-def send_waitlist_confirmation_email(to_email: str) -> bool:
-    """Send a thank-you confirmation email to a waitlist signup."""
-    if not RESEND_API_KEY:
-        logger.warning(f"RESEND_API_KEY not set. Waitlist confirmation for {to_email}")
-        return False
+def send_waitlist_confirmation_email(to_email: str, beta_code: str) -> bool:
+        """Send a beta access invite email with a unique beta code to a selected waitlist user."""
+            if not RESEND_API_KEY:
+                    logger.warning(f"RESEND_API_KEY not set. Invite email for {to_email}, code: {beta_code}")
+                            return False
 
-    try:
-        import resend
-        resend.api_key = RESEND_API_KEY
+                                try:
+                                        import resend
+                                                resend.api_key = RESEND_API_KEY
 
-        resend.Emails.send({
-            "from": FROM_EMAIL,
-            "to": [to_email],
-            "subject": "You're on the Cortexle early access list",
-            "html": f"""
-<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background: #0a0a0a; color: #f5f5f5; border-radius: 12px;">
-  <p style="font-size: 13px; letter-spacing: 0.1em; color: #22d3ee; text-transform: uppercase; margin-bottom: 8px;">CORTEXLE</p>
-  <h2 style="color: #ffffff; font-size: 22px; margin-bottom: 16px;">You're on the list.</h2>
-  <p style="color: #a1a1aa; font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
-    Thanks for your interest in Cortexle. We're building a new way to learn from video — and you'll be among the first to experience it.
-  </p>
-  <p style="color: #a1a1aa; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
-    When we launch, we'll send your early access code directly to this email. We'll also keep you in the loop if anything changes with our timeline.
-  </p>
-  <p style="color: #52525b; font-size: 13px; margin-top: 32px; border-top: 1px solid #27272a; padding-top: 16px;">
-    cortexle.com &mdash; Launching September 2026
-  </p>
-</div>
-"""
-        })
-        logger.info(f"Waitlist confirmation sent to {to_email}")
-        return True
+                                                        resend.Emails.send({
+                                                                    "from": FROM_EMAIL,
+                                                                                "to": [to_email],
+                                                                                            "subject": "You're in — your Cortexle beta access code",
+                                                                                                        "html": f"""
+                                                                                                        <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; background: #0a0a0a; border-radius: 12px;">
+                                                                                                          <p style="font-size: 12px; letter-spacing: 0.1em; color: #22d3ee; text-transform: uppercase; margin-bottom: 8px;">CORTEXLE EARLY ACCESS</p>
+                                                                                                            <h2 style="color: #ffffff; font-size: 24px; margin-bottom: 16px;">You're in. Welcome to the beta.</h2>
+                                                                                                              <p style="color: #a1a1aa; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
+                                                                                                                  You've been selected for early access to Cortexle — the AI-powered knowledge engine that transforms video into structured, searchable intelligence.
+                                                                                                                    </p>
+                                                                                                                      <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 8px;">Your personal access code:</p>
+                                                                                                                        <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 16px 24px; text-align: center; margin-bottom: 24px;">
+                                                                                                                            <span style="font-family: monospace; font-size: 22px; font-weight: 700; letter-spacing: 0.15em; color: #22d3ee;">{beta_code}</span>
+                                                                                                                              </div>
+                                                                                                                                <a href="{APP_URL}/app?beta={beta_code}" style="display: inline-block; padding: 12px 28px; background: #22d3ee; color: #0a0a0a; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; margin-bottom: 24px;">
+                                                                                                                                    Activate Access
+                                                                                                                                      </a>
+                                                                                                                                        <p style="color: #52525b; font-size: 13px; line-height: 1.6;">
+                                                                                                                                            Enter this code on the sign-up page or click the button above. This code is personal and cannot be shared — only one account can be activated per code.
+                                                                                                                                              </p>
+                                                                                                                                                <p style="color: #3f3f46; font-size: 12px; margin-top: 24px; border-top: 1px solid #27272a; padding-top: 16px;">
+                                                                                                                                                    cortexle.com &mdash; Launching September 2026
+                                                                                                                                                      </p>
+                                                                                                                                                      </div>
+                                                                                                                                                      """
+                                                                                                                                                              })
+                                                                                                                                                                      logger.info(f"Beta invite email sent to {to_email} with code {beta_code}")
+                                                                                                                                                                              return True
 
-    except Exception as e:
-        logger.error(f"Failed to send waitlist confirmation: {e}")
-        return False
+                                                                                                                                                                                  except Exception as e:
+                                                                                                                                                                                          logger.error(f"Failed to send beta invite email: {e}")
+                                                                                                                                                                                                  return False
