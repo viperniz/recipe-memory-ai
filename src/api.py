@@ -333,10 +333,10 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
 
     # Create user
     user = AuthService.create_user(db, user_data)
-        # Bind beta code to this user account
-        if waitlist_entry:
-            user.beta_code = waitlist_entry.beta_code
-            db.commit()
+    # Bind beta code to this user account
+    if waitlist_entry:
+        user.beta_code = waitlist_entry.beta_code
+        db.commit()
 
     # Process referral if code provided
     if user_data.referral_code:
