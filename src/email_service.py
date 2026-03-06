@@ -8,49 +8,65 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@videomemory.ai")
-SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "support@secondmind.app")
-APP_URL = os.getenv("APP_URL", "http://localhost:5173")
+
+def _get_resend_key():
+    """Read RESEND_API_KEY at call time (not module load time)."""
+    return os.getenv("RESEND_API_KEY", "")
+
+
+def _get_from_email():
+    return os.getenv("FROM_EMAIL", "noreply@videomemory.ai")
+
+
+def _get_support_email():
+    return os.getenv("SUPPORT_EMAIL", "support@secondmind.app")
+
+
+def _get_app_url():
+    return os.getenv("APP_URL", "http://localhost:5173")
+
+
+# Module-level aliases (may be stale if env changes post-load — use helpers above instead)
+RESEND_API_KEY = _get_resend_key()
+FROM_EMAIL = _get_from_email()
+SUPPORT_EMAIL = _get_support_email()
+APP_URL = _get_app_url()
 
 
 def send_password_reset_email(to_email: str, reset_token: str) -> bool:
     """Send a password reset email with the reset link."""
-    reset_url = f"{APP_URL}/reset-password?token={reset_token}"
-
-    if not RESEND_API_KEY:
+    resend_key = _get_resend_key()
+    from_email = _get_from_email()
+    app_url = _get_app_url()
+    reset_url = f"{app_url}/reset-password?token={reset_token}"
+    if not resend_key:
         logger.warning(f"RESEND_API_KEY not set. Reset URL: {reset_url}")
         return False
-
     try:
         import resend
-        resend.api_key = RESEND_API_KEY
-
+        resend.api_key = resend_key
         resend.Emails.send({
-            "from": FROM_EMAIL,
+            "from": from_email,
             "to": [to_email],
             "subject": "Reset your Video Memory password",
             "html": f"""
-            <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-                <h2 style="color: #18181b;">Reset your password</h2>
-                <p style="color: #3f3f46;">
-                    We received a request to reset your password. Click the button below to choose a new one.
-                    This link expires in 1 hour.
-                </p>
-                <a href="{reset_url}"
-                   style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white;
-                          text-decoration: none; border-radius: 8px; font-weight: 600; margin: 16px 0;">
-                    Reset Password
-                </a>
-                <p style="color: #71717a; font-size: 14px;">
-                    If you didn't request this, you can safely ignore this email.
-                </p>
-            </div>
-            """
+<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <h2 style="color: #18181b;">Reset your password</h2>
+  <p style="color: #3f3f46;">
+    We received a request to reset your password. Click the button below to choose a new one.
+    This link expires in 1 hour.
+  </p>
+  <a href="{reset_url}" style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 16px 0;">
+    Reset Password
+  </a>
+  <p style="color: #71717a; font-size: 14px;">
+    If you didn't request this, you can safely ignore this email.
+  </p>
+</div>
+"""
         })
         logger.info(f"Password reset email sent to {to_email}")
         return True
-
     except Exception as e:
         logger.error(f"Failed to send reset email: {e}")
         return False
@@ -58,45 +74,41 @@ def send_password_reset_email(to_email: str, reset_token: str) -> bool:
 
 def send_team_invite_email(to_email: str, team_name: str, inviter_name: str, invite_token: str) -> bool:
     """Send a team invitation email."""
-    accept_url = f"{APP_URL}/app?invite={invite_token}"
-
-    if not RESEND_API_KEY:
+    resend_key = _get_resend_key()
+    from_email = _get_from_email()
+    app_url = _get_app_url()
+    accept_url = f"{app_url}/app?invite={invite_token}"
+    if not resend_key:
         logger.warning(f"RESEND_API_KEY not set. Invite URL: {accept_url}")
         return False
-
     try:
         import resend
-        resend.api_key = RESEND_API_KEY
-
+        resend.api_key = resend_key
         resend.Emails.send({
-            "from": FROM_EMAIL,
+            "from": from_email,
             "to": [to_email],
             "subject": f"You've been invited to join {team_name} on Cortexle",
             "html": f"""
-            <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-                <h2 style="color: #18181b;">You're invited!</h2>
-                <p style="color: #3f3f46;">
-                    <strong>{inviter_name}</strong> has invited you to join
-                    <strong>{team_name}</strong> on Cortexle.
-                </p>
-                <p style="color: #3f3f46;">
-                    Join the team to collaborate on shared research, videos, and knowledge.
-                    This invitation expires in 7 days.
-                </p>
-                <a href="{accept_url}"
-                   style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white;
-                          text-decoration: none; border-radius: 8px; font-weight: 600; margin: 16px 0;">
-                    Accept Invitation
-                </a>
-                <p style="color: #71717a; font-size: 14px;">
-                    If you don't have an account yet, you'll be asked to create one first.
-                </p>
-            </div>
-            """
+<div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <h2 style="color: #18181b;">You're invited!</h2>
+  <p style="color: #3f3f46;">
+    <strong>{inviter_name}</strong> has invited you to join <strong>{team_name}</strong> on Cortexle.
+  </p>
+  <p style="color: #3f3f46;">
+    Join the team to collaborate on shared research, videos, and knowledge.
+    This invitation expires in 7 days.
+  </p>
+  <a href="{accept_url}" style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 16px 0;">
+    Accept Invitation
+  </a>
+  <p style="color: #71717a; font-size: 14px;">
+    If you don't have an account yet, you'll be asked to create one first.
+  </p>
+</div>
+"""
         })
         logger.info(f"Team invite email sent to {to_email}")
         return True
-
     except Exception as e:
         logger.error(f"Failed to send invite email: {e}")
         return False
@@ -104,32 +116,32 @@ def send_team_invite_email(to_email: str, team_name: str, inviter_name: str, inv
 
 def send_support_email(user_email: str, user_name: str, subject: str, message: str) -> bool:
     """Forward a support request to the configured support inbox."""
-    if not RESEND_API_KEY:
+    resend_key = _get_resend_key()
+    from_email = _get_from_email()
+    support_email = _get_support_email()
+    if not resend_key:
         logger.warning(f"RESEND_API_KEY not set. Support message from {user_email}: {subject}")
         return False
-
     try:
         import resend
-        resend.api_key = RESEND_API_KEY
-
+        resend.api_key = resend_key
         resend.Emails.send({
-            "from": FROM_EMAIL,
-            "to": [SUPPORT_EMAIL],
+            "from": from_email,
+            "to": [support_email],
             "reply_to": user_email,
             "subject": f"[Support] {subject}",
             "html": f"""
-            <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
-                <h2 style="color: #18181b;">Support Request</h2>
-                <p style="color: #3f3f46;"><strong>From:</strong> {user_name} &lt;{user_email}&gt;</p>
-                <p style="color: #3f3f46;"><strong>Subject:</strong> {subject}</p>
-                <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 16px 0;" />
-                <div style="color: #3f3f46; white-space: pre-wrap;">{message}</div>
-            </div>
-            """
+<div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+  <h2 style="color: #18181b;">Support Request</h2>
+  <p style="color: #3f3f46;"><strong>From:</strong> {user_name} &lt;{user_email}&gt;</p>
+  <p style="color: #3f3f46;"><strong>Subject:</strong> {subject}</p>
+  <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 16px 0;" />
+  <div style="color: #3f3f46; white-space: pre-wrap;">{message}</div>
+</div>
+"""
         })
         logger.info(f"Support email sent from {user_email}: {subject}")
         return True
-
     except Exception as e:
         logger.error(f"Failed to send support email: {e}")
         return False
@@ -137,46 +149,44 @@ def send_support_email(user_email: str, user_name: str, subject: str, message: s
 
 def send_welcome_email(email: str, name: str) -> bool:
     """Send a branded welcome email after registration."""
-    if not RESEND_API_KEY:
+    resend_key = _get_resend_key()
+    from_email = _get_from_email()
+    app_url = _get_app_url()
+    if not resend_key:
         logger.warning(f"RESEND_API_KEY not set. Welcome email for {email}")
         return False
-
     try:
         import resend
-        resend.api_key = RESEND_API_KEY
-
+        resend.api_key = resend_key
         display_name = name or email.split("@")[0]
         resend.Emails.send({
-            "from": FROM_EMAIL,
+            "from": from_email,
             "to": [email],
             "subject": "Welcome to Cortexle!",
             "html": f"""
-            <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
-                <h2 style="color: #18181b;">Welcome, {display_name}!</h2>
-                <p style="color: #3f3f46;">
-                    Thanks for joining <strong>Cortexle</strong> — your AI-powered research assistant.
-                </p>
-                <h3 style="color: #18181b; font-size: 16px;">Quick start</h3>
-                <ol style="color: #3f3f46; padding-left: 20px;">
-                    <li>Paste a YouTube link or upload a video to get started</li>
-                    <li>Our AI extracts summaries, key points, and transcripts</li>
-                    <li>Search across your knowledge base by meaning</li>
-                    <li>Generate flashcards, mind maps, and study guides</li>
-                </ol>
-                <a href="{APP_URL}/app"
-                   style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white;
-                          text-decoration: none; border-radius: 8px; font-weight: 600; margin: 16px 0;">
-                    Open Dashboard
-                </a>
-                <p style="color: #71717a; font-size: 14px; margin-top: 24px;">
-                    Questions? Reply to this email or visit our <a href="{APP_URL}/help" style="color: #8b5cf6;">Help Center</a>.
-                </p>
-            </div>
-            """
+<div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+  <h2 style="color: #18181b;">Welcome, {display_name}!</h2>
+  <p style="color: #3f3f46;">
+    Thanks for joining <strong>Cortexle</strong> — your AI-powered research assistant.
+  </p>
+  <h3 style="color: #18181b; font-size: 16px;">Quick start</h3>
+  <ol style="color: #3f3f46; padding-left: 20px;">
+    <li>Paste a YouTube link or upload a video to get started</li>
+    <li>Our AI extracts summaries, key points, and transcripts</li>
+    <li>Search across your knowledge base by meaning</li>
+    <li>Generate flashcards, mind maps, and study guides</li>
+  </ol>
+  <a href="{app_url}/app" style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 16px 0;">
+    Open Dashboard
+  </a>
+  <p style="color: #71717a; font-size: 14px; margin-top: 24px;">
+    Questions? Reply to this email or visit our <a href="{app_url}/help" style="color: #8b5cf6;">Help Center</a>.
+  </p>
+</div>
+"""
         })
         logger.info(f"Welcome email sent to {email}")
         return True
-
     except Exception as e:
         logger.error(f"Failed to send welcome email: {e}")
         return False
@@ -184,40 +194,38 @@ def send_welcome_email(email: str, name: str) -> bool:
 
 def send_job_complete_email(email: str, name: str, content_title: str, content_id: str) -> bool:
     """Notify user that their video/content has finished processing."""
-    if not RESEND_API_KEY:
+    resend_key = _get_resend_key()
+    from_email = _get_from_email()
+    app_url = _get_app_url()
+    if not resend_key:
         logger.warning(f"RESEND_API_KEY not set. Job complete email for {email}")
         return False
-
     try:
         import resend
-        resend.api_key = RESEND_API_KEY
-
+        resend.api_key = resend_key
         display_name = name or "there"
-        content_url = f"{APP_URL}/app?content={content_id}"
+        content_url = f"{app_url}/app?content={content_id}"
         resend.Emails.send({
-            "from": FROM_EMAIL,
+            "from": from_email,
             "to": [email],
             "subject": f"Your source is ready: {content_title[:60]}",
             "html": f"""
-            <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
-                <h2 style="color: #18181b;">Your source is ready!</h2>
-                <p style="color: #3f3f46;">
-                    Hi {display_name}, <strong>{content_title}</strong> has been processed and is ready to explore.
-                </p>
-                <a href="{content_url}"
-                   style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white;
-                          text-decoration: none; border-radius: 8px; font-weight: 600; margin: 16px 0;">
-                    View Source
-                </a>
-                <p style="color: #71717a; font-size: 14px;">
-                    You can also chat with the transcript, generate flashcards, and more.
-                </p>
-            </div>
-            """
+<div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+  <h2 style="color: #18181b;">Your source is ready!</h2>
+  <p style="color: #3f3f46;">
+    Hi {display_name}, <strong>{content_title}</strong> has been processed and is ready to explore.
+  </p>
+  <a href="{content_url}" style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 16px 0;">
+    View Source
+  </a>
+  <p style="color: #71717a; font-size: 14px;">
+    You can also chat with the transcript, generate flashcards, and more.
+  </p>
+</div>
+"""
         })
         logger.info(f"Job complete email sent to {email}")
         return True
-
     except Exception as e:
         logger.error(f"Failed to send job complete email: {e}")
         return False
@@ -225,89 +233,88 @@ def send_job_complete_email(email: str, name: str, content_title: str, content_i
 
 def send_low_credit_warning(email: str, name: str, remaining: int, tier: str) -> bool:
     """Warn user when credits drop below 10% of monthly allocation."""
-    if not RESEND_API_KEY:
+    resend_key = _get_resend_key()
+    from_email = _get_from_email()
+    app_url = _get_app_url()
+    if not resend_key:
         logger.warning(f"RESEND_API_KEY not set. Low credit warning for {email}")
         return False
-
     try:
         import resend
-        resend.api_key = RESEND_API_KEY
-
+        resend.api_key = resend_key
         display_name = name or "there"
         resend.Emails.send({
-            "from": FROM_EMAIL,
+            "from": from_email,
             "to": [email],
             "subject": "Your Cortexle credits are running low",
             "html": f"""
-            <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
-                <h2 style="color: #18181b;">Credits running low</h2>
-                <p style="color: #3f3f46;">
-                    Hi {display_name}, you have <strong>{remaining} credits</strong> remaining this month
-                    on your <strong>{tier.capitalize()}</strong> plan.
-                </p>
-                <p style="color: #3f3f46;">
-                    To keep processing videos and using AI features, you can upgrade your plan
-                    or purchase a credit top-up pack.
-                </p>
-                <a href="{APP_URL}/pricing"
-                   style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white;
-                          text-decoration: none; border-radius: 8px; font-weight: 600; margin: 16px 0;">
-                    Upgrade or Buy Credits
-                </a>
-                <p style="color: #71717a; font-size: 14px;">
-                    Your monthly credits reset automatically at the start of each billing cycle.
-                </p>
-            </div>
-            """
+<div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+  <h2 style="color: #18181b;">Credits running low</h2>
+  <p style="color: #3f3f46;">
+    Hi {display_name}, you have <strong>{remaining} credits</strong> remaining this month on your
+    <strong>{tier.capitalize()}</strong> plan.
+  </p>
+  <p style="color: #3f3f46;">
+    To keep processing videos and using AI features, you can upgrade your plan or purchase a credit top-up pack.
+  </p>
+  <a href="{app_url}/pricing" style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 16px 0;">
+    Upgrade or Buy Credits
+  </a>
+  <p style="color: #71717a; font-size: 14px;">
+    Your monthly credits reset automatically at the start of each billing cycle.
+  </p>
+</div>
+"""
         })
         logger.info(f"Low credit warning sent to {email}")
         return True
-
     except Exception as e:
         logger.error(f"Failed to send low credit warning: {e}")
         return False
 
 
 def send_waitlist_confirmation_email(to_email: str, beta_code: str) -> bool:
-        """Send a beta access invite email with a unique beta code to a selected waitlist user."""
-            if not RESEND_API_KEY:
-                    logger.warning(f"RESEND_API_KEY not set. Invite email for {to_email}, code: {beta_code}")
-                            return False
-
-                                try:
-                                        import resend
-                                                resend.api_key = RESEND_API_KEY
-
-                                                        resend.Emails.send({
-                                                                    "from": FROM_EMAIL,
-                                                                                "to": [to_email],
-                                                                                            "subject": "You're in — your Cortexle beta access code",
-                                                                                                        "html": f"""
-                                                                                                        <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; background: #0a0a0a; border-radius: 12px;">
-                                                                                                          <p style="font-size: 12px; letter-spacing: 0.1em; color: #22d3ee; text-transform: uppercase; margin-bottom: 8px;">CORTEXLE EARLY ACCESS</p>
-                                                                                                            <h2 style="color: #ffffff; font-size: 24px; margin-bottom: 16px;">You're in. Welcome to the beta.</h2>
-                                                                                                              <p style="color: #a1a1aa; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
-                                                                                                                  You've been selected for early access to Cortexle — the AI-powered knowledge engine that transforms video into structured, searchable intelligence.
-                                                                                                                    </p>
-                                                                                                                      <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 8px;">Your personal access code:</p>
-                                                                                                                        <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 16px 24px; text-align: center; margin-bottom: 24px;">
-                                                                                                                            <span style="font-family: monospace; font-size: 22px; font-weight: 700; letter-spacing: 0.15em; color: #22d3ee;">{beta_code}</span>
-                                                                                                                              </div>
-                                                                                                                                <a href="{APP_URL}/app?beta={beta_code}" style="display: inline-block; padding: 12px 28px; background: #22d3ee; color: #0a0a0a; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; margin-bottom: 24px;">
-                                                                                                                                    Activate Access
-                                                                                                                                      </a>
-                                                                                                                                        <p style="color: #52525b; font-size: 13px; line-height: 1.6;">
-                                                                                                                                            Enter this code on the sign-up page or click the button above. This code is personal and cannot be shared — only one account can be activated per code.
-                                                                                                                                              </p>
-                                                                                                                                                <p style="color: #3f3f46; font-size: 12px; margin-top: 24px; border-top: 1px solid #27272a; padding-top: 16px;">
-                                                                                                                                                    cortexle.com &mdash; Launching September 2026
-                                                                                                                                                      </p>
-                                                                                                                                                      </div>
-                                                                                                                                                      """
-                                                                                                                                                              })
-                                                                                                                                                                      logger.info(f"Beta invite email sent to {to_email} with code {beta_code}")
-                                                                                                                                                                              return True
-
-                                                                                                                                                                                  except Exception as e:
-                                                                                                                                                                                          logger.error(f"Failed to send beta invite email: {e}")
-                                                                                                                                                                                                  return False
+    """Send a beta access invite email with a unique beta code to a selected waitlist user."""
+    resend_key = _get_resend_key()
+    from_email = _get_from_email()
+    app_url = _get_app_url()
+    if not resend_key:
+        logger.warning(f"RESEND_API_KEY not set. Invite email for {to_email}, code: {beta_code}")
+        return False
+    try:
+        import resend
+        resend.api_key = resend_key
+        resend.Emails.send({
+            "from": from_email,
+            "to": [to_email],
+            "subject": "You're in — your Cortexle beta access code",
+            "html": f"""
+<div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; background: #0a0a0a; border-radius: 12px;">
+  <p style="font-size: 12px; letter-spacing: 0.1em; color: #22d3ee; text-transform: uppercase; margin-bottom: 8px;">CORTEXLE EARLY ACCESS</p>
+  <h2 style="color: #ffffff; font-size: 24px; margin-bottom: 16px;">You're in. Welcome to the beta.</h2>
+  <p style="color: #a1a1aa; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
+    You've been selected for early access to Cortexle — the AI-powered knowledge engine that
+    transforms video into structured, searchable intelligence.
+  </p>
+  <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 8px;">Your personal access code:</p>
+  <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 16px 24px; text-align: center; margin-bottom: 24px;">
+    <span style="font-family: monospace; font-size: 22px; font-weight: 700; letter-spacing: 0.15em; color: #22d3ee;">{beta_code}</span>
+  </div>
+  <a href="{app_url}/app?beta={beta_code}" style="display: inline-block; padding: 12px 28px; background: #22d3ee; color: #0a0a0a; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; margin-bottom: 24px;">
+    Activate Access
+  </a>
+  <p style="color: #52525b; font-size: 13px; line-height: 1.6;">
+    Enter this code on the sign-up page or click the button above.
+    This code is personal and cannot be shared — only one account can be activated per code.
+  </p>
+  <p style="color: #3f3f46; font-size: 12px; margin-top: 24px; border-top: 1px solid #27272a; padding-top: 16px;">
+    cortexle.com &mdash; Launching September 2026
+  </p>
+</div>
+"""
+        })
+        logger.info(f"Beta invite email sent to {to_email} with code {beta_code}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send beta invite email to {to_email}: {e}")
+        return False
