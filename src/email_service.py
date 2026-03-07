@@ -23,8 +23,7 @@ def _get_support_email():
 
 
 def _get_app_url():
-    return os.getenv("APP_URL", "http://localhost:5173")
-
+    return os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 # Module-level aliases (may be stale if env changes post-load — use helpers above instead)
 RESEND_API_KEY = _get_resend_key()
