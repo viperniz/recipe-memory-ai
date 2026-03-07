@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, FileResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-import sys
+import sysh
 import os
 
 # Fix Windows console encoding — prevent crashes on Unicode characters in video titles/paths
@@ -360,7 +360,7 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/api/auth/login", response_model=Token)
-async def login(credentials: UserLogin, db: Session = Depends(get_db)):
+async def login(credentials: UserLogin, db: Session = Depends(get_db), beta_code: Optional[str] = None):
     """Login and get JWT token"""
     user = AuthService.authenticate_user(db, credentials.email, credentials.password)
     if not user:
@@ -369,17 +369,27 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account is deactivated")
 
-        # Beta gate: allow if grandfathered OR has a bound beta code OR has a waitlist invite
-        if not user.beta_grandfathered and not user.beta_code:
-            from database import WaitlistEmail
-            waitlist_entry = db.query(WaitlistEmail).filter(
-                WaitlistEmail.email == credentials.email,
-                WaitlistEmail.invited == True
+        # Beta gate: bind code from activation link OR verify by email (legacy)
+        from database import WaitlistEmail
+        if beta_code and not user.beta_code:
+            wl = db.query(WaitlistEmail).filter(
+                WaitlistEmail.beta_code == beta_code,
+                WaitlistEmail.invited == True,
+                WaitlistEmail.beta_used == False,
             ).first()
-            if not waitlist_entry:
+            if not wl:
+                raise HTTPException(status_code=403, detail="invalid_beta_code")
+            user.beta_code = wl.beta_code
+            wl.beta_used = True
+            db.commit()
+        elif not user.beta_grandfathered and not user.beta_code:
+            wl = db.query(WaitlistEmail).filter(
+                WaitlistEmail.email == credentials.email,
+                WaitlistEmail.invited == True,
+            ).first()
+            if not wl:
                 raise HTTPException(status_code=403, detail="waitlist")
-            # Bind code on first login after invite
-            user.beta_code = waitlist_entry.beta_code
+            user.beta_code = wl.beta_code
             db.commit()
 
     # Get subscription tier
